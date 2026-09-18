@@ -3,6 +3,8 @@ import useSWR from 'swr'
 import { api } from '../../lib/api'
 import type { VergexHeatmapBin } from '../../lib/api/data'
 import { demoSeedPrice, demoTick } from '../../lib/demo/demoUniverse'
+import { t } from '../../i18n/translations'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const lmRnd = (a: number, b: number) => a + Math.random() * (b - a)
 
@@ -52,6 +54,7 @@ interface LiquidationMapProps {
 }
 
 export function LiquidationMap({ symbol, marketType = 'hip3_perp', height = 460, demo = false }: LiquidationMapProps) {
+  const { language } = useLanguage()
   // Synthetic markets live under marketType "hip3_perp"; crypto majors under
   // "perp". We try the caller's guess first and fall back to the other so the
   // heatmap resolves for ANY symbol that has one.
@@ -198,7 +201,7 @@ export function LiquidationMap({ symbol, marketType = 'hip3_perp', height = 460,
   return (
     <div style={{ fontFamily: 'var(--tm-mono)' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 3 }}>
-        <span className="tm-px" style={{ fontSize: 11 }}>Cost / Liq map</span>
+        <span className="tm-px" style={{ fontSize: 11 }}>{t('terminal.costLiqMap', language)}</span>
         <span className="tm-sc">{view.dispSymbol}</span>
         <span className="tm-sc" style={{ marginLeft: 'auto', color: view.rows.length ? 'var(--tm-up)' : 'var(--tm-muted)' }}>
           {view.rows.length ? '● live' : isLoading ? '○ sync' : '○ —'}
@@ -207,28 +210,33 @@ export function LiquidationMap({ symbol, marketType = 'hip3_perp', height = 460,
 
       {/* legend */}
       <div className="tm-sc" style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 4, fontSize: 9 }}>
-        <Swatch c={C_LONG_COST} label="Long cost" />
-        <Swatch c={C_SHORT_COST} label="Short cost" />
-        <Swatch c={C_LONG_LIQ} label="Long liq" />
-        <Swatch c={C_SHORT_LIQ} label="Short liq" />
+        <Swatch c={C_LONG_COST} label={t('terminal.longCost', language)} />
+        <Swatch c={C_SHORT_COST} label={t('terminal.shortCost', language)} />
+        <Swatch c={C_LONG_LIQ} label={t('terminal.longLiq', language)} />
+        <Swatch c={C_SHORT_LIQ} label={t('terminal.shortLiq', language)} />
       </div>
 
       {/* hover readout / mark line */}
       <div className="tm-mono" style={{ fontSize: 10, color: 'var(--tm-ink-2)', minHeight: 14, marginBottom: 2 }}>
         {hv ? (
           <span>
-            <b>{fmtPx(hv.px)}</b> · Cost line <span style={{ color: C_LONG_COST }}>{fmtUsd(hv.longCost)}</span>/<span style={{ color: C_SHORT_COST }}>{fmtUsd(hv.shortCost)}</span>
-            {' · '}liq <span style={{ color: C_LONG_LIQ }}>{fmtUsd(hv.longLiq)}</span>/<span style={{ color: C_SHORT_LIQ }}>{fmtUsd(hv.shortLiq)}</span>
+            <b>{fmtPx(hv.px)}</b> · {t('terminal.costLine', language)}{' '}
+            <span style={{ color: C_LONG_COST }}>{fmtUsd(hv.longCost)}</span>/<span style={{ color: C_SHORT_COST }}>{fmtUsd(hv.shortCost)}</span>
+            {' · '}{t('terminal.liq', language)}{' '}
+            <span style={{ color: C_LONG_LIQ }}>{fmtUsd(hv.longLiq)}</span>/<span style={{ color: C_SHORT_LIQ }}>{fmtUsd(hv.shortLiq)}</span>
           </span>
         ) : (
-          <span className="tm-sc">mark <b style={{ color: 'var(--tm-red)' }}>{view.mark ? fmtPx(view.mark) : '—'}</b> · {view.costAddrs.toLocaleString()} positions / {view.liqAddrs.toLocaleString()} liq levels</span>
+          <span className="tm-sc">{t('risk.mark', language)}{' '}
+            <b style={{ color: 'var(--tm-red)' }}>{view.mark ? fmtPx(view.mark) : '—'}</b> ·{' '}
+            {view.costAddrs.toLocaleString()} {t('risk.positionCount', language)} /{' '}
+            {view.liqAddrs.toLocaleString()} {t('risk.liqLevels', language)}</span>
         )}
       </div>
 
       {error && !view.rows.length ? (
         <div className="tm-sc" style={{ padding: '16px 0' }}>No cost/liq heatmap for {view.dispSymbol} (crypto / main-dex markets have none).</div>
       ) : !view.rows.length ? (
-        <div className="tm-sc" style={{ padding: '16px 0' }}>Loading cost/liquidation map…</div>
+        <div className="tm-sc" style={{ padding: '16px 0' }}>{t('terminal.loadingCostLiq', language)}</div>
       ) : (
         <div>
           <div ref={scrollRef} style={{ maxHeight: height, overflowY: 'auto' }}>
@@ -273,7 +281,7 @@ export function LiquidationMap({ symbol, marketType = 'hip3_perp', height = 460,
           </div>
           {/* totals footer */}
           <div className="tm-sc" style={{ display: 'flex', gap: 10, marginTop: 4, fontSize: 9, flexWrap: 'wrap' }}>
-            <span>Cost line <span style={{ color: C_LONG_COST }}>{fmtUsd(view.totals.lc)}</span>/<span style={{ color: C_SHORT_COST }}>{fmtUsd(view.totals.sc)}</span></span>
+            <span>{t('terminal.costLine', language)}<span style={{ color: C_LONG_COST }}>{fmtUsd(view.totals.lc)}</span>/<span style={{ color: C_SHORT_COST }}>{fmtUsd(view.totals.sc)}</span></span>
             <span>liq <span style={{ color: C_LONG_LIQ }}>{fmtUsd(view.totals.ll)}</span>/<span style={{ color: C_SHORT_LIQ }}>{fmtUsd(view.totals.sl)}</span></span>
           </div>
         </div>

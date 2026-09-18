@@ -12,6 +12,8 @@
 import axios, { AxiosInstance, AxiosError, AxiosResponse } from 'axios'
 import { toast } from 'sonner'
 
+import { tg } from '../i18n/translations'
+
 /**
  * Business response format - only business errors reach the caller
  */
@@ -127,14 +129,14 @@ export class HttpClient {
     if (!error.response) {
       const isTimeout = error.code === 'ECONNABORTED'
       const message = isTimeout
-        ? 'Request timed out'
-        : error.message || 'Network error'
+        ? tg('lib.reqTimeout')
+        : error.message || tg('lib.networkError')
       if (!isSilent) {
-        toast.error(isTimeout ? 'Request timed out' : 'Network error', {
+        toast.error(isTimeout ? tg('lib.reqTimeout') : tg('lib.networkError'), {
           id: 'network-error',
           description: isTimeout
-            ? 'The upstream service took too long to respond'
-            : 'Unable to reach the server',
+            ? tg('lib.timeoutDetail')
+            : tg('lib.unreachableDetail'),
         })
       }
       throw new Error(message)
@@ -145,7 +147,7 @@ export class HttpClient {
     // Handle 401 Unauthorized
     if (status === 401) {
       if (HttpClient.isHandling401) {
-        throw new Error('Session expired')
+        throw new Error(tg('lib.sessionExpired'))
       }
 
       HttpClient.isHandling401 = true
@@ -171,29 +173,29 @@ export class HttpClient {
         return new Promise(() => {})
       }
 
-      throw new Error('Session expired')
+      throw new Error(tg('lib.sessionExpired'))
     }
 
     // Handle 403 Forbidden - system error
     if (status === 403) {
       if (!isSilent) {
-        toast.error('Permission Denied', {
+        toast.error(tg('lib.permissionDeniedTitle'), {
           id: 'permission-denied',
-          description: 'You do not have permission to access this resource',
+          description: tg('lib.permissionDeniedDetail'),
         })
       }
-      throw new Error('Permission denied')
+      throw new Error(tg('lib.permissionDenied'))
     }
 
     // Handle 404 Not Found - system error
     if (status === 404) {
       if (!isSilent) {
-        toast.error('API Not Found', {
+        toast.error(tg('lib.apiNotFoundTitle'), {
           id: `404-${(error.config as any)?.url || 'unknown'}`,
-          description: 'The requested endpoint does not exist (404)',
+          description: tg('lib.apiNotFoundDetail'),
         })
       }
-      throw new Error('API not found')
+      throw new Error(tg('lib.apiNotFound'))
     }
 
     // Handle 500+ Server Error - system error
@@ -202,12 +204,12 @@ export class HttpClient {
         return Promise.reject(error)
       }
       if (!isSilent) {
-        toast.error('Server Error', {
+        toast.error(tg('lib.serverErrorTitle'), {
           id: 'server-error',
-          description: 'Please try again later or contact support',
+          description: tg('lib.serverErrorDetail'),
         })
       }
-      throw new Error('Server error')
+      throw new Error(tg('lib.serverError'))
     }
 
     // 4xx errors (except 401/403/404) are business logic errors
@@ -255,7 +257,7 @@ export class HttpClient {
         const errorData = error.response.data as any
         return {
           success: false,
-          message: errorData?.error || errorData?.message || 'Operation failed',
+          message: errorData?.error || errorData?.message || tg('lib.operationFailed'),
           errorKey: errorData?.error_key,
           errorParams: errorData?.error_params,
           statusCode: error.response.status,

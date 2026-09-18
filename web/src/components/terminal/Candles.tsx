@@ -1,5 +1,7 @@
 import { useMemo } from 'react'
 import type { Kline } from '../../lib/api/data'
+import { t } from '../../i18n/translations'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 interface CandlesProps {
   data: Kline[]
@@ -15,6 +17,7 @@ interface CandlesProps {
  * the loss red. Purely presentational — the parent fetches the real series.
  */
 export function Candles({ data, width = 640, height = 150, fill = false }: CandlesProps) {
+  const { language } = useLanguage()
   const candles = useMemo(() => {
     if (!data || data.length === 0) return []
     const slice = data.slice(-40)
@@ -51,7 +54,7 @@ export function Candles({ data, width = 640, height = 150, fill = false }: Candl
       viewBox={`0 0 ${width} ${height}`}
       preserveAspectRatio={fill ? 'none' : 'xMidYMid meet'}
       role="img"
-      aria-label="Candlestick chart"
+      aria-label={t('chart.candlestick', language)}
       style={{ display: 'block', ...(fill ? { height: '100%' } : {}) }}
     >
       {candles.map((c, i) => {

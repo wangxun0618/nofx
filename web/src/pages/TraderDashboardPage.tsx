@@ -7,7 +7,7 @@ import { PositionHistory } from '../components/trader/PositionHistory'
 import { PunkAvatar, getTraderAvatar } from '../components/common/PunkAvatar'
 import { confirmToast, notify } from '../lib/notify'
 import { formatPrice, formatQuantity } from '../utils/format'
-import { t, type Language } from '../i18n/translations'
+import { t, tg, type Language } from '../i18n/translations'
 import { LogOut, Loader2, Eye, EyeOff, Copy, Check } from 'lucide-react'
 import { DeepVoidBackground } from '../components/common/DeepVoidBackground'
 import { NofxSelect } from '../components/ui/select'
@@ -43,7 +43,7 @@ function getExchangeDisplayNameFromList(
     exchangeId: string | undefined,
     exchanges: Exchange[] | undefined
 ): string {
-    if (!exchangeId) return 'Unknown'
+    if (!exchangeId) return tg('common.unknown')
     const exchange = exchanges?.find((e) => e.id === exchangeId)
     if (!exchange) return exchangeId.substring(0, 8).toUpperCase() + '...'
     const typeName = exchange.exchange_type?.toUpperCase() || exchange.name
@@ -489,7 +489,7 @@ export function TraderDashboardPage({
                     </div>
                     <div className="flex items-center gap-6 text-sm flex-wrap text-nofx-text-muted font-mono pl-2">
                         <span className="flex items-center gap-2">
-                            <span className="opacity-60">AI Model:</span>
+                            <span className="opacity-60">{t('terminal.aiModel', language)}</span>
                             <span
                                 className="font-bold px-2 py-0.5 rounded text-xs tracking-wide"
                                 style={{
@@ -506,7 +506,7 @@ export function TraderDashboardPage({
                         </span>
                         <span className="w-px h-3 bg-nofx-text/10 hidden md:block" />
                         <span className="flex items-center gap-2">
-                            <span className="opacity-60">Exchange:</span>
+                            <span className="opacity-60">{t('terminal.exchange', language)}</span>
                             <span className="text-nofx-text-main font-semibold">
                                 {getExchangeDisplayNameFromList(
                                     selectedTrader.exchange_id,
@@ -516,17 +516,17 @@ export function TraderDashboardPage({
                         </span>
                         <span className="w-px h-3 bg-nofx-text/10 hidden md:block" />
                         <span className="flex items-center gap-2">
-                            <span className="opacity-60">Strategy:</span>
+                            <span className="opacity-60">{t('terminal.strategy', language)}</span>
                             <span className="text-nofx-gold font-semibold tracking-wide">
-                                {selectedTrader.strategy_name || 'No Strategy'}
+                                {selectedTrader.strategy_name || t('dashboard.noStrategy', language)}
                             </span>
                         </span>
                         {status && (
                             <div className="hidden md:contents">
                                 <span className="w-px h-3 bg-nofx-text/10" />
-                                <span>Cycles: <span className="text-nofx-text-main">{status.call_count}</span></span>
+                                <span>{t('terminal.cycles', language)}<span className="text-nofx-text-main">{status.call_count}</span></span>
                                 <span className="w-px h-3 bg-nofx-text/10" />
-                                <span>Runtime: <span className="text-nofx-text-main">{status.runtime_minutes} min</span></span>
+                                <span>{t('terminal.runtime', language)}<span className="text-nofx-text-main">{status.runtime_minutes} min</span></span>
                             </div>
                         )}
                     </div>
@@ -534,7 +534,7 @@ export function TraderDashboardPage({
 
                 {/* Debug Info */}
                 <div className="mb-4 px-3 py-1.5 rounded bg-nofx-bg-deeper border border-[rgba(26,24,19,0.14)] text-[10px] font-mono text-nofx-text-muted flex justify-between items-center opacity-60 hover:opacity-100 transition-opacity">
-                    <span style={{ color: '#2E8B57' }}>SYSTEM_STATUS::ONLINE</span>
+                    <span style={{ color: '#2E8B57' }}>{t('terminal.systemStatusOnline', language)}</span>
                     {account ? (
                         <div className="flex gap-4">
                             <span>LAST_UPDATE::{lastUpdate}</span>

@@ -8,6 +8,8 @@ import {
 import { resolveLaunchExchange, resolveLaunchModel } from './resolve'
 import type { LaunchOutcome } from './types'
 
+import { tg } from '../../i18n/translations'
+
 export const AUTOPILOT_TRADER_NAME = 'NOFX Autopilot'
 
 export interface LaunchAutopilotOptions {
@@ -37,7 +39,7 @@ export async function launchAutopilot(
         ok: false,
         kind: 'setup',
         message:
-          'No enabled AI model is ready. Create or fund the Claw402 wallet first.',
+          tg('lib.noEnabledModel'),
         setupTarget: 'claw402',
       }
     }
@@ -63,7 +65,7 @@ export async function launchAutopilot(
         kind: 'preflight',
         message:
           describeLaunchFailures(preflight) ||
-          'Launch prerequisites are not ready yet.',
+          tg('lib.launchNotReady'),
         preflight,
         setupTarget: primarySetupTarget(preflight),
       }
@@ -137,7 +139,7 @@ export async function launchAutopilot(
       ok: false,
       kind: 'error',
       message:
-        err instanceof Error ? err.message : 'Failed to launch NOFX Autopilot',
+        err instanceof Error ? err.message : tg('lib.launchAutopilotFailed'),
     }
   }
 }
@@ -169,7 +171,7 @@ export async function ensureClaw402Strategy(): Promise<string> {
   const created = await api.createStrategy({
     name: 'NOFX Claw402 Auto Strategy',
     description:
-      'Single built-in strategy: Claw402 board, per-symbol details, raw candles, then execution.',
+      tg('lib.claw402StrategyDesc'),
     config,
   })
   if (created?.id) {
@@ -181,7 +183,7 @@ export async function ensureClaw402Strategy(): Promise<string> {
   const fallback = refreshed.find((strategy) =>
     strategy.name.toLowerCase().includes('claw402')
   )
-  if (!fallback) throw new Error('Failed to create Claw402 strategy')
+  if (!fallback) throw new Error(tg('lib.createClaw402StrategyFailed'))
   await api.activateStrategy(fallback.id)
   return fallback.id
 }

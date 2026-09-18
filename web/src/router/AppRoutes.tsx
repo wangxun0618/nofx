@@ -75,7 +75,7 @@ function LoadingScreen() {
       <div className="text-center">
         <img
           src="/icons/nofx.svg"
-          alt="NoFx Logo"
+          alt={t('auth.noFxLogo', language)}
           className="w-16 h-16 mx-auto mb-4 animate-pulse"
         />
         <p style={{ color: '#1A1813' }}>{t('loading', language)}</p>
@@ -128,7 +128,7 @@ function AppChrome({
   extraContent,
 }: AppChromeProps) {
   const location = useLocation()
-  const { language, setLanguage } = useLanguage()
+  const { language } = useLanguage()
   const { user, logout } = useAuth()
   const [loginOverlayOpen, setLoginOverlayOpen] = useState(false)
   const [loginOverlayFeature, setLoginOverlayFeature] = useState('')
@@ -163,7 +163,6 @@ function AppChrome({
         isLoggedIn={!!user}
         currentPage={currentPage}
         language={language}
-        onLanguageChange={setLanguage}
         user={user}
         onLogout={logout}
         onLoginRequired={handleLoginRequired}

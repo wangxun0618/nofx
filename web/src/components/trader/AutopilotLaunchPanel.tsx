@@ -30,6 +30,8 @@ import type {
   TraderInfo,
 } from '../../types'
 import { HyperliquidWalletConnect } from '../common/HyperliquidWalletConnect'
+import { t, type Language } from '../../i18n/translations'
+import { tg } from '../../i18n/translations'
 
 type LaunchStepStatus = 'ready' | 'action' | 'blocked'
 
@@ -39,7 +41,7 @@ interface AutopilotLaunchPanelProps {
   exchangeAccountStates: Record<string, ExchangeAccountState>
   traders?: TraderInfo[]
   isLoggedIn: boolean
-  language: string
+  language: Language
   onRefresh: () => Promise<void>
   onOpenClaw402Config?: () => void
   onOpenHyperliquidConfig?: () => void
@@ -70,9 +72,9 @@ function formatUSDC(value: number) {
 async function copyText(value: string, label: string) {
   try {
     await navigator.clipboard.writeText(value)
-    toast.success(`${label} copied`)
+    toast.success(tg('autopilot.copied', { label }))
   } catch {
-    toast.error('Copy failed')
+    toast.error(tg('autopilot.copyFailed'))
   }
 }
 
@@ -261,7 +263,7 @@ export function AutopilotLaunchPanel({
         toast.warning(outcome.warning)
       }
       await onRefresh()
-      toast.success('NOFX Autopilot is running')
+      toast.success(t('autopilot.running', language))
       navigate(buildDashboardPath(outcome.traderId))
     } finally {
       setLaunching(false)
@@ -276,15 +278,14 @@ export function AutopilotLaunchPanel({
     action?: JSX.Element
   }> = [
     {
-      title: 'Step 1 · Fund the AI wallet ($1+)',
-      detail:
-        'The AI pays a tiny fee each time it thinks. Send $1 or more of USDC on the Base network to this address — from Binance, OKX, Coinbase or any wallet. Separate from your trading money.',
+      title: t('hlw.panelStep1Title', language),
+      detail: t('hlw.panelStep1Detail', language),
       status: feeReady ? 'ready' : 'action',
       meta: feeWalletAddress
         ? `${shortAddress(feeWalletAddress)} · ${formatUSDC(feeWalletBalance)} USDC${
             feeReady ? '' : ` · needs ≥ ${minAIFeeUSDC} USDC`
           }`
-        : 'Takes 1 minute — we create the wallet for you',
+        : t('hlw.panelStep1TakesMinute', language),
       action: feeWalletAddress ? (
         <div className="flex flex-wrap items-center gap-3">
           <button
@@ -293,16 +294,14 @@ export function AutopilotLaunchPanel({
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-nofx-gold hover:text-nofx-accent"
           >
             <CircleDollarSign className="h-3.5 w-3.5" />
-            Deposit
+            {t('hlw.deposit', language)}
           </button>
           <button
             type="button"
-            onClick={() => void copyText(feeWalletAddress, 'AI fee wallet')}
+            onClick={() => void copyText(feeWalletAddress, t('autopilot.aiFeeWallet', language))}
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-nofx-gold hover:text-nofx-accent"
           >
-            <Copy className="h-3.5 w-3.5" />
-            Copy
-          </button>
+            <Copy className="h-3.5 w-3.5" />{t('common.copy', language)}</button>
         </div>
       ) : (
         <button
@@ -311,18 +310,17 @@ export function AutopilotLaunchPanel({
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-nofx-gold hover:text-nofx-accent"
         >
           <ArrowRight className="h-3.5 w-3.5" />
-          Create
+          {t('hlw.create', language)}
         </button>
       ),
     },
     {
-      title: 'Step 2 · Connect Hyperliquid',
-      detail:
-        'Approve NOFX once with your crypto wallet (Rabby or MetaMask). This lets the AI place trades for you — it can never withdraw your money.',
+      title: t('hlw.panelStep2Title', language),
+      detail: t('hlw.panelStep2Detail', language),
       status: hyperliquidConnected ? 'ready' : 'action',
       meta: hyperliquidExchange?.hyperliquidWalletAddr
         ? `${shortAddress(hyperliquidExchange.hyperliquidWalletAddr)} · authorized`
-        : 'A few clicks + 3 wallet signatures',
+        : t('hlw.panelStep2Meta', language),
       action: (
         <button
           type="button"
@@ -330,14 +328,13 @@ export function AutopilotLaunchPanel({
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-nofx-gold hover:text-nofx-accent"
         >
           <Wallet className="h-3.5 w-3.5" />
-          Open
+          {t('hlw.open', language)}
         </button>
       ),
     },
     {
-      title: 'Step 3 · Add trading money ($12+)',
-      detail:
-        'Deposit USDC into your Hyperliquid account (app.hyperliquid.xyz → Deposit, USDC on Arbitrum). This is what the AI trades with — start small, you can add more anytime.',
+      title: t('hlw.panelStep3Title', language),
+      detail: t('hlw.panelStep3Detail', language),
       status: tradingBalanceReady
         ? 'ready'
         : hyperliquidConnected
@@ -347,20 +344,19 @@ export function AutopilotLaunchPanel({
         ? `${formatUSDC(tradingBalance)} USDC available${
             tradingBalanceReady ? '' : ` · needs ≥ ${minTradingUSDC} USDC`
           }`
-        : 'Finish step 2 first',
+        : t('hlw.panelStep3MetaFinish', language),
     },
     {
-      title: 'Step 4 · Press start',
-      detail:
-        'The AI reads the market every few minutes, picks its trades, and manages them on its own. Watch every decision live on the dashboard — stop it with one click anytime.',
+      title: t('hlw.panelStep4Title', language),
+      detail: t('hlw.panelStep4Detail', language),
       status: allReady ? 'ready' : 'blocked',
       meta: autopilotTrader?.is_running
-        ? 'Running — open the dashboard to watch'
+        ? t('hlw.panelStep4Running', language)
         : autopilotTrader
-          ? 'Ready to start'
+          ? t('hlw.panelStep4Ready', language)
           : allReady
-            ? 'Everything is ready — press the button'
-            : 'Unlocks when steps 1–3 are green',
+            ? t('hlw.panelStep4EverythingReady', language)
+            : t('hlw.panelStep4Unlocks', language),
     },
   ]
 
@@ -372,7 +368,7 @@ export function AutopilotLaunchPanel({
           onClick={() => navigate(ROUTES.welcome)}
           className="inline-flex items-center justify-center gap-2 rounded-lg bg-nofx-gold px-4 py-3 text-sm font-bold text-white hover:bg-nofx-accent"
         >
-          Set up the AI wallet
+          {t('hlw.panelSetupAiWallet', language)}
           <ArrowRight className="h-4 w-4" />
         </button>
       )
@@ -392,9 +388,7 @@ export function AutopilotLaunchPanel({
             }
           }}
           className="inline-flex items-center justify-center gap-2 rounded-lg bg-nofx-gold px-4 py-3 text-sm font-bold text-white hover:bg-nofx-accent"
-        >
-          Connect Hyperliquid
-          <ArrowRight className="h-4 w-4" />
+        >{t('hlw.connect', language)}<ArrowRight className="h-4 w-4" />
         </button>
       )
     }
@@ -407,7 +401,7 @@ export function AutopilotLaunchPanel({
           rel="noreferrer"
           className="inline-flex items-center justify-center gap-2 rounded-lg bg-nofx-gold px-4 py-3 text-sm font-bold text-white hover:bg-nofx-accent"
         >
-          Deposit USDC on Hyperliquid
+          {t('hlw.panelDepositUsdc', language)}
           <ExternalLink className="h-4 w-4" />
         </a>
       )
@@ -422,7 +416,7 @@ export function AutopilotLaunchPanel({
           }
           className="inline-flex items-center justify-center gap-2 rounded-lg bg-nofx-success px-4 py-3 text-sm font-bold text-white hover:bg-nofx-success/80"
         >
-          Open dashboard
+          {t('hlw.panelOpenDashboard', language)}
           <ArrowRight className="h-4 w-4" />
         </button>
       )
@@ -440,7 +434,7 @@ export function AutopilotLaunchPanel({
         ) : (
           <Zap className="h-4 w-4" />
         )}
-        Start NOFX Autopilot
+        {t('hlw.panelStartAutopilot', language)}
       </button>
     )
   }
@@ -456,14 +450,13 @@ export function AutopilotLaunchPanel({
             <div>
               <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-nofx-gold/25 bg-nofx-gold/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-nofx-gold">
                 <ShieldCheck className="h-3.5 w-3.5" />
-                Guided Launch
+                {t('hlw.panelGuidedLaunch', language)}
               </div>
               <h2 className="text-2xl font-bold tracking-tight text-nofx-text md:text-3xl">
-                Start NOFX Autopilot in minutes
+                {t('hlw.panelTitle', language)}
               </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-nofx-text-muted">
-                Four small steps, about $13 total. No API keys, no config files
-                — the AI trades for you, and you can stop it anytime.
+                {t('hlw.panelSubtitle', language)}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -475,9 +468,7 @@ export function AutopilotLaunchPanel({
               >
                 <RefreshCw
                   className={`h-3.5 w-3.5 ${refreshing || walletLoading ? 'animate-spin' : ''}`}
-                />
-                Refresh
-              </button>
+                />{t('common.refresh', language)}</button>
               {renderPrimaryAction()}
             </div>
           </div>
@@ -527,22 +518,21 @@ export function AutopilotLaunchPanel({
         </div>
 
         <aside className="border-t border-nofx-gold/20 bg-nofx-bg p-5 md:p-6 xl:border-l xl:border-t-0">
-          <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-nofx-text">
+            <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-nofx-text">
             <Wallet className="h-4 w-4 text-nofx-gold" />
-            Hyperliquid setup
+            {t('hlw.panelHyperliquidSetup', language)}
           </div>
           {hyperliquidConnected ? (
             <div className="rounded-lg border border-nofx-success/25 bg-nofx-success/10 p-4">
               <div className="flex items-center gap-2 text-sm font-semibold text-nofx-success">
                 <CheckCircle2 className="h-4 w-4" />
-                Trading authorization is ready
+                {t('hlw.panelAuthReady', language)}
               </div>
               <div className="mt-2 font-mono text-xs text-nofx-success/90">
                 {shortAddress(hyperliquidExchange?.hyperliquidWalletAddr)}
               </div>
               <p className="mt-3 text-xs leading-5 text-nofx-text-muted">
-                Funds stay in your Hyperliquid account. NOFX only stores the
-                authorized Agent key required for automated execution.
+                {t('hlw.panelFundsStay', language)}
               </p>
             </div>
           ) : (

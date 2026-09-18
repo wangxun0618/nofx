@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { demoSeedPrice, demoTick } from '../../lib/demo/demoUniverse'
+import { t } from '../../i18n/translations'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const rnd = (a: number, b: number) => a + Math.random() * (b - a)
 
@@ -63,6 +65,7 @@ interface OrderBookProps {
 }
 
 export function OrderBook({ symbol, markPrice, demo = false }: OrderBookProps) {
+  const { language } = useLanguage()
   const base = useMemo(() => baseSymbol(symbol || ''), [symbol])
   const [xyzSet, setXyzSet] = useState<Set<string>>(new Set())
   const [book, setBook] = useState<BookState | null>(null)
@@ -232,7 +235,7 @@ export function OrderBook({ symbol, markPrice, demo = false }: OrderBookProps) {
   return (
     <div style={{ fontFamily: 'var(--tm-mono)' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 6 }}>
-        <span className="tm-px" style={{ fontSize: 11 }}>Order book</span>
+        <span className="tm-px" style={{ fontSize: 11 }}>{t('terminal.orderBook', language)}</span>
         <span className="tm-sc">L2 · {coin || base || '—'}</span>
         <span
           className="tm-sc"
@@ -243,7 +246,7 @@ export function OrderBook({ symbol, markPrice, demo = false }: OrderBookProps) {
       </div>
 
       {!view ? (
-        <div className="tm-sc" style={{ padding: '16px 0' }}>Connecting to Hyperliquid…</div>
+        <div className="tm-sc" style={{ padding: '16px 0' }}>{t('terminal.connectingHyperliquid', language)}</div>
       ) : (
         <div style={{ fontSize: 11 }}>
           {/* column header */}

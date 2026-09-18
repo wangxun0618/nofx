@@ -1,10 +1,12 @@
 import { Fragment, useEffect, useRef } from 'react'
 import { ExternalLink } from 'lucide-react'
 import type { FAQBlock, FAQCategory } from '../../data/faqData'
+import { t, type Language } from '../../i18n/translations'
 
 interface FAQContentProps {
   categories: FAQCategory[]
   onActiveItemChange: (itemId: string) => void
+  language: Language
 }
 
 /** Renders text with inline `code` spans (backtick syntax). */
@@ -90,7 +92,11 @@ function Block({ block }: { block: FAQBlock }) {
   }
 }
 
-export function FAQContent({ categories, onActiveItemChange }: FAQContentProps) {
+export function FAQContent({
+  categories,
+  onActiveItemChange,
+  language,
+}: FAQContentProps) {
   const sectionRefs = useRef<Map<string, HTMLElement>>(new Map())
 
   useEffect(() => {
@@ -132,7 +138,11 @@ export function FAQContent({ categories, onActiveItemChange }: FAQContentProps) 
               {category.title}
             </h2>
             <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.12em] text-nofx-text-muted">
-              {category.items.length} {category.items.length === 1 ? 'entry' : 'entries'}
+              {category.items.length}{' '}
+              {t(
+                category.items.length === 1 ? 'faq.entry' : 'faq.entries',
+                language
+              )}
             </span>
           </div>
 

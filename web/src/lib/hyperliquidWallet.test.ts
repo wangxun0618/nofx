@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { tg } from '../i18n/translations'
 import {
   getWalletErrorMessage,
   getWalletProviderName,
@@ -110,7 +111,7 @@ describe('Hyperliquid wallet signing chain', () => {
       const provider: WalletProvider = { request }
 
       await expect(getWalletChainIdHex(provider)).rejects.toThrow(
-        'Wallet returned an invalid chain id'
+        tg('lib.invalidChainId')
       )
       expect(request).toHaveBeenCalledOnce()
     }

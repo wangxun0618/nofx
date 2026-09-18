@@ -23,11 +23,11 @@ export default function FooterSection({ language }: FooterSectionProps) {
     ],
     resources: [
       {
-        name: language === 'zh' ? 'Documentation' : 'Documentation',
+        name: t('landing.documentation', language),
         href: 'https://github.com/NoFxAiOS/nofx/blob/main/README.md',
       },
-      { name: 'Issues', href: 'https://github.com/NoFxAiOS/nofx/issues' },
-      { name: 'Pull Requests', href: 'https://github.com/NoFxAiOS/nofx/pulls' },
+      { name: t('footer.issues', language), href: 'https://github.com/NoFxAiOS/nofx/issues' },
+      { name: t('landing2.pullRequests', language), href: 'https://github.com/NoFxAiOS/nofx/pulls' },
     ],
     supporters: [
       { name: 'Binance', href: 'https://www.binance.com/join?ref=NOFXENG' },
@@ -50,7 +50,7 @@ export default function FooterSection({ language }: FooterSectionProps) {
           {/* Brand */}
           <div className="md:col-span-1">
             <div className="flex items-center gap-3 mb-4">
-              <img src="/icons/nofx.svg" alt="NOFX Logo" className="w-8 h-8" />
+              <img src="/icons/nofx.svg" alt={t('auth.noFxLogo', language)} className="w-8 h-8" />
               <span className="text-xl font-bold" style={{ color: '#1A1813' }}>
                 NOFX
               </span>

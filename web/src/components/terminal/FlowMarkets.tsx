@@ -1,5 +1,7 @@
 import { useMemo } from 'react'
 import type { FlowMarketItem } from '../../lib/api/data'
+import { t } from '../../i18n/translations'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 interface FlowMarketsProps {
   items?: FlowMarketItem[]
@@ -33,6 +35,7 @@ const GRID = '64px 96px minmax(120px, 1fr) 80px 96px'
  * latest price. Sorted by net inflow descending (the upstream ordering).
  */
 export function FlowMarkets({ items, window = '1h' }: FlowMarketsProps) {
+  const { language } = useLanguage()
   const win = window.toUpperCase()
   const rows = useMemo(() => {
     if (!items || items.length === 0) return []
@@ -56,7 +59,7 @@ export function FlowMarkets({ items, window = '1h' }: FlowMarketsProps) {
   }, [items])
 
   if (rows.length === 0) {
-    return <div className="tm-sc" style={{ padding: '12px 0' }}>No net-flow data (claw402 payment required).</div>
+    return <div className="tm-sc" style={{ padding: '12px 0' }}>{t('terminal.noNetFlow', language)}</div>
   }
 
   return (
@@ -74,10 +77,10 @@ export function FlowMarkets({ items, window = '1h' }: FlowMarketsProps) {
           fontSize: 9,
         }}
       >
-        <span>SYMBOL</span>
+        <span>{t('terminal.symbol', language)}</span>
         <span style={{ textAlign: 'right' }}>{win} NET</span>
-        <span>BUY/SELL</span>
-        <span style={{ textAlign: 'right' }}>TRADES</span>
+        <span>{t('terminal.buySell', language)}</span>
+        <span style={{ textAlign: 'right' }}>{t('terminal.trades', language)}</span>
         <span style={{ textAlign: 'right' }}>PRICE</span>
       </div>
 

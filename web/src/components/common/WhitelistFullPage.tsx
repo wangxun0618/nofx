@@ -2,12 +2,16 @@ import { motion } from 'framer-motion'
 import { ShieldAlert, ArrowLeft, Twitter, Send, Lock } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { OFFICIAL_LINKS } from '../../constants/branding'
+import { t } from '../../i18n/translations'
+import { useLanguage } from '../../contexts/LanguageContext'
+import { LanguageSwitcher } from './LanguageSwitcher'
 
 interface WhitelistFullPageProps {
   onBack?: () => void
 }
 
 export function WhitelistFullPage({ onBack }: WhitelistFullPageProps) {
+  const { language } = useLanguage()
   const navigate = useNavigate()
 
   const handleBackToLogin = () => {
@@ -20,6 +24,7 @@ export function WhitelistFullPage({ onBack }: WhitelistFullPageProps) {
 
   return (
     <div className="min-h-screen bg-nofx-bg-deeper text-nofx-text font-mono relative overflow-hidden flex items-center justify-center px-4">
+      <LanguageSwitcher />
       {/* Background Grid */}
       <div className="fixed inset-0 bg-[linear-gradient(to_right,rgba(26,24,19,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(26,24,19,0.04)_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none"></div>
 
@@ -52,8 +57,7 @@ export function WhitelistFullPage({ onBack }: WhitelistFullPageProps) {
 
             {/* Title */}
             <h1 className="text-2xl font-bold mb-2 tracking-widest text-nofx-text uppercase">
-              <span className="text-[#D6433A]">RESTRICTED</span> ACCESS
-            </h1>
+              <span className="text-[#D6433A]">{t('auth.whitelistHeading', language)}</span>{t('auth.accessWord', language)}</h1>
 
             <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-[#D6433A]/40 to-transparent my-4"></div>
 

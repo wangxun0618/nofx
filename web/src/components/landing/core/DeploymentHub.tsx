@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Terminal, Copy, Check, ChevronRight, Server, Command, Shield } from 'lucide-react'
+import { t } from '../../../i18n/translations'
+import { useLanguage } from '../../../contexts/LanguageContext'
 
 export default function DeploymentHub() {
+  const { language } = useLanguage()
     const [copied, setCopied] = useState(false)
     const installCmd = "curl -fsSL https://raw.githubusercontent.com/NoFxAiOS/nofx/main/install.sh | bash"
 
@@ -23,27 +26,26 @@ export default function DeploymentHub() {
                     {/* Left Column: Context */}
                     <div className="space-y-8">
                         <div className="flex items-center gap-2 text-nofx-gold font-mono text-xs tracking-[0.2em] uppercase">
-                            <Server className="w-4 h-4" /> System Deployment
+                            <Server className="w-4 h-4" /> {t('landing2.systemDeployment', language)}
                         </div>
 
                         <h2 className="text-4xl md:text-6xl font-black text-nofx-text leading-tight">
-                            DEPLOY <span className="text-nofx-gold">INSTANTLY</span>
+                            {t('landing2.deployWord', language)}{' '}
+                            <span className="text-nofx-gold">
+                                {t('landing2.instantlyWord', language)}
+                            </span>
                         </h2>
 
                         <p className="text-nofx-text-muted text-lg leading-relaxed font-light">
-                            One command on your laptop or any server installs
-                            everything. Open the address it prints, create your
-                            account, and the guided launch takes you to your
-                            first AI trade in about five minutes — around $13
-                            is enough to start.
+                            {t('landing2.deployIntro', language)}
                         </p>
 
                         {/* the first five minutes, in plain words */}
                         <ol className="space-y-2 pt-2 font-mono text-sm text-nofx-text-muted">
                             {[
-                                'Register — the first account owns this instance.',
-                                'Fund two small wallets: $1+ for AI fees, $12+ to trade with (guided, with QR codes).',
-                                'Press Start — the AI trades on its own; stop it anytime.',
+                                t('landing2.stepRegister', language),
+                                t('landing2.stepFund', language),
+                                t('landing2.stepPressStart', language),
                             ].map((step, i) => (
                                 <li key={i} className="flex gap-3">
                                     <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-nofx-gold/30 bg-nofx-gold/10 text-[11px] font-bold text-nofx-gold">
@@ -56,8 +58,8 @@ export default function DeploymentHub() {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
                             {[
-                                { icon: Command, label: "One-Line Install", desc: "Docker handles every dependency" },
-                                { icon: Shield, label: "Your Keys Stay Home", desc: "Runs on your machine, keys encrypted locally" }
+                                { icon: Command, label: t('landing2.oneLineInstall', language), desc: t('landing2.oneLineInstallDesc', language) },
+                                { icon: Shield, label: t('landing2.keysStayHome', language), desc: t('landing2.keysStayHomeDesc', language) }
                             ].map((item, i) => (
                                 <div key={i} className="flex gap-4 items-start p-4 rounded bg-nofx-bg-lighter border border-[rgba(26,24,19,0.14)] hover:border-nofx-gold/30 transition-colors group">
                                     <div className="p-2 rounded bg-nofx-bg-deeper border border-[rgba(26,24,19,0.14)] text-nofx-gold group-hover:bg-nofx-gold/10 transition-colors">
@@ -98,7 +100,7 @@ export default function DeploymentHub() {
 
                             {/* Terminal Content */}
                             <div className="p-8 font-mono text-sm md:text-base bg-nofx-bg-lighter min-h-[200px] flex flex-col justify-center">
-                                <div className="mb-2 text-nofx-text-muted text-xs tracking-wide"># Initialize NoFX Core Protocol</div>
+                                <div className="mb-2 text-nofx-text-muted text-xs tracking-wide">{t('landing2.initProtocol', language)}</div>
                                 <div
                                     className="group relative flex items-start gap-3 p-4 rounded-lg bg-nofx-bg-deeper border border-[rgba(26,24,19,0.14)] hover:border-nofx-gold/50 cursor-pointer transition-all hover:bg-nofx-bg"
                                     onClick={handleCopy}

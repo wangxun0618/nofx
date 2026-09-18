@@ -105,14 +105,14 @@ export function TwoStageKeyModal({
             ...obfuscationLog,
             `Stage 1: ${new Date().toISOString()} - Auto copied obfuscation`,
           ])
-          toast.success('Obfuscation string copied to clipboard')
+          toast.success(t('key.obfuscationCopied', language))
         } catch {
           setClipboardStatus('failed')
           setObfuscationLog([
             ...obfuscationLog,
             `Stage 1: ${new Date().toISOString()} - Auto copy failed, manual required`,
           ])
-          toast.error('Copy failed, please copy the obfuscation string manually')
+          toast.error(t('key.copyFailedManual', language))
         }
       } else {
         setClipboardStatus('failed')
@@ -120,7 +120,7 @@ export function TwoStageKeyModal({
           ...obfuscationLog,
           `Stage 1: ${new Date().toISOString()} - Clipboard API not available`,
         ])
-        toast('This browser does not support automatic copy, please copy manually')
+        toast(t('key.copyUnsupported', language))
       }
 
       setTimeout(() => {

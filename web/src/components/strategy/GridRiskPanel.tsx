@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { Shield, TrendingUp, AlertTriangle, Activity, Box, ChevronDown, ChevronUp } from 'lucide-react'
 import type { GridRiskInfo } from '../../types'
 import { gridRisk, ts } from '../../i18n/strategy-translations'
+import { t } from '../../i18n/translations'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 interface GridRiskPanelProps {
   traderId: string
@@ -11,9 +13,9 @@ interface GridRiskPanelProps {
 
 export function GridRiskPanel({
   traderId,
-  language = 'en',
   refreshInterval = 5000,
 }: GridRiskPanelProps) {
+  const { language } = useLanguage()
   const [riskInfo, setRiskInfo] = useState<GridRiskInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -36,7 +38,7 @@ export function GridRiskPanel({
       setRiskInfo(data)
       setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error')
+      setError(err instanceof Error ? err.message : t('common.unknownError', language))
     } finally {
       setLoading(false)
     }

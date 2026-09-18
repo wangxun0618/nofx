@@ -1,5 +1,17 @@
-import { createContext, useContext, useState, ReactNode } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react'
 import type { Language } from '../i18n/translations'
+import { setActiveLanguage } from '../i18n/active-language'
+
+const STORAGE_KEY = 'language'
+const DEFAULT_LANGUAGE: Language = 'zh'
 
 interface LanguageContextType {
   language: Language
@@ -10,23 +22,68 @@ const LanguageContext = createContext<LanguageContextType | undefined>(
   undefined
 )
 
-export function LanguageProvider({ children }: { children: ReactNode }) {
-  // The product UI is English-only. Normalize legacy browser state left by the
-  // removed language switcher so an old `language=zh|id` value cannot revive a
-  // partially translated, layout-breaking interface.
-  const [language] = useState<Language>(() => {
-    localStorage.setItem('language', 'en')
-    return 'en'
-  })
+function isLanguage(value: unknown): value is Language {
+  return value === 'en' || value === 'zh'
+}
 
-  const handleSetLanguage = (_lang: Language) => {
-    localStorage.setItem('language', 'en')
+/**
+ * Resolve the initial language. An explicit choice made in a previous visit
+ * always wins. First-time visitors get Chinese: it is the product's primary
+ * market, and the switcher is one click away for everyone else — so we do not
+ * try to out-guess the browser's Accept-Language header.
+ */
+function resolveInitialLanguage(): Language {
+  if (typeof window === 'undefined') {
+    return DEFAULT_LANGUAGE
   }
 
+  try {
+    const saved = window.localStorage.getItem(STORAGE_KEY)
+    if (isLanguage(saved)) {
+      return saved
+    }
+  } catch {
+    // Private mode / storage disabled — fall through to the default.
+  }
+
+  return DEFAULT_LANGUAGE
+}
+
+export function LanguageProvider({ children }: { children: ReactNode }) {
+  const [language, setLanguageState] = useState<Language>(() => {
+    const initial = resolveInitialLanguage()
+    // Keep ambient (non-React) translations in sync from the very first render.
+    setActiveLanguage(initial)
+    return initial
+  })
+
+  // Side effects stay out of the state updater: React may invoke an updater
+  // more than once (StrictMode), which would double-write storage and the
+  // ambient language. Persistence and <html lang> are handled by the effect.
+  const setLanguage = useCallback((lang: Language) => {
+    setActiveLanguage(lang)
+    setLanguageState((current) => (current === lang ? current : lang))
+  }, [])
+
+  // Keep <html lang> in sync so screen readers and CSS :lang() rules follow
+  // the active language instead of the static value in index.html.
+  useEffect(() => {
+    const htmlLang = language === 'zh' ? 'zh-CN' : 'en'
+    document.documentElement.setAttribute('lang', htmlLang)
+    try {
+      window.localStorage.setItem(STORAGE_KEY, language)
+    } catch {
+      // ignore
+    }
+  }, [language])
+
+  const value = useMemo(
+    () => ({ language, setLanguage }),
+    [language, setLanguage]
+  )
+
   return (
-    <LanguageContext.Provider
-      value={{ language, setLanguage: handleSetLanguage }}
-    >
+    <LanguageContext.Provider value={value}>
       {children}
     </LanguageContext.Provider>
   )

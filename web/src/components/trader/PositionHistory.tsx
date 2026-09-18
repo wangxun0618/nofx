@@ -109,6 +109,7 @@ function StatCard({
 
 // Symbol Stats Row
 function SymbolStatsRow({ stat }: { stat: SymbolStats }) {
+  const { language } = useLanguage()
   const totalPnl = stat.total_pnl || 0
   const winRate = stat.win_rate || 0
   const pnlColor = totalPnl >= 0 ? '#2E8B57' : '#D6433A'
@@ -131,7 +132,7 @@ function SymbolStatsRow({ stat }: { stat: SymbolStats }) {
       <div className="flex items-center gap-6">
         <div className="text-right">
           <div className="text-xs" style={{ color: '#8A8478' }}>
-            Win Rate
+            {t('history.winRate', language)}
           </div>
           <div className="font-mono font-semibold" style={{ color: winRateColor }}>
             {winRate.toFixed(1)}%
@@ -175,7 +176,7 @@ function DirectionStatsCard({ stat, language }: { stat: DirectionStats; language
           className="font-bold uppercase"
           style={{ color: iconColor }}
         >
-          {stat.side || 'Unknown'}
+          {stat.side || t('common.unknown', language)}
         </span>
       </div>
       <div className="grid grid-cols-4 gap-4">
@@ -368,7 +369,7 @@ export function PositionHistory({ traderId }: PositionHistoryProps) {
         setSymbolStats(data.symbol_stats || [])
         setDirectionStats(data.direction_stats || [])
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load history')
+        setError(err instanceof Error ? err.message : t('history.errLoad', language))
       } finally {
         setLoading(false)
       }
@@ -838,7 +839,7 @@ export function PositionHistory({ traderId }: PositionHistoryProps) {
             {/* Page size selector */}
             <div className="flex items-center gap-2">
               <span className="text-xs" style={{ color: '#8A8478' }}>
-                {language === 'zh' ? 'Per page' : 'Per page'}:
+                {t('common.perPage', language)}:
               </span>
               <NofxSelect
                 value={pageSize}

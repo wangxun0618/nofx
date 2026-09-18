@@ -1,3 +1,5 @@
+import { tg } from '../../i18n/translations'
+
 // Constants for AI model and provider configuration
 
 export interface Claw402Model {
@@ -48,7 +50,7 @@ export const CLAW402_MODELS: Claw402Model[] = [
     id: 'gpt-6',
     name: 'GPT-6 Astra',
     provider: 'OpenAI',
-    desc: 'Most capable · 1.05M context',
+    desc: tg('model.blurbMostCapableContext'),
     brand: 'openai',
     priceIn: 12.5,
     priceOut: 50,
@@ -58,7 +60,7 @@ export const CLAW402_MODELS: Claw402Model[] = [
     id: 'gpt-5.6',
     name: 'GPT-5.6 Sol',
     provider: 'OpenAI',
-    desc: 'Previous flagship',
+    desc: tg('model.blurbPreviousFlagship'),
     brand: 'openai',
     priceIn: 5,
     priceOut: 30,
@@ -85,7 +87,7 @@ export const CLAW402_MODELS: Claw402Model[] = [
     id: 'claude-fable',
     name: 'Claude Fable 5',
     provider: 'Anthropic',
-    desc: 'Most capable',
+    desc: tg('model.blurbMostCapable'),
     brand: 'claude',
     priceIn: 10,
     priceOut: 50,
@@ -94,7 +96,7 @@ export const CLAW402_MODELS: Claw402Model[] = [
     id: 'claude-opus',
     name: 'Claude Opus 4.8',
     provider: 'Anthropic',
-    desc: 'Coding & agents flagship',
+    desc: tg('model.blurbCodingFlagship'),
     brand: 'claude',
     priceIn: 5,
     priceOut: 25,
@@ -103,7 +105,7 @@ export const CLAW402_MODELS: Claw402Model[] = [
     id: 'deepseek-v4-flash',
     name: 'DeepSeek-V4 Flash',
     provider: 'DeepSeek',
-    desc: 'Fast general model',
+    desc: tg('model.blurbFastGeneral'),
     brand: 'deepseek',
     priceIn: 0.14,
     priceOut: 0.28,
@@ -112,7 +114,7 @@ export const CLAW402_MODELS: Claw402Model[] = [
     id: 'deepseek-v4-pro',
     name: 'DeepSeek-V4 Pro',
     provider: 'DeepSeek',
-    desc: 'Advanced reasoning',
+    desc: tg('model.blurbAdvancedReasoning'),
     brand: 'deepseek',
     priceIn: 1.74,
     priceOut: 3.48,
@@ -121,7 +123,7 @@ export const CLAW402_MODELS: Claw402Model[] = [
     id: 'glm-5',
     name: 'GLM-5',
     provider: 'Z.ai',
-    desc: 'Deep reasoning flagship',
+    desc: tg('model.blurbDeepReasoning'),
     brand: 'zhipu',
     priceIn: 0.6,
     priceOut: 2,
@@ -147,7 +149,7 @@ export function getExchangeDisplayName(
     account_name?: string
   }[]
 ): string {
-  if (!exchangeId) return 'Unknown'
+  if (!exchangeId) return tg('common.unknown')
   const exchange = exchanges.find((e) => e.id === exchangeId)
   if (!exchange) return exchangeId.substring(0, 8).toUpperCase() + '...' // Show truncated UUID if not found
   const typeName = exchange.exchange_type?.toUpperCase() || exchange.name

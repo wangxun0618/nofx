@@ -10,6 +10,7 @@ import {
   setBeginnerWalletAddress,
   markBeginnerOnboardingCompleted,
 } from '../lib/onboarding'
+import { t } from '../i18n/translations'
 
 export function BeginnerOnboardingPage() {
   const { language } = useLanguage()
@@ -37,9 +38,7 @@ export function BeginnerOnboardingPage() {
       setError(
         err instanceof Error
           ? err.message
-          : isZh
-            ? 'Failed to prepare beginner wallet'
-            : 'Failed to prepare beginner wallet'
+          : t('onboarding.prepareWalletFailed', language)
       )
     } finally {
       if (showLoading) {
@@ -88,18 +87,16 @@ export function BeginnerOnboardingPage() {
 
   const noticeText = useMemo(
     () =>
-      isZh
-        ? 'This wallet only pays for model calls. It does not fund your exchange automatically. The private key cannot be recovered, and you should only deposit Base USDC.'
-        : 'This wallet only pays for model calls. It does not fund your exchange automatically. The private key cannot be recovered, and you should only deposit Base USDC.',
+      t('onboarding.walletUsageNote', language),
     [isZh]
   )
 
   const copyText = async (value: string, label: string) => {
     try {
       await navigator.clipboard.writeText(value)
-      toast.success(isZh ? `${label} copied` : `${label} copied`)
+      toast.success(t('onboarding.copySuccess', language, { label: label }))
     } catch {
-      toast.error(isZh ? 'Copy failed' : 'Copy failed')
+      toast.error(t('onboarding.copyFailed', language))
     }
   }
 
@@ -116,7 +113,7 @@ export function BeginnerOnboardingPage() {
           type="button"
           onClick={handleContinue}
           className="absolute right-6 top-6 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-[rgba(26,24,19,0.14)] bg-nofx-text/5 text-nofx-text-muted transition hover:border-[rgba(26,24,19,0.24)] hover:bg-nofx-text/10 hover:text-nofx-text"
-          aria-label={isZh ? 'Skip' : 'Skip'}
+          aria-label={t('onboarding.skip', language)}
         >
           <X className="h-5 w-5" />
         </button>
@@ -134,7 +131,7 @@ export function BeginnerOnboardingPage() {
                       : 'text-[10px] tracking-[0.2em]'
                   }`}
                 >
-                  {isZh ? 'Beginner Guard' : 'Beginner Guard'}
+                  {t('onboarding.beginnerGuard', language)}
                 </div>
                 <h1
                   className={`mt-2 font-bold leading-[1.04] text-nofx-text ${
@@ -143,7 +140,7 @@ export function BeginnerOnboardingPage() {
                       : 'max-w-[720px] text-[27px] tracking-[-0.03em] sm:text-[35px] xl:text-[42px]'
                   }`}
                 >
-                  {isZh ? 'Your wallet is ready' : 'Your wallet is ready'}
+                  {t('onboarding.walletReady', language)}
                 </h1>
               </div>
             </div>
@@ -156,16 +153,14 @@ export function BeginnerOnboardingPage() {
               }`}
             >
               Claw402 + DeepSeek <span className="mx-2 text-nofx-text-muted">·</span>
-              {isZh ? 'Pay per call' : 'Pay per call'}
+              {t('onboarding.payPerCallTitle', language)}
             </div>
           </div>
 
           <div className="overflow-hidden rounded-[32px] border border-[rgba(26,24,19,0.14)] bg-nofx-bg-lighter shadow-lg backdrop-blur-2xl">
             {loading ? (
               <div className="flex min-h-[390px] items-center justify-center px-6 text-sm text-nofx-text-muted">
-                {isZh
-                  ? 'Preparing your Base wallet...'
-                  : 'Preparing your Base wallet...'}
+                {t('onboarding.preparingWallet', language)}
               </div>
             ) : data ? (
               <div className="grid lg:grid-cols-[0.82fr_1.18fr]">
@@ -176,9 +171,7 @@ export function BeginnerOnboardingPage() {
                     </div>
 
                     <div className="mt-4 text-[15px] font-medium text-nofx-text">
-                      {isZh
-                        ? 'Deposit address (Base USDC)'
-                        : 'Deposit address (Base USDC)'}
+                      {t('onboarding.depositAddress', language)}
                     </div>
 
                     <div className="mt-4 flex items-center justify-between gap-3 rounded-[24px] border border-nofx-success/20 bg-nofx-success/10 px-5 py-3.5">
@@ -195,7 +188,7 @@ export function BeginnerOnboardingPage() {
                         onClick={() => void loadOnboarding(false)}
                         disabled={refreshingBalance}
                         className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-nofx-success/20 bg-nofx-bg-deeper text-nofx-success transition hover:bg-nofx-success/10 disabled:cursor-not-allowed disabled:opacity-60"
-                        aria-label={isZh ? 'Refresh balance' : 'Refresh balance'}
+                        aria-label={t('onboarding.refreshBalance', language)}
                       >
                         <RefreshCw
                           className={`h-4 w-4 ${refreshingBalance ? 'animate-spin' : ''}`}
@@ -215,7 +208,7 @@ export function BeginnerOnboardingPage() {
                       </div>
                       Buy USDC on Binance, OKX or Coinbase, then withdraw it to
                       the address above — and pick the{' '}
-                      <b>Base network</b> when the exchange asks. It usually
+                      <b>{t('onboarding.baseNetwork', language)}</b> when the exchange asks. It usually
                       arrives in about a minute. Only send USDC on Base.
                     </div>
                   </div>
@@ -226,7 +219,7 @@ export function BeginnerOnboardingPage() {
                     <div>
                       <div className="mb-3 flex items-center gap-2 text-sm font-medium text-nofx-gold">
                         <Wallet className="h-4 w-4" />
-                        <span>{isZh ? 'Wallet address' : 'Wallet address'}</span>
+                        <span>{t('onboarding.walletAddress', language)}</span>
                       </div>
                       <div className="flex items-stretch gap-3">
                         <div className="min-w-0 flex-1 rounded-2xl border border-[rgba(26,24,19,0.14)] bg-nofx-bg-deeper px-5 py-3 font-mono text-[14px] text-nofx-text">
@@ -235,10 +228,10 @@ export function BeginnerOnboardingPage() {
                         <button
                           type="button"
                           onClick={() =>
-                            copyText(data.address, isZh ? 'Address' : 'Address')
+                            copyText(data.address, t('onboarding.address', language))
                           }
                           className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-[rgba(26,24,19,0.14)] bg-nofx-text/5 text-nofx-text transition hover:border-[rgba(26,24,19,0.24)] hover:bg-nofx-text/10 hover:text-nofx-text"
-                          aria-label={isZh ? 'Copy address' : 'Copy address'}
+                          aria-label={t('onboarding.copyAddress', language)}
                         >
                           <Copy className="h-5 w-5" />
                         </button>
@@ -249,9 +242,7 @@ export function BeginnerOnboardingPage() {
                       <div className="mb-3 flex items-center gap-2 text-sm font-medium text-nofx-gold">
                         <Shield className="h-4 w-4" />
                         <span>
-                          {isZh
-                            ? 'Private key, back it up now'
-                            : 'Private key, back it up now'}
+                          {t('onboarding.privateKeyBackup', language)}
                         </span>
                       </div>
                       <div className="flex items-stretch gap-3">
@@ -266,11 +257,11 @@ export function BeginnerOnboardingPage() {
                             onClick={() =>
                               copyText(
                                 data.private_key,
-                                isZh ? 'Private key' : 'Private key'
+                                t('onboarding.privateKey', language)
                               )
                             }
                             className="inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-nofx-gold/20 bg-nofx-gold/10 text-nofx-gold transition hover:bg-nofx-gold/15"
-                            aria-label={isZh ? 'Copy private key' : 'Copy private key'}
+                            aria-label={t('onboarding.copyPrivateKey', language)}
                           >
                             <Copy className="h-5 w-5" />
                           </button>
@@ -308,7 +299,7 @@ export function BeginnerOnboardingPage() {
                         isZh ? 'text-[20px]' : 'text-[16px] sm:text-[18px]'
                       }`}
                     >
-                      <span>Continue setup</span>
+                      <span>{t('onboarding.continueSetup', language)}</span>
                       <ArrowRight className="h-5 w-5" />
                     </button>
 

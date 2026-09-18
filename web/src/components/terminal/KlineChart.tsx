@@ -4,6 +4,8 @@ import { api } from '../../lib/api'
 import type { Kline } from '../../lib/api/data'
 import { Candles } from './Candles'
 import { demoSeedPrice } from '../../lib/demo/demoUniverse'
+import { t } from '../../i18n/translations'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const drnd = (a: number, b: number) => a + Math.random() * (b - a)
 
@@ -37,6 +39,7 @@ interface KlineChartProps {
 }
 
 export function KlineChart({ symbol, height = 360, fill = false, demo = false }: KlineChartProps) {
+  const { language } = useLanguage()
   const base = baseSymbol(symbol || '')
 
   // history seed (resynced occasionally; the WS carries the live bar)
@@ -209,16 +212,22 @@ export function KlineChart({ symbol, height = 360, fill = false, demo = false }:
     <div style={{ fontFamily: 'var(--tm-mono)', ...(fill ? { display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 } : {}) }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 6 }}>
         <span className="tm-px" style={{ fontSize: 11 }}>{base || 'MARKET'}</span>
-        <span className="tm-sc">{INTERVAL} · Live candles</span>
+        <span className="tm-sc">
+          {INTERVAL} · {t('terminal.liveCandles', language)}
+        </span>
         <span className="tm-sc" style={{ marginLeft: 'auto', color: live ? 'var(--tm-up)' : 'var(--tm-muted)' }}>
-          {live ? '● live' : isLoading || candles.length ? '○ sync' : '○ —'}
+          {live
+            ? `● ${t('terminal.live', language)}`
+            : isLoading || candles.length
+              ? `○ ${t('terminal.sync', language)}`
+              : '○ —'}
         </span>
       </div>
       {last > 0 && (
         <div className="tm-mono" style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4, fontSize: 12 }}>
           <span style={{ fontWeight: 600 }}>${last.toLocaleString('en-US', { maximumFractionDigits: 4 })}</span>
           <span className={chg >= 0 ? 'tm-up' : 'tm-dn'} style={{ fontSize: 11 }}>{chg >= 0 ? '+' : ''}{chg.toFixed(2)}%</span>
-          <span className="tm-sc" style={{ marginLeft: 'auto' }}>{candles.length} bars · {INTERVAL}</span>
+          <span className="tm-sc" style={{ marginLeft: 'auto' }}>{candles.length} {t('terminal.bars', language)} · {INTERVAL}</span>
         </div>
       )}
       {candles.length > 0 ? (
@@ -230,7 +239,7 @@ export function KlineChart({ symbol, height = 360, fill = false, demo = false }:
           <Candles data={candles} width={380} height={height} />
         )
       ) : (
-        <div className="tm-sc" style={{ padding: '20px 0' }}>Loading market…</div>
+        <div className="tm-sc" style={{ padding: '20px 0' }}>{t('terminal.loadingMarket', language)}</div>
       )}
     </div>
   )

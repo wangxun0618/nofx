@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { httpClient } from '../../lib/httpClient'
+import { t } from '../../i18n/translations'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 interface ChartWithOrdersSimpleProps {
   symbol: string
@@ -14,6 +16,7 @@ export function ChartWithOrdersSimple({
   traderID,
   height = 500,
 }: ChartWithOrdersSimpleProps) {
+  const { language } = useLanguage()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [klineCount, setKlineCount] = useState(0)
@@ -34,7 +37,7 @@ export function ChartWithOrdersSimple({
         const klineResult = await httpClient.request(klineUrl, { silent: true })
 
         if (!klineResult.success || !klineResult.data) {
-          throw new Error('Failed to fetch klines from our service')
+          throw new Error(t('chart.errFetchKlinesOurs', language))
         }
 
         console.log('[ChartSimple] Received klines:', klineResult.data.length)
@@ -57,7 +60,7 @@ export function ChartWithOrdersSimple({
         setLoading(false)
       } catch (err: any) {
         console.error('[ChartSimple] Error:', err)
-        setError(err.message || 'Failed to load data')
+        setError(err.message || t('chart.errLoadData', language))
         setLoading(false)
       }
     }
@@ -92,7 +95,7 @@ export function ChartWithOrdersSimple({
         ) : (
           <>
             <div className="p-4 rounded" style={{ background: '#F7F4EC', border: '1px solid rgba(26, 24, 19, 0.14)' }}>
-              <div className="text-sm mb-2" style={{ color: '#8A8478' }}>Binance Kline Data</div>
+              <div className="text-sm mb-2" style={{ color: '#8A8478' }}>{t('chart.binanceKline', language)}</div>
               <div className="text-2xl font-bold" style={{ color: '#2E8B57' }}>
                 {klineCount} klines
               </div>
@@ -100,7 +103,7 @@ export function ChartWithOrdersSimple({
 
             {traderID && (
               <div className="p-4 rounded" style={{ background: '#F7F4EC', border: '1px solid rgba(26, 24, 19, 0.14)' }}>
-                <div className="text-sm mb-2" style={{ color: '#8A8478' }}>Historical Order Data</div>
+                <div className="text-sm mb-2" style={{ color: '#8A8478' }}>{t('chart.historicalOrders', language)}</div>
                 <div className="text-2xl font-bold" style={{ color: '#E0483B' }}>
                   {orderCount} orders
                 </div>
@@ -108,7 +111,7 @@ export function ChartWithOrdersSimple({
             )}
 
             <div className="p-4 rounded" style={{ background: '#F7F4EC', border: '1px solid rgba(26, 24, 19, 0.14)' }}>
-              <div className="text-sm mb-2" style={{ color: '#8A8478' }}>Status</div>
+              <div className="text-sm mb-2" style={{ color: '#8A8478' }}>{t('chart.status', language)}</div>
               <div className="text-lg" style={{ color: '#1A1813' }}>
                 ✅ Data fetched successfully, chart component in development
               </div>

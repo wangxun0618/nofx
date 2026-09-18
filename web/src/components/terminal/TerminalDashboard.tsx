@@ -32,6 +32,8 @@ const CRYPTO_MAJORS = new Set([
 // fixed height for the three row-1 panels so the row stays balanced at any width
 const ROW1_H = 500
 import { FlowMarkets } from './FlowMarkets'
+import { t } from '../../i18n/translations'
+import { useLanguage } from '../../contexts/LanguageContext'
 import './terminal.css'
 
 interface TerminalDashboardProps {
@@ -114,6 +116,7 @@ export function TerminalDashboard({
   positions: propPositions,
   decisions: propDecisions,
 }: TerminalDashboardProps) {
+  const { language } = useLanguage()
   const traderId = selectedTrader?.trader_id || selectedTraderId
   useTick(1000)
   const clock = new Date().toLocaleTimeString('en-GB', { hour12: false })
@@ -121,11 +124,14 @@ export function TerminalDashboard({
 
   async function closePositionRow(symbol: string, side: 'LONG' | 'SHORT') {
     if (!traderId || closing) return
-    const ok = await confirmToast(`Market-close ${symbol} ${side}?`, {
-      title: 'Close position',
-      okText: 'Close',
-      cancelText: 'Cancel',
-    })
+    const ok = await confirmToast(
+      t('terminal.marketCloseOne', language, { symbol, side }),
+      {
+        title: t('terminal.closePosition', language),
+        okText: t('terminal.close', language),
+        cancelText: t('common.cancel', language),
+      }
+    )
     if (!ok) return
     setClosing(symbol)
     try {
@@ -136,7 +142,9 @@ export function TerminalDashboard({
         mutate(`account-${traderId}`),
       ])
     } catch (err) {
-      notify.error(err instanceof Error ? err.message : 'Close failed')
+      notify.error(
+        err instanceof Error ? err.message : t('terminal.closeFailed', language)
+      )
     } finally {
       setClosing(null)
     }
@@ -145,8 +153,12 @@ export function TerminalDashboard({
   async function closeAllPositions(open: Position[]) {
     if (!traderId || closing || open.length === 0) return
     const ok = await confirmToast(
-      `Market-close ALL ${open.length} open positions?`,
-      { title: 'Flatten book', okText: 'Close all', cancelText: 'Cancel' }
+      t('terminal.marketCloseAll', language, { count: open.length }),
+      {
+        title: t('terminal.flattenBook', language),
+        okText: t('terminal.closeAll', language),
+        cancelText: t('common.cancel', language),
+      }
     )
     if (!ok) return
     setClosing('__all__')
@@ -164,8 +176,14 @@ export function TerminalDashboard({
       mutate(`positions-${traderId}`),
       mutate(`account-${traderId}`),
     ])
-    if (failed === 0) notify.success('All positions closed')
-    else notify.error(`${failed}/${open.length} closes failed`)
+    if (failed === 0) notify.success(t('terminal.allPositionsClosed', language))
+    else
+      notify.error(
+        t('terminal.closesFailed', language, {
+          failed,
+          total: open.length,
+        })
+      )
     setClosing(null)
   }
 
@@ -339,7 +357,7 @@ export function TerminalDashboard({
       <button
         type="button"
         onClick={() => setDemo((v) => !v)}
-        aria-label="toggle presentation mode"
+        aria-label={t('terminal.togglePresentation', language)}
         style={{
           position: 'fixed',
           right: 10,
@@ -380,14 +398,16 @@ export function TerminalDashboard({
           <div className="tm-mono" style={{ display: 'flex', gap: 10, alignItems: 'center', margin: '8px 14px 0', padding: '8px 12px', fontSize: 11, border: '1px solid var(--tm-down)', color: 'var(--tm-down)', background: 'rgba(200,60,40,0.06)', flexWrap: 'wrap' }}>
             <span style={{ fontWeight: 600 }}>
               {status.ai_wallet_status === 'empty'
-                ? 'AI fee wallet is out of USDC — decisions are failing.'
+                ? t('terminal.aiWalletEmpty', language)
                 : status.ai_wallet_status === 'low'
-                  ? `AI fee wallet is low (${(status.ai_wallet_balance_usdc ?? 0).toFixed(2)} USDC) — top up soon.`
-                  : 'Safe mode: AI failed repeatedly, no new positions are being opened.'}
+                  ? t('terminal.aiWalletLow', language, {
+                      amount: (status.ai_wallet_balance_usdc ?? 0).toFixed(2),
+                    })
+                  : t('terminal.safeModeBanner', language)}
             </span>
             <span style={{ color: 'var(--tm-ink-2)' }}>
               {status.ai_wallet_status === 'empty' || status.ai_wallet_status === 'low'
-                ? 'Deposit Base USDC to the Claw402 wallet, the trader recovers automatically.'
+                ? t('terminal.depositToRecover', language)
                 : status.safe_mode_reason || ''}
             </span>
           </div>
@@ -396,9 +416,9 @@ export function TerminalDashboard({
             minute (the AI is reading the market); tell newcomers what to expect */}
         {!on && status?.is_running && (status.call_count ?? 0) <= 1 && !status.safe_mode && (
           <div className="tm-mono" style={{ display: 'flex', gap: 10, alignItems: 'center', margin: '8px 14px 0', padding: '8px 12px', fontSize: 11, border: '1px solid var(--tm-up)', color: 'var(--tm-ink)', background: 'rgba(40,140,80,0.06)', flexWrap: 'wrap' }}>
-            <span style={{ fontWeight: 600, color: 'var(--tm-up)' }}>Your AI is live.</span>
+            <span style={{ fontWeight: 600, color: 'var(--tm-up)' }}>{t('terminal.liveTitle', language)}</span>
             <span style={{ color: 'var(--tm-ink-2)' }}>
-              It reads the whole market before acting — the first decision usually lands within a minute or two and will appear in the Execution Log below. You can stop it anytime from the Config page.
+              {t('terminal.firstRunHint', language)}
             </span>
           </div>
         )}
@@ -416,7 +436,7 @@ export function TerminalDashboard({
           <span><span className="tm-sc">scan </span>{scanMin}m</span>
           <span><span className="tm-sc">universe </span>{candidateCoins.length}</span>
           <span><span className="tm-sc">positions </span>{positions?.length ?? 0}</span>
-          <span style={{ marginLeft: 'auto' }}><span className="tm-sc">next cycle </span>{countdown}</span>
+          <span style={{ marginLeft: 'auto' }}><span className="tm-sc">{t('terminal.nextCycle', language)}</span>{countdown}</span>
         </div>
         <div className="tm-rule" />
 
@@ -425,16 +445,16 @@ export function TerminalDashboard({
             so the two never read as contradicting each other */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)' }}>
           {[
-            { l: 'Equity', v: fmtUsd(account?.total_equity), c: 'var(--tm-ink)' },
-            { l: 'Total P/L · incl. unrealized', v: `${fmtUsd(pnl, true)} (${fmtPct(pnlPct)})`, c: up ? 'var(--tm-up)' : 'var(--tm-dn)' },
+            { l: t('terminal.equityLabel', language), v: fmtUsd(account?.total_equity), c: 'var(--tm-ink)' },
+            { l: t('terminal.totalPnl', language), v: `${fmtUsd(pnl, true)} (${fmtPct(pnlPct)})`, c: up ? 'var(--tm-up)' : 'var(--tm-dn)' },
             {
-              l: 'Realized P/L · closed trades',
+              l: t('terminal.realizedPnl', language),
               v: fullStats != null ? fmtUsd(fullStats.total_pnl, true) : '—',
               c: fullStats != null && fullStats.total_pnl >= 0 ? 'var(--tm-up)' : 'var(--tm-dn)',
             },
-            { l: 'Profit factor', v: fullStats != null ? fullStats.profit_factor.toFixed(2) : '—', c: 'var(--tm-ink)' },
+            { l: t('terminal.profitFactor', language), v: fullStats != null ? fullStats.profit_factor.toFixed(2) : '—', c: 'var(--tm-ink)' },
             // max_drawdown_pct is already a percent (18.5 = -18.5%)
-            { l: 'Max drawdown', v: fullStats != null ? `-${fullStats.max_drawdown_pct.toFixed(1)}%` : '—', c: 'var(--tm-dn)' },
+            { l: t('terminal.maxDrawdown', language), v: fullStats != null ? `-${fullStats.max_drawdown_pct.toFixed(1)}%` : '—', c: 'var(--tm-dn)' },
           ].map((m, i) => (
             <div key={m.l} style={{ padding: '12px 14px', borderRight: i < 4 ? cellBorder : 'none' }}>
               <div className="tm-sc">{m.l}</div>
@@ -456,7 +476,7 @@ export function TerminalDashboard({
               <span className="tm-sc">fees <b style={{ color: 'var(--tm-ink)' }}>-{fmtUsd(fullStats.total_fee)}</b></span>
               <span className="tm-sc">net <b style={{ color: fullStats.total_pnl >= 0 ? 'var(--tm-up)' : 'var(--tm-dn)' }}>{fmtUsd(fullStats.total_pnl, true)}</b></span>
               <span className="tm-sc">sharpe/trade <b style={{ color: 'var(--tm-ink)' }}>{fullStats.sharpe_ratio.toFixed(2)}</b></span>
-              <span className="tm-sc">avg win/loss <b style={{ color: 'var(--tm-ink)' }}>{fullStats.avg_win.toFixed(2)}/{fullStats.avg_loss.toFixed(2)}</b></span>
+              <span className="tm-sc">{t('terminal.avgWinLoss', language)}<b style={{ color: 'var(--tm-ink)' }}>{fullStats.avg_win.toFixed(2)}/{fullStats.avg_loss.toFixed(2)}</b></span>
             </div>
             <div className="tm-rule" />
           </>
@@ -494,15 +514,14 @@ export function TerminalDashboard({
         {/* orchestration topology — second row, full width (the agent workflow) */}
         <div style={sc}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 4 }}>
-            <span className="tm-px" style={{ fontSize: 12 }}>Orchestration topology</span>
-            <span className="tm-sc">Orchestration topology · net inflow → signal → execute → hold</span>
+            <span className="tm-px" style={{ fontSize: 12 }}>{t('terminal.orchestrationTopology', language)}</span>
+            <span className="tm-sc">{t('terminal.orchestrationFlow', language)}</span>
           </div>
           <OrchestrationTopology
             layers={[
               {
                 key: 'flow',
-                title: 'FLOW',
-                zh: 'flow',
+                title: t('terminal.stageFlow', language),
                 items: [
                   ...(flow?.data?.inflow ?? []).map((i) => ({ symbol: i.symbol, dir: 'long' as const })),
                   ...(flow?.data?.outflow ?? []).map((i) => ({ symbol: i.symbol, dir: 'short' as const })),
@@ -510,8 +529,7 @@ export function TerminalDashboard({
               },
               {
                 key: 'signal',
-                title: 'SIGNAL',
-                zh: 'signal',
+                title: t('terminal.stageSignal', language),
                 items: (signalRank?.items ?? []).map((s) => ({
                   symbol: s.symbol,
                   dir: (s.bias || '').toLowerCase() === 'bearish' ? ('short' as const) : ('long' as const),
@@ -520,8 +538,7 @@ export function TerminalDashboard({
               {
                 // every candidate the AI actually judged this cycle (its full decision set)
                 key: 'decision',
-                title: 'DECISION',
-                zh: 'decision',
+                title: t('terminal.stageDecision', language),
                 items: candidateCoins.map((c) => ({ symbol: c, dir: dirFor(c) })),
               },
               {
@@ -529,8 +546,7 @@ export function TerminalDashboard({
                 // EXECUTE mirrors the live book (this cycle's fills plus anything
                 // still open from prior cycles) and flows straight into HOLD
                 key: 'exec',
-                title: 'EXECUTE',
-                zh: 'execute',
+                title: t('terminal.stageExecute', language),
                 items: (positions ?? []).map((p) => ({
                   symbol: p.symbol,
                   dir: (p.side || '').toLowerCase().includes('short') ? ('short' as const) : ('long' as const),
@@ -538,8 +554,7 @@ export function TerminalDashboard({
               },
               {
                 key: 'hold',
-                title: 'HOLD',
-                zh: 'hold',
+                title: t('terminal.stageHold', language),
                 items: (positions ?? []).map((p) => ({
                   symbol: p.symbol,
                   dir: (p.side || '').toLowerCase().includes('short') ? ('short' as const) : ('long' as const),
@@ -561,8 +576,8 @@ export function TerminalDashboard({
           <div style={sc}>
             {/* live open positions (the book right now) */}
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 6 }}>
-              <span className="tm-px" style={{ fontSize: 11 }}>Positions</span>
-              <span className="tm-sc">Current positions · live</span>
+              <span className="tm-px" style={{ fontSize: 11 }}>{t('terminal.positions', language)}</span>
+              <span className="tm-sc">{t('terminal.currentPositionsLive', language)}</span>
               <span className="tm-sc" style={{ marginLeft: 'auto' }}>{positions?.length ?? 0} open</span>
               {traderId && !on && positions && positions.length > 0 && (
                 <button
@@ -639,13 +654,13 @@ export function TerminalDashboard({
                   })}
                 </tbody>
               </table>
-            ) : <div className="tm-sc" style={{ padding: '8px 0' }}>No open positions.</div>}
+            ) : <div className="tm-sc" style={{ padding: '8px 0' }}>{t('terminal.noOpenPositions', language)}</div>}
 
             <div className="tm-rule" style={{ margin: '12px 0 10px' }} />
 
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 6 }}>
-              <span className="tm-px" style={{ fontSize: 11 }}>Recent trades</span>
-              <span className="tm-sc">Recent closes · symbol/side/hold/pnl</span>
+              <span className="tm-px" style={{ fontSize: 11 }}>{t('terminal.recentTrades', language)}</span>
+              <span className="tm-sc">{t('terminal.recentCloses', language)}</span>
             </div>
             {recentTrades.length > 0 ? (
               <table className="tm-mono" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
@@ -673,7 +688,7 @@ export function TerminalDashboard({
                   })}
                 </tbody>
               </table>
-            ) : <div className="tm-sc" style={{ padding: '8px 0' }}>No closed trades yet.</div>}
+            ) : <div className="tm-sc" style={{ padding: '8px 0' }}>{t('terminal.noClosedTrades', language)}</div>}
           </div>
         </div>
         <div className="tm-rule" />
@@ -682,7 +697,7 @@ export function TerminalDashboard({
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.2fr) minmax(0,0.9fr) minmax(0,0.9fr)' }}>
           <div style={{ ...sc, borderRight: cellBorder }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 8 }}>
-              <span className="tm-px" style={{ fontSize: 12 }}>Market net inflow</span>
+              <span className="tm-px" style={{ fontSize: 12 }}>{t('terminal.marketNetInflow', language)}</span>
               <span className="tm-sc">Market net inflow · {flow?.data?.window || '1h'} · Vergex</span>
               <span className="tm-sc" style={{ marginLeft: 'auto' }}>{flowItems.length} markets</span>
             </div>
@@ -690,8 +705,8 @@ export function TerminalDashboard({
           </div>
           <div style={{ ...sc, borderRight: cellBorder }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
-              <span className="tm-px" style={{ fontSize: 11 }}>By symbol</span>
-              <span className="tm-sc">By-symbol history · trades/win/pnl</span>
+              <span className="tm-px" style={{ fontSize: 11 }}>{t('terminal.bySymbol', language)}</span>
+              <span className="tm-sc">{t('terminal.bySymbolHistory', language)}</span>
             </div>
             {symbolStats.length > 0 ? symbolStats.map((s) => (
               <div key={s.symbol} style={{ marginBottom: 7 }}>
@@ -704,12 +719,12 @@ export function TerminalDashboard({
                   <div style={{ height: 4, width: `${(s.total_trades / maxSymTrades) * 100}%`, background: s.total_pnl >= 0 ? 'var(--tm-up)' : 'var(--tm-dn)' }} />
                 </div>
               </div>
-            )) : <div className="tm-sc">No symbol history.</div>}
+            )) : <div className="tm-sc">{t('terminal.noSymbolHistory', language)}</div>}
           </div>
           <div style={sc}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
-              <span className="tm-px" style={{ fontSize: 11 }}>Edge profile</span>
-              <span className="tm-sc">Net by hold time &amp; side · after fees</span>
+              <span className="tm-px" style={{ fontSize: 11 }}>{t('terminal.edgeProfile', language)}</span>
+              <span className="tm-sc">{t('terminal.edgeProfileDetail', language)}</span>
             </div>
             <EdgeProfile positions={history?.positions} />
           </div>

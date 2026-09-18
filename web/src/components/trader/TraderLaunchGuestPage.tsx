@@ -11,51 +11,50 @@ import {
   Zap,
 } from 'lucide-react'
 import { ROUTES } from '../../router/paths'
+import { t } from '../../i18n/translations'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const setupSteps = [
   {
-    title: 'Create your NOFX account',
-    detail:
-      'Your account keeps the Autopilot configuration, wallet authorization state, and trading dashboard in one place.',
+    titleKey: 'hlw.guestCreateAccountTitle',
+    detailKey: 'hlw.guestCreateAccountDetail',
     icon: KeyRound,
-    action: 'Create account',
+    actionKey: 'hlw.guestCreateAccountAction',
     to: ROUTES.register,
   },
   {
-    title: 'Fund the AI fee wallet',
-    detail:
-      'NOFX prepares a Base USDC wallet for Claw402.ai data and model calls. This wallet is separate from trading collateral.',
+    titleKey: 'hlw.guestFundFeeTitle',
+    detailKey: 'hlw.guestFundFeeDetail',
     icon: CircleDollarSign,
-    action: 'Open deposit QR',
+    actionKey: 'hlw.guestOpenDepositQr',
     to: ROUTES.login,
     returnUrl: `${ROUTES.traders}?setup=claw402`,
   },
   {
-    title: 'Authorize Hyperliquid',
-    detail:
-      'Connect your trading wallet, approve the NOFX Agent, and approve the builder fee. Funds remain in your Hyperliquid account.',
+    titleKey: 'hlw.guestAuthorizeTitle',
+    detailKey: 'hlw.guestAuthorizeDetail',
     icon: Wallet,
-    action: 'Connect exchange',
+    actionKey: 'hlw.guestConnectExchange',
     to: ROUTES.login,
     returnUrl: `${ROUTES.traders}?setup=hyperliquid`,
   },
   {
-    title: 'Deposit trading USDC',
-    detail:
-      'Add USDC on Hyperliquid, then start NOFX Autopilot. The strategy is created and launched automatically.',
+    titleKey: 'hlw.guestDepositTitle',
+    detailKey: 'hlw.guestDepositDetail',
     icon: Zap,
-    action: 'Open Hyperliquid',
+    actionKey: 'hlw.openHyperliquid',
     href: 'https://app.hyperliquid.xyz/',
   },
 ]
 
 const pipeline = [
-  'Read the live Claw402.ai board, with US stocks prioritized before crypto.',
-  'Load current direction, direction history, and cost/liquidation structure for each candidate.',
-  'Confirm with raw OHLCV candles, then trade full-size 10x only when the setup is strong enough.',
+  'hlw.guestPipeline1',
+  'hlw.guestPipeline2',
+  'hlw.guestPipeline3',
 ]
 
 export function TraderLaunchGuestPage() {
+  const { language } = useLanguage()
   return (
     <div className="min-h-[calc(100vh-4rem)] overflow-hidden bg-nofx-bg px-4 py-10 md:px-8">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-8">
@@ -66,12 +65,10 @@ export function TraderLaunchGuestPage() {
               NOFX Autopilot
             </div>
             <h1 className="max-w-3xl text-4xl font-bold tracking-tight text-nofx-text md:text-5xl">
-              One strategy. Four setup steps. Then it trades.
+              {t('hlw.guestHeadline', language)}
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-nofx-text-muted">
-              NOFX runs a single Claw402-driven strategy: board, per-market
-              details, liquidation structure, candles, execution. No strategy
-              picker, no manual symbol picking required.
+              {t('hlw.guestIntro', language)}
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <Link
@@ -84,14 +81,14 @@ export function TraderLaunchGuestPage() {
                 }
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-nofx-gold px-5 py-3 text-sm font-bold text-white transition hover:bg-nofx-gold/90"
               >
-                Start setup
+                {t('hlw.guestStartSetup', language)}
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 to={ROUTES.register}
                 className="inline-flex items-center justify-center rounded-xl border border-nofx-gold/20 bg-nofx-bg-deeper px-5 py-3 text-sm font-semibold text-nofx-text transition hover:border-nofx-gold/40 hover:bg-nofx-bg-deeper"
               >
-                Create account
+                {t('hlw.guestCreateAccountAction', language)}
               </Link>
             </div>
           </div>
@@ -112,13 +109,13 @@ export function TraderLaunchGuestPage() {
                     </span>
                   </div>
                   <h2 className="text-base font-semibold text-nofx-text">
-                    {step.title}
+                    {t(step.titleKey, language)}
                   </h2>
                   <p className="mt-2 text-sm leading-6 text-nofx-text-muted">
-                    {step.detail}
+                    {t(step.detailKey, language)}
                   </p>
                   <div className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-nofx-gold transition group-hover:text-nofx-gold/80">
-                    {step.action}
+                    {t(step.actionKey, language)}
                     {step.href ? (
                       <ExternalLink className="h-3.5 w-3.5" />
                     ) : (
@@ -131,7 +128,7 @@ export function TraderLaunchGuestPage() {
               if (step.href) {
                 return (
                   <a
-                    key={step.title}
+                    key={step.titleKey}
                     href={step.href}
                     target="_blank"
                     rel="noreferrer"
@@ -144,7 +141,7 @@ export function TraderLaunchGuestPage() {
 
               return (
                 <Link
-                  key={step.title}
+                  key={step.titleKey}
                   to={step.to || ROUTES.login}
                   onClick={() => {
                     if (step.returnUrl) {
@@ -163,12 +160,10 @@ export function TraderLaunchGuestPage() {
         <section className="grid gap-5 rounded-2xl border border-nofx-gold/20 bg-nofx-bg-lighter p-5 md:grid-cols-[0.78fr_1.22fr] md:p-6">
           <div>
             <div className="text-sm font-semibold uppercase tracking-[0.18em] text-nofx-gold">
-              No trading wallet yet?
+              {t('hlw.guestNoWalletTitle', language)}
             </div>
             <p className="mt-3 text-sm leading-6 text-nofx-text-muted">
-              NOFX does not need your main-wallet private key. Install or unlock
-              an EVM wallet, fund Hyperliquid with USDC, then authorize the NOFX
-              Agent after sign-in.
+              {t('hlw.guestNoWalletDetail', language)}
             </p>
           </div>
           <div className="grid gap-3 lg:grid-cols-3">
@@ -179,9 +174,9 @@ export function TraderLaunchGuestPage() {
               className="group rounded-xl border border-nofx-gold/20 bg-nofx-bg-deeper p-4 transition hover:border-nofx-gold/30 hover:bg-nofx-gold/[0.06]"
             >
               <Download className="mb-3 h-4 w-4 text-nofx-gold" />
-              <div className="font-semibold text-nofx-text">Install Rabby</div>
+              <div className="font-semibold text-nofx-text">{t('hlw.installRabby', language)}</div>
               <p className="mt-2 text-sm leading-6 text-nofx-text-muted">
-                Create or import an EVM wallet before connecting to Hyperliquid.
+                {t('hlw.guestRabbyDetail', language)}
               </p>
             </a>
             <a
@@ -193,8 +188,7 @@ export function TraderLaunchGuestPage() {
               <ExternalLink className="mb-3 h-4 w-4 text-nofx-gold" />
               <div className="font-semibold text-nofx-text">MetaMask</div>
               <p className="mt-2 text-sm leading-6 text-nofx-text-muted">
-                Already use MetaMask? Unlock it, then continue setup inside
-                NOFX.
+                {t('hlw.guestMetaMaskDetail', language)}
               </p>
             </a>
             <a
@@ -205,11 +199,10 @@ export function TraderLaunchGuestPage() {
             >
               <ExternalLink className="mb-3 h-4 w-4 text-nofx-gold" />
               <div className="font-semibold text-nofx-text">
-                Open Hyperliquid
+                {t('hlw.openHyperliquid', language)}
               </div>
               <p className="mt-2 text-sm leading-6 text-nofx-text-muted">
-                Deposit USDC there. Trading funds stay in your Hyperliquid
-                account.
+                {t('hlw.guestDepositHyperliquidDetail', language)}
               </p>
             </a>
           </div>
@@ -218,11 +211,10 @@ export function TraderLaunchGuestPage() {
         <section className="grid gap-4 rounded-2xl border border-nofx-gold/20 bg-nofx-bg-lighter p-5 md:grid-cols-[0.72fr_1.28fr] md:p-6">
           <div>
             <div className="text-sm font-semibold uppercase tracking-[0.18em] text-nofx-gold">
-              What runs after launch
+              {t('hlw.guestAfterLaunchTitle', language)}
             </div>
             <p className="mt-3 text-sm leading-6 text-nofx-text-muted">
-              The same production path runs every cycle. The interface only asks
-              you to fund, authorize, and start.
+              {t('hlw.guestAfterLaunchDetail', language)}
             </p>
           </div>
           <div className="grid gap-3 lg:grid-cols-3">
@@ -232,7 +224,9 @@ export function TraderLaunchGuestPage() {
                 className="flex gap-3 rounded-xl border border-nofx-gold/20 bg-nofx-bg-deeper p-4"
               >
                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-nofx-success" />
-                <p className="text-sm leading-6 text-nofx-text">{item}</p>
+                <p className="text-sm leading-6 text-nofx-text">
+                  {t(item, language)}
+                </p>
               </div>
             ))}
           </div>

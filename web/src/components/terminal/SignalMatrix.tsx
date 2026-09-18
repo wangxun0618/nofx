@@ -1,5 +1,7 @@
 import { useMemo } from 'react'
 import type { SignalRankItem } from '../../lib/api/data'
+import { t } from '../../i18n/translations'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 /**
  * SignalMatrix renders the Vergex (Claw402) direction board as a high-density
@@ -64,6 +66,7 @@ export function SignalMatrix({
   active,
   onSelect,
 }: SignalMatrixProps) {
+  const { language } = useLanguage()
   const view = useMemo(() => {
     const raw = items ?? []
     const sorted = [...raw].sort((a, b) => a.rank - b.rank).slice(0, max)
@@ -96,7 +99,7 @@ export function SignalMatrix({
     return (
       <div style={{ fontFamily: 'var(--tm-mono)' }}>
         <Head />
-        <div className="tm-sc">No signal data (claw402).</div>
+        <div className="tm-sc">{t('terminal.noSignalData', language)}</div>
       </div>
     )
   }
@@ -116,11 +119,11 @@ export function SignalMatrix({
           fontSize: 9,
         }}
       >
-        <Swatch c="var(--tm-up)" label="Bullish" />
-        <Swatch c="var(--tm-dn)" label="Bearish" />
-        <Swatch c="var(--tm-muted)" label="Neutral" />
+        <Swatch c="var(--tm-up)" label={t('terminal.bullish', language)} />
+        <Swatch c="var(--tm-dn)" label={t('terminal.bearish', language)} />
+        <Swatch c="var(--tm-muted)" label={t('terminal.neutral', language)} />
         {onSelect && (
-          <span style={{ color: 'var(--tm-red)' }}>click to switch ▸</span>
+          <span style={{ color: 'var(--tm-red)' }}>{t('terminal.clickToSwitch', language)}</span>
         )}
         <span style={{ marginLeft: 'auto' }}>{view.cells.length} signals</span>
       </div>
@@ -189,6 +192,7 @@ function fmtScore(n: number): string {
 }
 
 function Head() {
+  const { language } = useLanguage()
   return (
     <div
       style={{
@@ -201,7 +205,7 @@ function Head() {
       <span className="tm-px" style={{ fontSize: 11 }}>
         Signal matrix
       </span>
-      <span className="tm-sc">Signal matrix · vergex</span>
+      <span className="tm-sc">{t('terminal.signalMatrix', language)}</span>
     </div>
   )
 }

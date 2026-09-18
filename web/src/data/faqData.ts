@@ -8,6 +8,7 @@ import {
   Zap,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import type { Language } from '../i18n/translations'
 
 /**
  * FAQ content model. Answers are composed from typed blocks so the renderer
@@ -47,7 +48,8 @@ export function faqItemSearchText(item: FAQItem): string {
   return parts.join(' ').toLowerCase()
 }
 
-export const faqCategories: FAQCategory[] = [
+// ───────────────────────── English source ─────────────────────────
+export const faqCategoriesEn: FAQCategory[] = [
   // ───────────────────────── Getting started ─────────────────────────
   {
     id: 'getting-started',
@@ -685,3 +687,651 @@ export const faqCategories: FAQCategory[] = [
     ],
   },
 ]
+
+// ───────────────────────── Simplified Chinese mirror ─────────────────────────
+// Same ids, icons, hrefs, ordering, code spans and brand names as above — only
+// human-readable copy (title, question, block text, list/steps items, link
+// labels) is translated.
+export const faqCategoriesZh: FAQCategory[] = [
+  // ───────────────────────── 新手入门 ─────────────────────────
+  {
+    id: 'getting-started',
+    title: '新手入门',
+    icon: BookOpen,
+    items: [
+      {
+        id: 'what-is-nofx',
+        question: 'NOFX 是什么？',
+        blocks: [
+          {
+            type: 'p',
+            text: 'NOFX 是一套开源、自托管的 AI 交易终端。其核心模式是 NOFX Autopilot（自动驾驶）：一个 AI 智能体，它会读取 Claw402.ai 信号榜，借助 Signal Lab 与强平结构筛选候选标的，用原始 K 线确认时机，并在 Hyperliquid 上执行交易 —— 全程运行在你自己的机器上，你的密钥永不离开你的服务器。',
+          },
+          {
+            type: 'p',
+            text: '除了 Autopilot，你还可以在 Strategy Studio 中构建自定义策略、并排运行多个 AI 交易员，并在排行榜上对比它们的表现。',
+          },
+        ],
+      },
+      {
+        id: 'what-do-i-need',
+        question: '启动 Autopilot 之前需要准备什么？',
+        blocks: [
+          {
+            type: 'p',
+            text: '两个已充值的账户 —— Config 页面的引导式启动会带你完成两者：',
+          },
+          {
+            type: 'list',
+            items: [
+              'AI 费用钱包：一个 Base 链上的 USDC 钱包，用于支付 AI 模型与市场数据调用费用。启动最低需 `1 USDC`。',
+              '一个已开通交易授权的 Hyperliquid 账户，且至少有 `12 USDC` 可用作保证金。',
+            ],
+          },
+          {
+            type: 'p',
+            text: '启动按钮会先运行一次服务端预检，逐项检查前提条件，并精确指出缺失的环节，因此你不可能启动一个配置不全的机器人。',
+          },
+        ],
+      },
+      {
+        id: 'which-markets',
+        question: '它可以交易哪些市场？',
+        blocks: [
+          {
+            type: 'p',
+            text: 'Autopilot 交易 Hyperliquid 永续合约：加密主流币（BTC、ETH、SOL……）外加覆盖美股、指数、大宗商品与外汇的 xyz 合成市场 —— 一个账户即可让 AI 在多种资产间运作。',
+          },
+          {
+            type: 'p',
+            text: '在 Strategy Studio 中手动搭建的交易员，还可以连接 Binance、Bybit、OKX、Bitget、KuCoin、Gate、Aster 与 Lighter。',
+          },
+        ],
+      },
+      {
+        id: 'ai-models',
+        question: '它使用哪些 AI 模型？我需要 API Key 吗？',
+        blocks: [
+          {
+            type: 'p',
+            text: '无需任何 API Key。NOFX 通过 Claw402 按量付费的基础设施完成推理：你的 AI 费用钱包以 Base 链 USDC 按次付费，终端按需调用受支持的模型（DeepSeek 及其他前沿模型）。',
+          },
+          {
+            type: 'p',
+            text: '高级用户仍可在 Config → Models 下接入自己的供应商密钥（OpenAI、Claude、Gemini、DeepSeek、Qwen、Grok、Kimi，或任何兼容 OpenAI 的接口）。',
+          },
+        ],
+      },
+      {
+        id: 'is-it-profitable',
+        question: '它能帮我赚钱吗？',
+        blocks: [
+          {
+            type: 'p',
+            text: '没有人能对此做出承诺，你也应警惕任何做出承诺的人。AI 遵循一套系统化的流程交易，但市场充满对抗性，过往表现绝不保证未来结果。',
+          },
+          {
+            type: 'p',
+            text: '看板刻意对绩效保持诚实：它区分已实现与未实现盈亏，展示手续费拖累链条（毛收益 − 手续费 = 净收益）、盈利因子，以及基于你真实起始余额计算的最大回撤。请关注这些数字，从小资金起步，只用亏得起的闲钱交易。',
+          },
+          {
+            type: 'note',
+            text: '交易存在重大亏损风险。NOFX 是软件，而非投资建议。',
+          },
+        ],
+      },
+    ],
+  },
+
+  // ───────────────────────── 启动与钱包 ─────────────────────────
+  {
+    id: 'launch-wallets',
+    title: '启动与钱包',
+    icon: Zap,
+    items: [
+      {
+        id: 'ai-fee-wallet',
+        question: '什么是 AI 费用钱包？',
+        blocks: [
+          {
+            type: 'p',
+            text: '一个专用于 Base 链的 EVM 钱包，用来支付 AI 模型调用与付费市场数据（x402 微支付）。它与你的交易保证金完全隔离 —— 永远不会接触 Hyperliquid。',
+          },
+          {
+            type: 'list',
+            items: [
+              '引导式设置会为你创建（或复用已有的）钱包。',
+              '仅向该地址在 Base 网络上转入 USDC。',
+              '启动至少需要 `1 USDC`；充值后余额显示会自动刷新。',
+              '一次典型循环的费用从不到一分到几美分不等，取决于所使用的模型。',
+            ],
+          },
+        ],
+      },
+      {
+        id: 'fee-wallet-private-key',
+        question: 'AI 费用钱包的私钥保存在哪里？',
+        blocks: [
+          {
+            type: 'p',
+            text: '该私钥在你的服务器本地生成，以加密形式（AES-256）存储在你的自有数据库中，并在引导屏幕上仅向你展示一次。请务必备份 —— 一旦数据库丢失，密钥无法恢复。',
+          },
+          {
+            type: 'note',
+            text: '只在该钱包中存放费用资金。它的作用是支付 AI 调用费用，而非储蓄。',
+          },
+        ],
+      },
+      {
+        id: 'hyperliquid-authorization',
+        question: 'Hyperliquid 授权是如何工作的？安全吗？',
+        blocks: [
+          {
+            type: 'p',
+            text: 'NOFX 使用 Hyperliquid 代理钱包，因此你的主钱包私钥绝不会被共享。连接流程包含四个签名步骤：',
+          },
+          {
+            type: 'steps',
+            items: [
+              '连接你的 EVM 钱包（Rabby、MetaMask、OKX、Coinbase Wallet）。',
+              '授权一个新生成的 NOFX 代理钱包 —— 有效期 180 天，仅限交易。',
+              '授权 builder 费用（每笔订单的小额平台费用）。',
+              '将代理密钥保存到你的 NOFX 服务器（加密存储）。',
+            ],
+          },
+          {
+            type: 'p',
+            text: '代理钱包只能下单与平仓，别无他权。它无法提取资金，你的保证金始终留在你自己的 Hyperliquid 账户中。',
+          },
+        ],
+      },
+      {
+        id: 'launch-preflight',
+        question: '启动预检会检查哪些内容？',
+        blocks: [
+          {
+            type: 'p',
+            text: '在任何创建或变更发生之前，服务端会用实时数据校验完整的链路：',
+          },
+          {
+            type: 'list',
+            items: [
+              'AI 模型已启用并配置了凭据。',
+              'AI 费用钱包密钥有效，且 Base 链 USDC 余额至少为 `1 USDC`（链上查询）。',
+              'Hyperliquid 账户已完成授权（代理 + builder 费用）且可连通。',
+              '交易资金：计入持仓权益后至少为 `12 USDC`。',
+            ],
+          },
+          {
+            type: 'p',
+            text: '每一项未通过的检查都会明确指出修复方式，并深度链接到对应的引导设置。相同的检查在每次启动时都会于服务端强制执行，因此界面无法被意外绕过。',
+          },
+        ],
+      },
+      {
+        id: 'relaunch-behavior',
+        question: '如果我再次点击启动会怎样？',
+        blocks: [
+          {
+            type: 'p',
+            text: '启动是幂等的。如果 NOFX Autopilot 已存在，启动器会用当前的策略配置更新它并重新启动 —— 绝不会创建重复实例。如果机器人正处于循环中，重启最多需要约一分钟；界面会等待其完成。',
+          },
+        ],
+      },
+      {
+        id: 'deposit-not-showing',
+        question: '我已经充值了 USDC，但余额仍显示为零。',
+        blocks: [
+          {
+            type: 'list',
+            items: [
+              'AI 费用钱包：请确认你是在 Base 网络上向界面显示的准确地址转入 USDC。余额会被缓存约 30 秒，设置面板每几秒会自动重新查询一次。',
+              'Hyperliquid：充值会进入你自己的 Hyperliquid 账户；余额步骤会轮询账户实时状态。如有疑问，请在引导面板中点击 Refresh。',
+              '如果链上 RPC 暂时不可达，面板会将余额标记为“未知”而非 0 —— 请稍候一分钟重试。',
+            ],
+          },
+        ],
+      },
+    ],
+  },
+
+  // ───────────────────────── 交易与执行 ─────────────────────────
+  {
+    id: 'trading',
+    title: '交易与执行',
+    icon: TrendingUp,
+    items: [
+      {
+        id: 'autopilot-pipeline',
+        question: 'Autopilot 策略是如何一步步工作的？',
+        blocks: [
+          {
+            type: 'p',
+            text: '每个循环都会运行相同的四阶段漏斗 —— 任一阶段都可能淘汰某个候选标的，只有全部通过四关的设定才会被交易：',
+          },
+          {
+            type: 'steps',
+            items: [
+              '构建标的池 —— 拉取 Claw402.ai 实时榜单，选取加密主流币与 xyz 合成市场（美股、指数、大宗商品、外汇）中的头部候选（默认 10 个），每个都带有方向偏好与信号 z 分数。',
+              '验证每个候选 —— 获取其 Signal Lab 深度信号，以及价格附近的成本/强平结构：强平密集区与成本基线揭示了一次行情是前方有燃料，还是挡着高墙。',
+              '确认时机 —— 读取原始 15 分钟 OHLCV K 线（30 根），确认入场是顺势借力，而非追高已拉伸的行情。',
+              '决策与仓位 —— 只有越过置信度阈值（默认 `78/100`）且风险回报比约 `3:1` 的设定，才以 10 倍杠杆开仓；平仓始终先于开仓执行，且每个循环都会同时考虑多头与空头两个方向。',
+            ],
+          },
+          {
+            type: 'p',
+            text: '第五层完全独立于 AI：硬性风控（持仓数量上限、杠杆上限、保证金上限、交易节流）会否决任何违反它们的决策，无论模型有多自信。',
+          },
+        ],
+      },
+      {
+        id: 'data-sources',
+        question: '它使用哪些数据？哪些部分是付费的？',
+        blocks: [
+          {
+            type: 'list',
+            items: [
+              'Claw402.ai 信号数据 —— 排行榜、各币种 Signal Lab 深度信号，以及市场净流入。这些是付费接口，按次以 USDC 从你的 AI 费用钱包计费（x402 微支付）。',
+              '成本/强平热力图 —— 每个市场的持仓成本与强平密集区聚合结构。',
+              'Hyperliquid 行情数据 —— 原始 OHLCV K 线与实时 L2 订单簿（免费公开数据）。',
+              '通过代理钱包读取你的账户 —— 净值、可用保证金，以及带盈亏的持仓。',
+              '自身的交易历史 —— 已平仓交易会把胜率、盈利因子与回撤反馈到下一轮提示词中，让 AI 了解自己近期的状态。',
+            ],
+          },
+          {
+            type: 'note',
+            text: '看板会以较慢的频率（每几分钟）轮询付费的 Claw402 接口，以节省你的费用钱包 —— 行情面板始终由免费数据源保持实时。',
+          },
+        ],
+      },
+      {
+        id: 'decision-cycle',
+        question: 'AI 多久做一次决策？',
+        blocks: [
+          {
+            type: 'p',
+            text: 'Autopilot 每 5–15 分钟运行一次扫描循环，具体取决于你的启动方式（可按交易员配置，最短 3 分钟）。首个循环在启动后立即开始；单次循环通常耗时 30–60 秒，因为 AI 在决策前会读取完整的市场上下文。',
+          },
+        ],
+      },
+      {
+        id: 'what-ai-sees',
+        question: '每个循环 AI 都能看到哪些信息？',
+        blocks: [
+          {
+            type: 'list',
+            items: [
+              '你的账户：净值、可用保证金，以及带盈亏的持仓。',
+              'Claw402 排行榜：带有方向偏好的候选标的池。',
+              '各候选的 Signal Lab 深度信号与成本/强平结构。',
+              '用于确认时机的原始 OHLCV K 线。',
+              '自身的战绩：胜率、盈利因子、回撤、近期交易。',
+            ],
+          },
+          {
+            type: 'p',
+            text: '每个循环都会作为一条决策记录被保存 —— 看板上的执行日志会展示推理链条、所采取的动作，以及任何被拦截的订单。',
+          },
+        ],
+      },
+      {
+        id: 'leverage-and-risk',
+        question: '它使用怎样的杠杆与风险控制？',
+        blocks: [
+          {
+            type: 'p',
+            text: 'Autopilot 默认使用 10 倍全仓保证金。硬性风控运行在 AI 之外，无法被 AI 覆盖：',
+          },
+          {
+            type: 'list',
+            items: [
+              '来自策略配置的持仓数量上限 —— 达到上限后将拒绝新的开仓。',
+              '按资产类别划分的杠杆上限（BTC/ETH 与山寨币分别限制）。',
+              '交易节流会阻止频繁折腾，例如在开仓后几分钟内平掉几乎没有波动的仓位。',
+              '安全模式（见下文）会在 AI 自身失灵时保护整个仓位组合。',
+            ],
+          },
+        ],
+      },
+      {
+        id: 'safe-mode',
+        question: '什么是安全模式？',
+        blocks: [
+          {
+            type: 'p',
+            text: '如果 AI 连续 3 个循环失败（供应商宕机、费用钱包余额为空、响应异常），交易员会进入安全模式：不再开新仓，已有持仓保持原有保护，循环持续重试。下一次 AI 调用成功时，会自动退出安全模式。',
+          },
+          {
+            type: 'p',
+            text: '安全模式会在看板上以横幅形式展示，并附带原因，因此绝不会悄无声息地发生。',
+          },
+        ],
+      },
+      {
+        id: 'fee-wallet-empty-mid-run',
+        question: '如果运行中 AI 费用钱包余额耗尽会怎样？',
+        blocks: [
+          {
+            type: 'p',
+            text: 'AI 调用将开始失败，并给出明确的“资金不足”状态。看板会显示一个持续的红色横幅，标注钱包余额；连续三个循环失败后，机器人进入安全模式。向费用钱包补充 Base 链 USDC 后，交易员会自动恢复 —— 无需重启。',
+          },
+        ],
+      },
+      {
+        id: 'trading-fees',
+        question: '我需要支付哪些费用？',
+        blocks: [
+          {
+            type: 'list',
+            items: [
+              '每笔订单的 Hyperliquid 交易手续费，外加已授权的 builder 费用。',
+              '从费用钱包按次支付的 AI/数据成本（每个循环几美分）。',
+            ],
+          },
+          {
+            type: 'p',
+            text: '手续费是高频策略的隐形杀手。看板的统计条会展示完整的链条 —— 已实现毛盈亏，减去手续费，等于净利 —— 让你立刻看清手续费是否正在吞噬你的优势。',
+          },
+        ],
+      },
+      {
+        id: 'stop-and-manual',
+        question: '如何停止机器人或手动平仓？',
+        blocks: [
+          {
+            type: 'list',
+            items: [
+              '停止：使用 Config 页面交易员列表中的 Stop 按钮。停止会中止决策循环；已开持仓保持开放，由你自行管理。',
+              '手动平仓：在看板持仓面板中平掉任意仓位 —— 手动平仓会同步回仓位历史。',
+              '紧急情况：你随时可以直接在 Hyperliquid 上管理持仓；NOFX 永远不会把你锁在自己的账户之外。',
+            ],
+          },
+        ],
+      },
+    ],
+  },
+
+  // ───────────────────────── 看板与指标 ─────────────────────────
+  {
+    id: 'dashboard',
+    title: '看板与指标',
+    icon: Monitor,
+    items: [
+      {
+        id: 'metrics-meaning',
+        question: '顶部各项指标究竟代表什么？',
+        blocks: [
+          {
+            type: 'list',
+            items: [
+              '净值 —— 包含未实现盈亏的实时账户价值。',
+              '总盈亏（含未实现）—— 净值相对于起始余额的差额；随持仓波动。',
+              '已实现盈亏（已平仓交易）—— 仅统计已结束交易的净结果；胜率、盈利因子与夏普比率都基于它计算。',
+              '盈利因子 —— 已平仓交易的毛利 ÷ 毛亏；大于 1.0 表示已平仓组合整体为正。',
+              '最大回撤 —— 已实现净值曲线从峰值到谷值的最大跌幅，以你的真实起始余额为基准衡量。',
+            ],
+          },
+        ],
+      },
+      {
+        id: 'pl-contradiction',
+        question: '为什么总盈亏为正，而已实现盈亏却为负？',
+        blocks: [
+          {
+            type: 'p',
+            text: '两者衡量的是不同的东西。已实现盈亏只统计已平仓交易；总盈亏还包含仍在持仓中的未实现收益。一个机器人可能在已平仓交易上亏损，但其未平仓组合带来了足够的未实现利润，使总盈亏翻红 —— 反之亦然。查看“毛收益/手续费/净利”统计条，可以看清已实现结果中有多少是被手续费拖累的。',
+          },
+        ],
+      },
+      {
+        id: 'execution-log',
+        question: '在哪里可以看到 AI 为什么做了（或拒绝做）某件事？',
+        blocks: [
+          {
+            type: 'p',
+            text: '执行日志面板会列出每个循环所采取的动作、AI 调用耗时，以及任何被拦截的订单及其触发的确切风控（节流、持仓上限、风控）。完整的推理链条会随每条决策记录一同保存。',
+          },
+        ],
+      },
+      {
+        id: 'competition',
+        question: '排行榜 / 竞赛是什么？',
+        blocks: [
+          {
+            type: 'p',
+            text: '开启了“显示在竞赛中”的交易员会出现在公开排行榜上，按实时表现排名。此为按交易员可选的加入项，可随时在交易员列表中切换。',
+          },
+        ],
+      },
+    ],
+  },
+
+  // ───────────────────────── 安全 ─────────────────────────
+  {
+    id: 'security',
+    title: '安全',
+    icon: Shield,
+    items: [
+      {
+        id: 'key-storage',
+        question: '我的密钥是如何存储的？',
+        blocks: [
+          {
+            type: 'list',
+            items: [
+              '所有密钥类数据（代理密钥、费用钱包私钥、交易所 API Key）都以 AES-256 在静止状态下加密，存储于你自己的数据库中。',
+              '可选的 RSA 传输加密，保护浏览器与服务器之间传输中的密钥。',
+              'NOFX 是自托管的：任何数据都不会发往任何第三方服务器。代码开源，可供审计。',
+            ],
+          },
+        ],
+      },
+      {
+        id: 'can-nofx-steal-funds',
+        question: 'NOFX 能提取或盗取我的资金吗？',
+        blocks: [
+          {
+            type: 'p',
+            text: '不能。在 Hyperliquid 上，NOFX 永远只持有代理钱包，而代理钱包按协议设计只能交易、不能提现。你的保证金始终留在你自己的账户中，由你的主钱包掌控。',
+          },
+          {
+            type: 'note',
+            text: '如果你连接的是 CEX（中心化交易所），请只为其 API Key 授予交易权限 —— 关闭提现功能并设置 IP 白名单。',
+          },
+        ],
+      },
+      {
+        id: 'registration-model',
+        question: '为什么其他人无法在我的实例上注册？',
+        blocks: [
+          {
+            type: 'p',
+            text: '出于设计，一个实例仅限单一操作者：首个注册的账户成为操作者，注册随即关闭（“System already initialized”）。这可防止陌生人在暴露的部署上创建账户。每位操作者请运行一个独立实例。',
+          },
+        ],
+      },
+    ],
+  },
+
+  // ───────────────────────── 自托管与故障排查 ─────────────────────────
+  {
+    id: 'self-hosting',
+    title: '自托管与故障排查',
+    icon: Wrench,
+    items: [
+      {
+        id: 'how-to-install',
+        question: '如何安装 NOFX？',
+        blocks: [
+          {
+            type: 'p',
+            text: '在 Linux/macOS 上只需一行命令（通过 Docker 安装并启动全部服务）：',
+          },
+          {
+            type: 'list',
+            items: [
+              '脚本方式：`curl -fsSL https://raw.githubusercontent.com/NoFxAiOS/nofx/main/install.sh | bash`',
+              'Docker：下载 `docker-compose.prod.yml` 并运行 `docker compose -f docker-compose.prod.yml up -d`',
+              'Windows：安装 Docker Desktop，然后使用上述 Docker 方式。',
+              '源码编译：需 Go 1.21+、Node 18+、TA-Lib（`brew install ta-lib` / `apt-get install libta-lib0-dev`），随后运行 `go run .` 与 `npm --prefix web run dev`。',
+            ],
+          },
+          {
+            type: 'p',
+            text: '随后打开 `http://127.0.0.1:3000` —— Web 界面使用 3000 端口，API 使用 8080 端口。',
+          },
+        ],
+      },
+      {
+        id: 'how-to-update',
+        question: '如何更新？',
+        blocks: [
+          {
+            type: 'p',
+            text: '重新运行安装脚本，或使用 Docker：`docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d`。你的数据库与密钥位于挂载的 `data/` 目录中，更新后不会丢失。后端恢复后，正在运行的交易员会自动重启。',
+          },
+        ],
+      },
+      {
+        id: 'launch-blocked',
+        question: '启动被某项失败检查拦截了，该怎么办？',
+        blocks: [
+          {
+            type: 'p',
+            text: '请阅读提示信息：每一项预检失败都会指出修复方式，并引导你前往对应的设置步骤 —— 为 AI 钱包充值、完成 Hyperliquid 授权，或存入交易用的 USDC。余额会被实时重新校验，因此一旦你修复该项，启动即可通过。',
+          },
+        ],
+      },
+      {
+        id: 'exchange-unreachable',
+        question: '交易所账户显示“invalid credentials”或“unavailable”。',
+        blocks: [
+          {
+            type: 'list',
+            items: [
+              '凭证无效：代理授权已过期（180 天）或保存的密钥已失效 —— 重新连接 Hyperliquid 钱包；流程中提供一键续期。',
+              '不可用：交易所 API 未响应；账户状态会缓存 30 秒，请等待后刷新。',
+              'CEX 密钥：请核实交易权限、IP 白名单，以及是否已开启期货/永续交易权限。',
+            ],
+          },
+        ],
+      },
+      {
+        id: 'where-are-logs',
+        question: '日志在哪里？',
+        blocks: [
+          {
+            type: 'list',
+            items: [
+              '后端：`docker logs nofx-trading`（或运行 `go run .` 的终端）。',
+              '每个循环的 AI 推理与错误：看板执行日志。',
+              '前端构建/运行时问题：浏览器开发者工具控制台。',
+            ],
+          },
+        ],
+      },
+      {
+        id: 'port-conflicts',
+        question: '端口 3000 或 8080 已被占用。',
+        blocks: [
+          {
+            type: 'p',
+            text: '停止冲突的服务，或在 compose 文件中重新映射对外端口（例如前端用 `"3100:80"`、API 用 `"8180:8080"`），然后重启容器。',
+          },
+        ],
+      },
+    ],
+  },
+
+  // ───────────────────────── 参与贡献 ─────────────────────────
+  {
+    id: 'contributing',
+    title: '参与贡献',
+    icon: GitBranch,
+    items: [
+      {
+        id: 'how-to-contribute',
+        question: '如何参与代码贡献？',
+        blocks: [
+          {
+            type: 'links',
+            links: [
+              {
+                label: '路线图',
+                href: 'https://github.com/orgs/NoFxAiOS/projects/3',
+              },
+              {
+                label: '任务看板',
+                href: 'https://github.com/orgs/NoFxAiOS/projects/5',
+              },
+              {
+                label: '贡献指南（CONTRIBUTING.md）',
+                href: 'https://github.com/NoFxAiOS/nofx/blob/dev/CONTRIBUTING.md',
+              },
+            ],
+          },
+          {
+            type: 'steps',
+            items: [
+              '从上述看板中挑选一个任务（按 good first issue / help wanted 筛选），并评论“assign me”（分配给我）。',
+              'Fork 仓库，并从 `dev` 分支切出新分支：`git checkout -b feat/your-topic`。',
+              '遵循 Conventional Commits 规范；推送前运行 `npm --prefix web run lint && npm --prefix web run build`。',
+              '向 `NoFxAiOS/nofx:dev` 发起 PR，引用对应 issue（`Closes #123`），UI 改动请附上截图。',
+            ],
+          },
+        ],
+      },
+      {
+        id: 'bounty-program',
+        question: '有赏金计划吗？',
+        blocks: [
+          {
+            type: 'p',
+            text: '有 —— 部分入选 issue 提供现金赏金，此外还有徽章、优先评审，以及为长期贡献者提供的 Beta 访问权限。',
+          },
+          {
+            type: 'links',
+            links: [
+              {
+                label: '带有 bounty 标签的 issue',
+                href: 'https://github.com/NoFxAiOS/nofx/labels/bounty',
+              },
+              {
+                label: '赏金认领模板',
+                href: 'https://github.com/NoFxAiOS/nofx/blob/dev/.github/ISSUE_TEMPLATE/bounty_claim.md',
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'report-bugs',
+        question: '如何报告一个 Bug？',
+        blocks: [
+          {
+            type: 'p',
+            text: '使用模板提交 GitHub issue：你做了什么、发生了什么、后端日志（`docker logs nofx-trading`），以及截图。如怀疑存在安全问题，请遵循 SECURITY.md 中的负责任披露说明，而非公开提交 issue。',
+          },
+          {
+            type: 'links',
+            links: [
+              {
+                label: '新建 issue',
+                href: 'https://github.com/NoFxAiOS/nofx/issues/new/choose',
+              },
+              {
+                label: 'SECURITY.md',
+                href: 'https://github.com/NoFxAiOS/nofx/blob/dev/SECURITY.md',
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+]
+
+/** Returns the FAQ content for the active language. */
+export function getFaqCategories(language: Language): FAQCategory[] {
+  return language === 'zh' ? faqCategoriesZh : faqCategoriesEn
+}

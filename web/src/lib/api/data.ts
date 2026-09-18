@@ -10,6 +10,8 @@ import type {
 } from '../../types'
 import { API_BASE, httpClient } from './helpers'
 
+import { tg } from '../../i18n/translations'
+
 export interface Kline {
   openTime: number
   open: number
@@ -221,7 +223,7 @@ export const dataApi = {
     const result = await httpClient.get<SymbolListResponse>(
       `${API_BASE}/symbols?exchange=${encodeURIComponent(exchange)}`
     )
-    if (!result.success) throw new Error('Failed to fetch symbol list')
+    if (!result.success) throw new Error(tg('lib.fetchSymbolList'))
     return result.data || { exchange, symbols: [], count: 0 }
   },
 
@@ -232,7 +234,7 @@ export const dataApi = {
       `${API_BASE}/vergex/direction-change/leaderboard`
     )
     if (!result.success)
-      throw new Error('Failed to fetch Claw402/Vergex direction leaderboard')
+      throw new Error(tg('lib.fetchDirectionLeaderboardVergex'))
     const items = (result.data?.items || []).slice(0, limit).map((item) => ({
       rank: item.rank,
       symbol: item.symbol,
@@ -253,7 +255,7 @@ export const dataApi = {
       { timeout: 90000 }
     )
     if (!result.success)
-      throw new Error(result.message || 'Failed to fetch current direction')
+      throw new Error(result.message || tg('lib.fetchCurrentDirection'))
     return result.data!
   },
 
@@ -274,7 +276,7 @@ export const dataApi = {
       { timeout: 90000 }
     )
     if (!result.success)
-      throw new Error(result.message || 'Failed to fetch direction history')
+      throw new Error(result.message || tg('lib.fetchDirectionHistory'))
     return result.data || { items: [] }
   },
 
@@ -287,7 +289,7 @@ export const dataApi = {
     )
     if (!result.success)
       throw new Error(
-        result.message || 'Failed to fetch cost/liquidation heatmap'
+        result.message || tg('lib.fetchCostLiqHeatmap')
       )
     return result.data || {}
   },
@@ -297,7 +299,7 @@ export const dataApi = {
       ? `${API_BASE}/status?trader_id=${traderId}`
       : `${API_BASE}/status`
     const result = await httpClient.request<SystemStatus>(url, { silent })
-    if (!result.success) throw new Error('Failed to fetch system status')
+    if (!result.success) throw new Error(tg('lib.fetchSystemStatus'))
     return result.data!
   },
 
@@ -306,7 +308,7 @@ export const dataApi = {
       ? `${API_BASE}/account?trader_id=${traderId}`
       : `${API_BASE}/account`
     const result = await httpClient.request<AccountInfo>(url, { silent })
-    if (!result.success) throw new Error('Failed to fetch account info')
+    if (!result.success) throw new Error(tg('lib.fetchAccountInfo'))
     return result.data!
   },
 
@@ -315,7 +317,7 @@ export const dataApi = {
       ? `${API_BASE}/positions?trader_id=${traderId}`
       : `${API_BASE}/positions`
     const result = await httpClient.request<Position[]>(url, { silent })
-    if (!result.success) throw new Error('Failed to fetch positions')
+    if (!result.success) throw new Error(tg('lib.fetchPositions'))
     return result.data!
   },
 
@@ -324,7 +326,7 @@ export const dataApi = {
       ? `${API_BASE}/decisions?trader_id=${traderId}`
       : `${API_BASE}/decisions`
     const result = await httpClient.get<DecisionRecord[]>(url)
-    if (!result.success) throw new Error('Failed to fetch decision logs')
+    if (!result.success) throw new Error(tg('lib.fetchDecisionLogs'))
     return result.data!
   },
 
@@ -343,7 +345,7 @@ export const dataApi = {
       `${API_BASE}/decisions/latest?${params}`,
       { silent }
     )
-    if (!result.success) throw new Error('Failed to fetch latest decisions')
+    if (!result.success) throw new Error(tg('lib.fetchLatestDecisions'))
     return result.data!
   },
 
@@ -355,7 +357,7 @@ export const dataApi = {
       ? `${API_BASE}/statistics?trader_id=${traderId}`
       : `${API_BASE}/statistics`
     const result = await httpClient.request<Statistics>(url, { silent })
-    if (!result.success) throw new Error('Failed to fetch statistics')
+    if (!result.success) throw new Error(tg('lib.fetchStatistics'))
     return result.data!
   },
 
@@ -367,7 +369,7 @@ export const dataApi = {
       ? `${API_BASE}/statistics/full?trader_id=${traderId}`
       : `${API_BASE}/statistics/full`
     const result = await httpClient.request<TraderFullStats>(url, { silent })
-    if (!result.success) throw new Error('Failed to fetch full statistics')
+    if (!result.success) throw new Error(tg('lib.fetchFullStatistics'))
     return result.data!
   },
 
@@ -388,7 +390,7 @@ export const dataApi = {
       `${API_BASE}/klines?${params}`,
       { silent }
     )
-    if (!result.success) throw new Error('Failed to fetch klines')
+    if (!result.success) throw new Error(tg('lib.fetchKlines'))
     return result.data!
   },
 
@@ -405,7 +407,7 @@ export const dataApi = {
       `${API_BASE}/vergex/flow-markets?${params}`,
       { silent }
     )
-    if (!result.success) throw new Error('Failed to fetch flow markets')
+    if (!result.success) throw new Error(tg('lib.fetchFlowMarkets'))
     return result.data!
   },
 
@@ -418,7 +420,7 @@ export const dataApi = {
       { silent }
     )
     if (!result.success)
-      throw new Error('Failed to fetch direction leaderboard')
+      throw new Error(tg('lib.fetchDirectionLeaderboard'))
     return {
       items: (result.data?.items || []).slice(0, limit).map((item) => ({
         rank: item.rank,
@@ -437,7 +439,7 @@ export const dataApi = {
       ? `${API_BASE}/equity-history?trader_id=${traderId}`
       : `${API_BASE}/equity-history`
     const result = await httpClient.request<any[]>(url, { silent })
-    if (!result.success) throw new Error('Failed to fetch equity history')
+    if (!result.success) throw new Error(tg('lib.fetchEquityHistory'))
     return result.data!
   },
 
@@ -449,13 +451,13 @@ export const dataApi = {
       `${API_BASE}/equity-history-batch`,
       { trader_ids: traderIds, hours: hours || 0 }
     )
-    if (!result.success) throw new Error('Failed to fetch batch equity history')
+    if (!result.success) throw new Error(tg('lib.fetchBatchEquityHistory'))
     return result.data!
   },
 
   async getTopTraders(): Promise<any[]> {
     const result = await httpClient.get<any[]>(`${API_BASE}/top-traders`)
-    if (!result.success) throw new Error('Failed to fetch top traders')
+    if (!result.success) throw new Error(tg('lib.fetchTopTraders'))
     return result.data!
   },
 
@@ -463,7 +465,7 @@ export const dataApi = {
     const result = await httpClient.get<any>(
       `${API_BASE}/traders/${traderId}/public-config`
     )
-    if (!result.success) throw new Error('Failed to fetch public trader config')
+    if (!result.success) throw new Error(tg('lib.fetchPublicTraderConfig'))
     return result.data!
   },
 
@@ -471,7 +473,7 @@ export const dataApi = {
     const result = await httpClient.get<CompetitionData>(
       `${API_BASE}/competition`
     )
-    if (!result.success) throw new Error('Failed to fetch competition data')
+    if (!result.success) throw new Error(tg('lib.fetchCompetitionData'))
     return result.data!
   },
 
@@ -484,7 +486,7 @@ export const dataApi = {
       `${API_BASE}/positions/history?trader_id=${traderId}&limit=${limit}`,
       { silent }
     )
-    if (!result.success) throw new Error('Failed to fetch position history')
+    if (!result.success) throw new Error(tg('lib.fetchPositionHistory'))
     return result.data!
   },
 }

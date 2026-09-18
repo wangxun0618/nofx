@@ -18,6 +18,7 @@ import { ExchangeConfigModal } from '../components/trader/ExchangeConfigModal'
 import { TelegramConfigModal } from '../components/trader/TelegramConfigModal'
 import { ModelConfigModal } from '../components/trader/ModelConfigModal'
 import type { Exchange, AIModel, ExchangeAccountState } from '../types'
+import { t } from '../i18n/translations'
 
 type Tab = 'account' | 'models' | 'exchanges' | 'telegram'
 
@@ -87,7 +88,7 @@ export function SettingsPage() {
       const response = await api.getExchangeAccountState()
       setExchangeStates(response.states || {})
     } catch {
-      toast.error('Failed to load exchange balances')
+      toast.error(t('settings.errLoadExchangeBalances', language))
     } finally {
       setExchangeStatesLoading(false)
     }
@@ -96,11 +97,11 @@ export function SettingsPage() {
   // Fetch data when tabs are visited
   useEffect(() => {
     if (activeTab === 'models') {
-      refreshModelConfigs().catch(() => toast.error('Failed to load AI models'))
+      refreshModelConfigs().catch(() => toast.error(t('settings.errLoadAiModels', language)))
     }
     if (activeTab === 'exchanges') {
       refreshExchangeConfigs().catch(() =>
-        toast.error('Failed to load exchanges')
+        toast.error(t('settings.errLoadExchanges', language))
       )
     }
   }, [activeTab])
@@ -108,7 +109,7 @@ export function SettingsPage() {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault()
     if (newPassword.length < 8) {
-      toast.error('Password must be at least 8 characters')
+      toast.error(t('settings.passwordTooShort', language))
       return
     }
     setChangingPassword(true)
@@ -123,13 +124,13 @@ export function SettingsPage() {
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        throw new Error(data.error || 'Failed to update password')
+        throw new Error(data.error || t('settings.errUpdatePassword', language))
       }
-      toast.success('Password updated successfully')
+      toast.success(t('settings.passwordUpdated', language))
       setNewPassword('')
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : 'Failed to update password'
+        err instanceof Error ? err.message : t('settings.errUpdatePassword', language)
       )
     } finally {
       setChangingPassword(false)
@@ -147,7 +148,7 @@ export function SettingsPage() {
       const modelTemplate = supportedModels.find((m) => m.id === modelId)
       const modelToUpdate = existingModel || modelTemplate
       if (!modelToUpdate) {
-        toast.error('Model not found')
+        toast.error(t('settings.modelNotFound', language))
         return
       }
 
@@ -191,12 +192,12 @@ export function SettingsPage() {
         ),
       }
       await api.updateModelConfigs(request)
-      toast.success('Model config saved')
+      toast.success(t('settings.modelSaved', language))
       await refreshModelConfigs()
       setShowModelModal(false)
       setEditingModel(null)
     } catch {
-      toast.error('Failed to save model config')
+      toast.error(t('settings.errSaveModel', language))
     }
   }
 
@@ -230,9 +231,9 @@ export function SettingsPage() {
       await refreshModelConfigs()
       setShowModelModal(false)
       setEditingModel(null)
-      toast.success('Model config removed')
+      toast.success(t('settings.modelRemoved', language))
     } catch {
-      toast.error('Failed to remove model config')
+      toast.error(t('settings.errRemoveModel', language))
     }
   }
 
@@ -256,9 +257,7 @@ export function SettingsPage() {
     try {
       if (exchangeType === 'hyperliquid') {
         toast.error(
-          language === 'zh'
-            ? 'Hyperliquid must be connected through wallet authorization, not manual keys.'
-            : 'Hyperliquid must be connected through wallet authorization, not manual keys.'
+          t('exchangeCfg.notManualKeys', language)
         )
         return
       }
@@ -284,7 +283,7 @@ export function SettingsPage() {
           },
         }
         await api.updateExchangeConfigsEncrypted(request)
-        toast.success('Exchange config updated')
+        toast.success(t('settings.exchangeUpdated', language))
       } else {
         const createRequest = {
           exchange_type: exchangeType,
@@ -305,31 +304,31 @@ export function SettingsPage() {
           lighter_api_key_index: lighterApiKeyIndex || 0,
         }
         await api.createExchangeEncrypted(createRequest)
-        toast.success('Exchange account created')
+        toast.success(t('settings.exchangeCreated', language))
       }
       await refreshExchangeConfigs()
       setShowExchangeModal(false)
       setEditingExchange(null)
     } catch {
-      toast.error('Failed to save exchange config')
+      toast.error(t('settings.errSaveExchange', language))
     }
   }
 
   const handleDeleteExchange = async (exchangeId: string) => {
     try {
       await api.deleteExchange(exchangeId)
-      toast.success('Exchange account deleted')
+      toast.success(t('settings.exchangeDeleted', language))
       await refreshExchangeConfigs()
       setShowExchangeModal(false)
       setEditingExchange(null)
     } catch {
-      toast.error('Failed to delete exchange account')
+      toast.error(t('settings.errDeleteExchange', language))
     }
   }
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: 'account', label: 'Account', icon: <User size={16} /> },
-    { key: 'models', label: 'AI Models', icon: <Cpu size={16} /> },
+    { key: 'models', label: t('settings.tabAiModels', language), icon: <Cpu size={16} /> },
     { key: 'exchanges', label: 'Exchanges', icon: <Building2 size={16} /> },
     { key: 'telegram', label: 'Telegram', icon: <MessageCircle size={16} /> },
   ]
@@ -340,7 +339,7 @@ export function SettingsPage() {
       style={{ background: '#F1ECE2' }}
     >
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-xl font-bold text-nofx-text mb-6">Settings</h1>
+        <h1 className="text-xl font-bold text-nofx-text mb-6">{t('common.settings', language)}</h1>
 
         {/* Tabs */}
         <div className="flex gap-1 mb-6 bg-nofx-bg-lighter border border-[rgba(26,24,19,0.14)] rounded-xl p-1">
@@ -386,7 +385,7 @@ export function SettingsPage() {
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         className="w-full bg-nofx-bg-deeper border border-[rgba(26,24,19,0.14)] rounded-xl px-4 py-3 pr-11 text-sm text-nofx-text placeholder-nofx-text-muted focus:outline-none focus:border-nofx-gold/60 focus:ring-1 focus:ring-nofx-gold/30 transition-all"
-                        placeholder="At least 8 characters"
+                        placeholder={t('common.atLeast8Chars', language)}
                         required
                       />
                       <button
@@ -407,7 +406,9 @@ export function SettingsPage() {
                     disabled={changingPassword || newPassword.length < 8}
                     className="w-full bg-nofx-gold hover:bg-nofx-gold-highlight active:scale-[0.98] text-nofx-bg font-semibold py-3 rounded-xl text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {changingPassword ? 'Updating...' : 'Update Password'}
+                    {changingPassword
+                      ? t('settings.updating', language)
+                      : t('settings.updatePassword', language)}
                   </button>
                 </form>
               </div>
@@ -461,12 +462,12 @@ export function SettingsPage() {
                             <p className="text-xs text-nofx-text-muted">
                               {model.provider}
                             </p>
-                            {configBadge('API Key', !!model.has_api_key)}
+                            {configBadge(t('settings.badgeApiKey', language), !!model.has_api_key)}
                             {model.customModelName
-                              ? configBadge('Custom Model', true)
+                              ? configBadge(t('settings.badgeCustomModel', language), true)
                               : null}
                             {model.customApiUrl
-                              ? configBadge('Base URL', true)
+                              ? configBadge(t('settings.baseUrl', language), true)
                               : null}
                           </div>
                         </div>
@@ -503,7 +504,9 @@ export function SettingsPage() {
                     disabled={exchangeStatesLoading}
                     className="text-xs font-medium bg-nofx-bg-deeper hover:bg-nofx-bg-deeper disabled:opacity-60 text-nofx-text px-3 py-1.5 rounded-lg transition-colors"
                   >
-                    {exchangeStatesLoading ? 'Refreshing…' : 'Refresh Balances'}
+                    {exchangeStatesLoading
+                      ? t('settings.refreshing', language)
+                      : t('settings.refreshBalances', language)}
                   </button>
                   <button
                     onClick={() => {
@@ -547,7 +550,7 @@ export function SettingsPage() {
                               <p className="text-xs text-nofx-text-muted capitalize">
                                 {exchange.exchange_type || exchange.type}
                               </p>
-                              {configBadge('API Key', !!exchange.has_api_key)}
+                              {configBadge(t('settings.badgeApiKey', language), !!exchange.has_api_key)}
                               {configBadge('Secret', !!exchange.has_secret_key)}
                               {exchange.has_passphrase
                                 ? configBadge('Passphrase', true)
@@ -556,11 +559,11 @@ export function SettingsPage() {
                                 ? configBadge('Wallet', true)
                                 : null}
                               {exchange.has_aster_private_key
-                                ? configBadge('Aster Key', true)
+                                ? configBadge(t('settings.badgeAsterKey', language), true)
                                 : null}
                               {exchange.has_lighter_private_key ||
                               exchange.has_lighter_api_key_private_key
-                                ? configBadge('Lighter Key', true)
+                                ? configBadge(t('settings.badgeLighterKey', language), true)
                                 : null}
                             </div>
                             {accountState && (

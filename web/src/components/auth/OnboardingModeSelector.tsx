@@ -1,7 +1,8 @@
 import type { UserMode } from '../../lib/onboarding'
+import { t, type Language } from '../../i18n/translations'
 
 interface OnboardingModeSelectorProps {
-  language: string
+  language: Language
   mode: UserMode
   onChange: (mode: UserMode) => void
 }
@@ -11,8 +12,6 @@ export function OnboardingModeSelector({
   mode,
   onChange,
 }: OnboardingModeSelectorProps) {
-  const isZh = language === 'zh'
-
   const options: Array<{
     id: UserMode
     title: string
@@ -21,25 +20,21 @@ export function OnboardingModeSelector({
   }> = [
     {
       id: 'beginner',
-      title: isZh ? 'Beginner Mode' : 'Beginner Mode',
-      badge: isZh ? 'Recommended' : 'Recommended',
-      description: isZh
-        ? 'Generate a Base wallet automatically and start with Claw402 + GLM by default.'
-        : 'Generate a Base wallet automatically and start with Claw402 + GLM by default.',
+      title: t('mode.beginnerTitle', language),
+      badge: t('mode.beginnerBadge', language),
+      description: t('mode.beginnerDesc', language),
     },
     {
       id: 'advanced',
-      title: isZh ? 'Advanced Mode' : 'Advanced Mode',
-      description: isZh
-        ? 'Keep the full manual flow and configure models, wallets, and exchanges yourself.'
-        : 'Keep the full manual flow and configure models, wallets, and exchanges yourself.',
+      title: t('mode.advancedTitle', language),
+      description: t('mode.advancedDesc', language),
     },
   ]
 
   return (
     <div className="space-y-2">
       <div className="text-xs font-medium text-nofx-text-muted">
-        {isZh ? 'Experience' : 'Experience'}
+        {t('mode.experience', language)}
       </div>
       <div className="grid grid-cols-1 gap-2">
         {options.map((option) => {

@@ -1,6 +1,7 @@
 import { useLanguage } from '../../contexts/LanguageContext'
 import { t } from '../../i18n/translations'
 import { Container } from './Container'
+import { LanguageSwitcher } from './LanguageSwitcher'
 
 interface HeaderProps {
   simple?: boolean // For login/register pages
@@ -16,7 +17,7 @@ export function Header({ simple = false }: HeaderProps) {
           {/* Left - Logo and Title */}
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center">
-              <img src="/icons/nofx.svg" alt="NoFx Logo" className="w-8 h-8" />
+              <img src="/icons/nofx.svg" alt={t('auth.noFxLogo', language)} className="w-8 h-8" />
             </div>
             <div>
               <h1 className="text-xl font-bold" style={{ color: '#1A1813' }}>
@@ -29,6 +30,9 @@ export function Header({ simple = false }: HeaderProps) {
               )}
             </div>
           </div>
+
+          {/* Right - Language switcher */}
+          <LanguageSwitcher variant="inline" className="shrink-0" />
         </div>
       </Container>
     </header>

@@ -1,5 +1,7 @@
 import { useMemo } from 'react'
 import type { HistoricalPosition } from '../../types'
+import { t } from '../../i18n/translations'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 /**
  * EdgeProfile — where the money actually comes from. Aggregates recent closed
@@ -46,6 +48,7 @@ function toEpochMs(value: number | string): number {
 }
 
 export function EdgeProfile({ positions }: EdgeProfileProps) {
+  const { language } = useLanguage()
   const { holdBuckets, sideBuckets, sample } = useMemo(() => {
     const holds = [
       newBucket('<15m'),
@@ -79,7 +82,7 @@ export function EdgeProfile({ positions }: EdgeProfileProps) {
   }, [positions])
 
   if (sample === 0) {
-    return <div className="tm-sc">No closed trades yet.</div>
+    return <div className="tm-sc">{t('terminal.noClosedTrades', language)}</div>
   }
 
   const maxAbsNet = Math.max(0.01, ...holdBuckets.map((b) => Math.abs(b.net)))

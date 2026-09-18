@@ -10,10 +10,12 @@ import type {
 } from '../../types'
 import { API_BASE, httpClient, CryptoService } from './helpers'
 
+import { tg } from '../../i18n/translations'
+
 export const configApi = {
   async getModelConfigs(): Promise<AIModel[]> {
     const result = await httpClient.get<AIModel[]>(`${API_BASE}/models`)
-    if (!result.success) throw new Error('Failed to fetch model configs')
+    if (!result.success) throw new Error(tg('lib.fetchModelConfigs'))
     return Array.isArray(result.data) ? result.data : []
   },
 
@@ -21,13 +23,13 @@ export const configApi = {
     const result = await httpClient.get<AIModel[]>(
       `${API_BASE}/supported-models`
     )
-    if (!result.success) throw new Error('Failed to fetch supported models')
+    if (!result.success) throw new Error(tg('lib.fetchSupportedModels'))
     return result.data!
   },
 
   async getPromptTemplates(): Promise<string[]> {
     const res = await fetch(`${API_BASE}/prompt-templates`)
-    if (!res.ok) throw new Error('Failed to fetch prompt templates')
+    if (!res.ok) throw new Error(tg('lib.fetchPromptTemplates'))
     const data = await res.json()
     if (Array.isArray(data.templates)) {
       return data.templates.map((item: { name: string }) => item.name)
@@ -42,7 +44,7 @@ export const configApi = {
     if (!config.transport_encryption) {
       // Transport encryption disabled, send plaintext
       const result = await httpClient.put(`${API_BASE}/models`, request)
-      if (!result.success) throw new Error('Failed to update model configs')
+      if (!result.success) throw new Error(tg('lib.updateModelConfigs'))
       return
     }
 
@@ -65,12 +67,12 @@ export const configApi = {
 
     // Send encrypted data
     const result = await httpClient.put(`${API_BASE}/models`, encryptedPayload)
-    if (!result.success) throw new Error('Failed to update model configs')
+    if (!result.success) throw new Error(tg('lib.updateModelConfigs'))
   },
 
   async getExchangeConfigs(): Promise<Exchange[]> {
     const result = await httpClient.get<Exchange[]>(`${API_BASE}/exchanges`)
-    if (!result.success) throw new Error('Failed to fetch exchange configs')
+    if (!result.success) throw new Error(tg('lib.fetchExchangeConfigs'))
     return result.data!
   },
 
@@ -79,7 +81,7 @@ export const configApi = {
       `${API_BASE}/exchanges/account-state`
     )
     if (!result.success || !result.data) {
-      throw new Error('Failed to fetch exchange account states')
+      throw new Error(tg('lib.fetchExchangeAccountStates'))
     }
     return result.data
   },
@@ -88,7 +90,7 @@ export const configApi = {
     const result = await httpClient.get<Exchange[]>(
       `${API_BASE}/supported-exchanges`
     )
-    if (!result.success) throw new Error('Failed to fetch supported exchanges')
+    if (!result.success) throw new Error(tg('lib.fetchSupportedExchanges'))
     return result.data!
   },
 
@@ -96,12 +98,12 @@ export const configApi = {
     request: UpdateExchangeConfigRequest
   ): Promise<void> {
     const result = await httpClient.put(`${API_BASE}/exchanges`, request)
-    if (!result.success) throw new Error('Failed to update exchange configs')
+    if (!result.success) throw new Error(tg('lib.updateExchangeConfigs'))
   },
 
   async createExchange(request: CreateExchangeRequest): Promise<{ id: string }> {
     const result = await httpClient.post<{ id: string }>(`${API_BASE}/exchanges`, request)
-    if (!result.success) throw new Error('Failed to create exchange account')
+    if (!result.success) throw new Error(tg('lib.createExchangeAccount'))
     return result.data!
   },
 
@@ -112,7 +114,7 @@ export const configApi = {
     if (!config.transport_encryption) {
       // Transport encryption disabled, send plaintext
       const result = await httpClient.post<{ id: string }>(`${API_BASE}/exchanges`, request)
-      if (!result.success) throw new Error('Failed to create exchange account')
+      if (!result.success) throw new Error(tg('lib.createExchangeAccount'))
       return result.data!
     }
 
@@ -138,13 +140,13 @@ export const configApi = {
       `${API_BASE}/exchanges`,
       encryptedPayload
     )
-    if (!result.success) throw new Error('Failed to create exchange account')
+    if (!result.success) throw new Error(tg('lib.createExchangeAccount'))
     return result.data!
   },
 
   async deleteExchange(exchangeId: string): Promise<void> {
     const result = await httpClient.delete(`${API_BASE}/exchanges/${exchangeId}`)
-    if (!result.success) throw new Error('Failed to delete exchange account')
+    if (!result.success) throw new Error(tg('lib.deleteExchangeAccount'))
   },
 
   async updateExchangeConfigsEncrypted(
@@ -156,7 +158,7 @@ export const configApi = {
     if (!config.transport_encryption) {
       // Transport encryption disabled, send plaintext
       const result = await httpClient.put(`${API_BASE}/exchanges`, request)
-      if (!result.success) throw new Error('Failed to update exchange configs')
+      if (!result.success) throw new Error(tg('lib.updateExchangeConfigs'))
       return
     }
 
@@ -182,7 +184,7 @@ export const configApi = {
       `${API_BASE}/exchanges`,
       encryptedPayload
     )
-    if (!result.success) throw new Error('Failed to update exchange configs')
+    if (!result.success) throw new Error(tg('lib.updateExchangeConfigs'))
   },
 
   async getServerIP(): Promise<{
@@ -193,7 +195,7 @@ export const configApi = {
       public_ip: string
       message: string
     }>(`${API_BASE}/server-ip`)
-    if (!result.success) throw new Error('Failed to fetch server IP')
+    if (!result.success) throw new Error(tg('lib.fetchServerIp'))
     return result.data!
   },
 
@@ -202,7 +204,7 @@ export const configApi = {
       `${API_BASE}/onboarding/beginner`
     )
     if (!result.success || !result.data) {
-      throw new Error(result.message || 'Failed to prepare beginner onboarding')
+      throw new Error(result.message || tg('lib.prepareBeginnerOnboarding'))
     }
     return result.data
   },
@@ -212,7 +214,7 @@ export const configApi = {
       `${API_BASE}/onboarding/beginner/current`
     )
     if (!result.success || !result.data) {
-      throw new Error(result.message || 'Failed to fetch current beginner wallet')
+      throw new Error(result.message || tg('lib.fetchBeginnerWallet'))
     }
     return result.data
   },

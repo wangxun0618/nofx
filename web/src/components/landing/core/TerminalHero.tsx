@@ -17,6 +17,7 @@ const tickerLabels: Record<string, string> = {
 }
 
 export default function TerminalHero() {
+  const { language } = useLanguage()
     const navigate = useNavigate()
 
     // Real-time price state
@@ -123,7 +124,7 @@ export default function TerminalHero() {
                             </h3>
                             <div className="space-y-3 font-mono text-[10px] text-nofx-text-muted">
                                 <div className="flex justify-between items-center">
-                                    <span>KERNEL_LATENCY</span>
+                                    <span>{t('landing.kernelLatency', language)}</span>
                                     <span className="text-nofx-accent">12ms</span>
                                 </div>
                                 <div className="w-full h-1 bg-nofx-bg-deeper rounded-full overflow-hidden">
@@ -131,7 +132,7 @@ export default function TerminalHero() {
                                 </div>
 
                                 <div className="flex justify-between items-center">
-                                    <span>MEMORY_INTEGRITY</span>
+                                    <span>{t('landing.memoryIntegrity', language)}</span>
                                     <span className="text-nofx-success">100%</span>
                                 </div>
                                 <div className="w-full h-1 bg-nofx-bg-deeper rounded-full overflow-hidden">
@@ -139,7 +140,7 @@ export default function TerminalHero() {
                                 </div>
 
                                 <div className="flex justify-between items-center">
-                                    <span>UPTIME</span>
+                                    <span>{t('landing.uptime', language)}</span>
                                     <span className="text-nofx-text">99.999%</span>
                                 </div>
                             </div>
@@ -148,7 +149,7 @@ export default function TerminalHero() {
                         <div className="p-4 border border-[rgba(26,24,19,0.14)] rounded bg-nofx-bg-lighter">
                             <div className="flex items-center gap-3 text-nofx-text-muted mb-2">
                                 <Shield className="w-4 h-4" />
-                                <span className="text-[10px] font-mono tracking-widest">SECURITY PROTOCOLS</span>
+                                <span className="text-[10px] font-mono tracking-widest">{t('landing.securityProtocols', language)}</span>
                             </div>
                             <div className="flex gap-1">
                                 <div className="h-1 flex-1 bg-nofx-gold"></div>
@@ -156,16 +157,16 @@ export default function TerminalHero() {
                                 <div className="h-1 flex-1 bg-nofx-gold"></div>
                                 <div className="h-1 flex-1 bg-nofx-bg-deeper"></div>
                             </div>
-                            <div className="mt-2 text-right text-[10px] text-nofx-gold/80 font-mono">LEVEL 3 ACTIVATE</div>
+                            <div className="mt-2 text-right text-[10px] text-nofx-gold/80 font-mono">{t('landing.level3Activate', language)}</div>
                         </div>
                     </div>
 
                     {/* Bottom: Network Log */}
                     <div className="font-mono text-[10px] text-nofx-text-muted space-y-1 opacity-70">
-                        <div>&gt; CONNECTING TO MARKET DATA... OK</div>
-                        <div>&gt; SYNCING VENUES (424/424)... OK</div>
-                        <div>&gt; LOADING MULTI-ASSET UNIVERSE... DONE</div>
-                        <div className="animate-pulse">&gt; AWAITING USER INPUT_</div>
+                        <div>{t('landing2.logConnecting', language)}</div>
+                        <div>{t('landing2.logSyncingVenues', language)}</div>
+                        <div>{t('landing2.logLoadingUniverse', language)}</div>
+                        <div className="animate-pulse">{t('landing2.logAwaitingInput', language)}</div>
                     </div>
                 </div>
 
@@ -182,7 +183,7 @@ export default function TerminalHero() {
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-nofx-gold opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-nofx-gold"></span>
                         </span>
-                        <span className="text-xs font-mono text-nofx-gold tracking-widest">NOFX PROFESSIONAL MULTI-ASSET AGENT OS</span>
+                        <span className="text-xs font-mono text-nofx-gold tracking-widest">{t('landing.agentOs', language)}</span>
                     </motion.div>
 
                     {/* Main Title - Massive & Impactful */}
@@ -190,12 +191,11 @@ export default function TerminalHero() {
                     <div className="relative z-20">
                         <h1 className="text-5xl sm:text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter leading-[0.9] md:leading-[0.8] mb-6 select-none text-nofx-text">
                             AGENTIC<br />
-                            <span className="text-nofx-gold animate-shimmer tracking-tight">TRADING</span>
+                            <span className="text-nofx-gold animate-shimmer tracking-tight">{t('landing.trading', language)}</span>
                         </h1>
 
                         <p className="max-w-xl text-nofx-text-muted text-lg mb-6 font-light leading-relaxed">
-                            Professional AI trading agents for US stocks, commodities, FX and Pre-IPO synthetic markets.
-                            Build institutional-grade strategies by chatting in plain English.
+                            {t('landing2.heroSubtitle', language)}
                         </p>
                     </div>
 
@@ -226,7 +226,7 @@ export default function TerminalHero() {
                     <div className="w-full max-w-lg h-12 bg-nofx-bg-lighter border border-[rgba(26,24,19,0.14)] rounded flex items-center px-4 mb-10 font-mono text-sm shadow-sm group hover:border-nofx-gold/50 transition-colors cursor-text" onClick={() => document.getElementById('market-scanner')?.scrollIntoView({ behavior: 'smooth' })}>
                         <span className="text-nofx-success mr-2">➜</span>
                         <span className="text-nofx-accent mr-2">~</span>
-                        <span className="text-nofx-text-muted">create US stock trader --idea="breakouts"</span>
+                        <span className="text-nofx-text-muted">{t('landing.createTraderCmd', language)}</span>
                         <span className="w-2 h-4 bg-nofx-gold ml-1 animate-pulse"></span>
                     </div>
 
@@ -246,14 +246,13 @@ export default function TerminalHero() {
                             onClick={() => document.getElementById('market-scanner')?.scrollIntoView({ behavior: 'smooth' })}
                             className="px-8 py-4 font-bold font-mono tracking-wider text-nofx-text border border-[rgba(26,24,19,0.2)] rounded hover:border-nofx-gold/50 hover:text-nofx-gold transition-colors"
                         >
-                            SEE IT WORK
+                            {t('landing2.seeItWork', language)}
                         </button>
                     </div>
 
                     {/* Plain-language promise — the anti-jargon line */}
                     <p className="mt-5 text-sm text-nofx-text-muted font-mono">
-                        Self-hosted &amp; open source · about $13 is enough to start · guided
-                        setup, no API keys — first trade in minutes
+                        {t('landing2.heroPromise', language)}
                     </p>
 
                     {/* Community Stats Row */}
@@ -287,9 +286,9 @@ export default function TerminalHero() {
             {/* FLOATING TICKER FOOTER */}
             <div className="absolute bottom-0 w-full bg-nofx-bg-lighter border-t border-[rgba(26,24,19,0.14)] backdrop-blur-md z-30 overflow-hidden py-2 flex items-center">
                 <div className="flex animate-marquee whitespace-nowrap gap-12 text-xs font-mono text-nofx-text-muted px-4">
-                    <span className="flex items-center gap-2"><Globe className="w-3 h-3 text-nofx-text-muted" /> GLOBAL MARKET ACCESS</span>
-                    <span className="flex items-center gap-2 text-nofx-gold"><Zap className="w-3 h-3" /> MULTI-ASSET ROUTING ENABLED</span>
-                    <span className="flex items-center gap-2"><Wifi className="w-3 h-3 text-nofx-success" /> LOW LATENCY LINK: 12ms</span>
+                    <span className="flex items-center gap-2"><Globe className="w-3 h-3 text-nofx-text-muted" />{t('landing.globalMarketAccess', language)}</span>
+                    <span className="flex items-center gap-2 text-nofx-gold"><Zap className="w-3 h-3" />{t('landing.multiAssetRouting', language)}</span>
+                    <span className="flex items-center gap-2"><Wifi className="w-3 h-3 text-nofx-success" />{t('landing.lowLatencyLink', language)}</span>
 
                     {/* Dynamic Coins */}
                     {Object.entries(prices).map(([symbol, price]) => (
@@ -298,7 +297,7 @@ export default function TerminalHero() {
                         </span>
                     ))}
 
-                    <span className="flex items-center gap-2"><CircuitBoard className="w-3 h-3 text-nofx-accent" /> AI MODEL: Claude Opus 4.6</span>
+                    <span className="flex items-center gap-2"><CircuitBoard className="w-3 h-3 text-nofx-accent" />{t('landing.aiModelLine', language)}</span>
 
                     {/* Duplicate sequence for seamless loop effect (basic set) */}
                     {Object.entries(prices).map(([symbol, price]) => (
@@ -314,6 +313,8 @@ export default function TerminalHero() {
 }
 
 import { OFFICIAL_LINKS } from '../../../constants/branding'
+import { t } from '../../../i18n/translations'
+import { useLanguage } from '../../../contexts/LanguageContext'
 
 function CommunityStats() {
     const { stars, forks, contributors, isLoading, error } = useGitHubStats('NoFxAiOS', 'nofx')

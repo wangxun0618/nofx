@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { RegistrationDisabled } from './RegistrationDisabled'
 import { LanguageProvider } from '../../contexts/LanguageContext'
+import { t } from '../../i18n/translations'
 
 const mockNavigate = vi.fn()
 
@@ -48,7 +49,9 @@ describe('RegistrationDisabled Component', () => {
 
     it('should display the NoFx logo', () => {
       renderComponent()
-      const logo = screen.getByAltText('NoFx Logo')
+      // The alt text is localized now, so resolve it through the translator
+      // instead of hardcoding one language's copy.
+      const logo = screen.getByAltText(t('auth.noFxLogo', 'en'))
       expect(logo).toBeTruthy()
       expect(logo.getAttribute('src')).toBe('/icons/nofx.svg')
     })

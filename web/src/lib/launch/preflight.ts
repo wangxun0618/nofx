@@ -5,6 +5,8 @@ import type {
   SetupTarget,
 } from './types'
 
+import { tg } from '../../i18n/translations'
+
 export interface LaunchPreflightRequest {
   ai_model_id: string
   exchange_id: string
@@ -23,7 +25,7 @@ export async function runLaunchPreflight(
     request
   )
   if (!result.success || !result.data) {
-    throw new Error(result.message || 'Failed to run launch preflight')
+    throw new Error(result.message || tg('lib.runPreflightFailed'))
   }
   return result.data
 }
@@ -35,7 +37,7 @@ export async function getTraderPreflight(
     `${API_BASE}/traders/${traderId}/preflight`
   )
   if (!result.success || !result.data) {
-    throw new Error(result.message || 'Failed to run launch preflight')
+    throw new Error(result.message || tg('lib.runPreflightFailed'))
   }
   return result.data
 }

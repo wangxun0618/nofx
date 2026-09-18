@@ -6,6 +6,8 @@ import type {
 import { API_BASE, httpClient } from './helpers'
 import { ApiError } from '../httpClient'
 
+import { tg } from '../../i18n/translations'
+
 // Create/update/start legitimately run long: stopping a live trader waits for
 // its in-flight cycle and monitors, and creation probes the exchange (~35s
 // worst case observed). The default 30s axios timeout aborts mid-operation and
@@ -28,13 +30,13 @@ export const traderApi = {
       `${API_BASE}/my-traders`,
       { silent }
     )
-    if (!result.success) throw new Error('Failed to fetch trader list')
+    if (!result.success) throw new Error(tg('lib.fetchTraderList'))
     return Array.isArray(result.data) ? result.data : []
   },
 
   async getPublicTraders(): Promise<any[]> {
     const result = await httpClient.get<any[]>(`${API_BASE}/traders`)
-    if (!result.success) throw new Error('Failed to fetch public trader list')
+    if (!result.success) throw new Error(tg('lib.fetchPublicTraderList'))
     return result.data!
   },
 
@@ -46,7 +48,7 @@ export const traderApi = {
     })
     if (!result.success) {
       throwApiError(
-        result.message || 'Failed to create trader',
+        result.message || tg('lib.createTrader'),
         result.errorKey,
         result.errorParams,
         result.statusCode
@@ -57,7 +59,7 @@ export const traderApi = {
 
   async deleteTrader(traderId: string): Promise<void> {
     const result = await httpClient.delete(`${API_BASE}/traders/${traderId}`)
-    if (!result.success) throw new Error('Failed to delete trader')
+    if (!result.success) throw new Error(tg('lib.deleteTrader'))
   },
 
   async startTrader(traderId: string): Promise<void> {
@@ -67,7 +69,7 @@ export const traderApi = {
     )
     if (!result.success) {
       throwApiError(
-        result.message || 'Failed to start trader',
+        result.message || tg('lib.startTrader'),
         result.errorKey,
         result.errorParams,
         result.statusCode,
@@ -78,7 +80,7 @@ export const traderApi = {
 
   async stopTrader(traderId: string): Promise<void> {
     const result = await httpClient.post(`${API_BASE}/traders/${traderId}/stop`)
-    if (!result.success) throw new Error('Failed to stop trader')
+    if (!result.success) throw new Error(tg('lib.stopTrader'))
   },
 
   async toggleCompetition(traderId: string, showInCompetition: boolean): Promise<void> {
@@ -86,7 +88,7 @@ export const traderApi = {
       `${API_BASE}/traders/${traderId}/competition`,
       { show_in_competition: showInCompetition }
     )
-    if (!result.success) throw new Error('Failed to update competition visibility')
+    if (!result.success) throw new Error(tg('lib.updateCompetitionVisibility'))
   },
 
   async closePosition(traderId: string, symbol: string, side: string): Promise<{ message: string }> {
@@ -94,7 +96,7 @@ export const traderApi = {
       `${API_BASE}/traders/${traderId}/close-position`,
       { symbol, side }
     )
-    if (!result.success) throw new Error('Failed to close position')
+    if (!result.success) throw new Error(tg('lib.closePosition'))
     return result.data!
   },
 
@@ -106,7 +108,7 @@ export const traderApi = {
       `${API_BASE}/traders/${traderId}/prompt`,
       { custom_prompt: customPrompt }
     )
-    if (!result.success) throw new Error('Failed to update custom prompt')
+    if (!result.success) throw new Error(tg('lib.updateCustomPrompt'))
   },
 
   async getTraderConfig(
@@ -117,7 +119,7 @@ export const traderApi = {
       `${API_BASE}/traders/${traderId}/config`,
       { silent }
     )
-    if (!result.success) throw new Error('Failed to fetch trader config')
+    if (!result.success) throw new Error(tg('lib.fetchTraderConfig'))
     return result.data!
   },
 
@@ -131,7 +133,7 @@ export const traderApi = {
     )
     if (!result.success) {
       throwApiError(
-        result.message || 'Failed to update trader',
+        result.message || tg('lib.updateTrader'),
         result.errorKey,
         result.errorParams,
         result.statusCode

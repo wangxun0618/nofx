@@ -1,5 +1,7 @@
 import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
+import { t } from '../../../i18n/translations'
+import { useLanguage } from '../../../contexts/LanguageContext'
 
 interface LogEntry {
     id: number
@@ -44,6 +46,7 @@ const generateLog = (id: number): LogEntry => {
 }
 
 export default function LiveFeed() {
+  const { language } = useLanguage()
     const [logs, setLogs] = useState<LogEntry[]>([])
 
     useEffect(() => {
@@ -70,10 +73,10 @@ export default function LiveFeed() {
                 <div className="hidden md:flex items-center gap-6 text-nofx-text-muted border-r border-[rgba(26,24,19,0.14)] pr-6 shrink-0">
                     <div className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 bg-nofx-success rounded-full animate-pulse"></div>
-                        <span className="font-bold text-nofx-text">WS_CONN: STABLE</span>
+                        <span className="font-bold text-nofx-text">{t('landing.wsConnStable', language)}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <span className="text-nofx-gold">TPS: 48,291</span>
+                        <span className="text-nofx-gold">{t('landing.tps', language)}</span>
                     </div>
                 </div>
 

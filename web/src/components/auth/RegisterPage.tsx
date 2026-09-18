@@ -8,6 +8,7 @@ import { useLanguage } from '../../contexts/LanguageContext'
 import { t } from '../../i18n/translations'
 import { getSystemConfig } from '../../lib/config'
 import { DeepVoidBackground } from '../common/DeepVoidBackground'
+import { LanguageSwitcher } from '../common/LanguageSwitcher'
 import { RegistrationDisabled } from './RegistrationDisabled'
 import { WhitelistFullPage } from '../common/WhitelistFullPage'
 
@@ -57,7 +58,7 @@ export function RegisterPage() {
     }
 
     if (betaMode && !betaCode.trim()) {
-      setError('A beta code is required to register during the closed beta')
+      setError(t('auth.betaCodeRequired', language))
       return
     }
 
@@ -95,7 +96,7 @@ export function RegisterPage() {
       const errorMsg =
         e instanceof Error
           ? e.message
-          : 'Registration failed due to server error'
+          : t('auth.registrationServerError', language)
       const lowerMsg = errorMsg.toLowerCase()
       if (
         lowerMsg.includes('whitelist') ||
@@ -119,6 +120,7 @@ export function RegisterPage() {
       className="min-h-screen flex items-center justify-center py-12 font-mono"
       disableAnimation
     >
+      <LanguageSwitcher />
       <div className="w-full max-w-lg relative z-10 px-6">
         <div className="flex justify-between items-center mb-8">
           <button
@@ -137,13 +139,13 @@ export function RegisterPage() {
             <div className="relative">
               <img
                 src="/icons/nofx.svg"
-                alt="NoFx Logo"
+                alt={t('auth.noFxLogo', language)}
                 className="w-16 h-16 object-contain relative z-10 opacity-90"
               />
             </div>
           </div>
           <h1 className="text-3xl font-bold tracking-tighter text-nofx-text uppercase mb-2">
-            <span className="text-nofx-gold">CREATE</span> YOUR ACCOUNT
+            <span className="text-nofx-gold">{t('auth.createAccountTag', language)}</span> YOUR ACCOUNT
           </h1>
           <p className="text-nofx-text-muted text-sm">
             This account owns your NOFX instance. Next step: a guided launch —
@@ -157,7 +159,7 @@ export function RegisterPage() {
               <div
                 className="w-2.5 h-2.5 rounded-full bg-nofx-danger/50 hover:bg-nofx-danger cursor-pointer transition-colors"
                 onClick={() => navigate('/')}
-                title="Close / Return Home"
+                title={t('auth.closeReturnHome', language)}
               ></div>
               <div className="w-2.5 h-2.5 rounded-full bg-nofx-gold/50"></div>
               <div className="w-2.5 h-2.5 rounded-full bg-nofx-success/50"></div>
@@ -321,10 +323,10 @@ export function RegisterPage() {
                 className="w-full bg-nofx-gold text-nofx-bg font-bold py-3 px-4 rounded text-sm tracking-wide uppercase hover:bg-nofx-gold-highlight transition-all transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed font-mono flex items-center justify-center gap-2 group mt-4"
               >
                 {loading ? (
-                  <span className="animate-pulse">INITIALIZING...</span>
+                  <span className="animate-pulse">{t('auth.initializing', language)}</span>
                 ) : (
                   <>
-                    <span>CREATE_ACCOUNT</span>
+                    <span>{t('auth.createAccountTag', language)}</span>
                     <span className="group-hover:translate-x-1 transition-transform">
                       -&gt;
                     </span>
@@ -335,8 +337,8 @@ export function RegisterPage() {
           </div>
 
           <div className="bg-nofx-bg-deeper p-3 flex justify-between items-center text-[10px] font-mono text-nofx-text-muted border-t border-[rgba(26,24,19,0.14)]">
-            <div>ENCRYPTION: AES-256</div>
-            <div>SECURE_REGISTRY</div>
+            <div>{t('auth.encryption', language)}</div>
+            <div>{t('auth.secureRegistry', language)}</div>
           </div>
         </div>
 

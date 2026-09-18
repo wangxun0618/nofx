@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 
+import { tg } from '../i18n/translations'
+
 interface GitHubStats {
   stars: number
   forks: number
@@ -26,7 +28,7 @@ export function useGitHubStats(owner: string, repo: string): GitHubStats {
       try {
         // Fetch basic repo info
         const repoRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`)
-        if (!repoRes.ok) throw new Error('Failed to fetch GitHub stats')
+        if (!repoRes.ok) throw new Error(tg('lib.fetchGitHubStats'))
         const repoData = await repoRes.json()
 
         // Fetch contributors count (using Link header trick for large numbers, or length for small)
@@ -79,7 +81,7 @@ export function useGitHubStats(owner: string, repo: string): GitHubStats {
         setStats((prev) => ({
           ...prev,
           isLoading: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: error instanceof Error ? error.message : tg('lib.unknownError'),
         }))
       }
     }

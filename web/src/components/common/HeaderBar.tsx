@@ -6,6 +6,7 @@ import { t, type Language } from '../../i18n/translations'
 import { OFFICIAL_LINKS } from '../../constants/branding'
 import { getCurrentPageForPath, ROUTES, type Page } from '../../router/paths'
 import { HyperliquidWalletConnect } from './HyperliquidWalletConnect'
+import { LanguageSwitcher } from './LanguageSwitcher'
 
 interface HeaderBarProps {
   onLoginClick?: () => void
@@ -13,7 +14,6 @@ interface HeaderBarProps {
   isHomePage?: boolean
   currentPage?: Page
   language?: Language
-  onLanguageChange?: (lang: Language) => void
   user?: { email: string } | null
   onLogout?: () => void
   onPageChange?: (page: Page) => void
@@ -77,7 +77,7 @@ export default function HeaderBar({
               border: '1px solid rgba(26,24,19,0.12)',
             }}
           >
-            <img src="/icons/nofx.svg" alt="NOFX Logo" className="w-8 h-8" />
+            <img src="/icons/nofx.svg" alt={t('auth.noFxLogo', language)} className="w-8 h-8" />
           </span>
           <span className="text-lg font-bold text-nofx-gold tracking-wide">
             NOFX
@@ -104,22 +104,14 @@ export default function HeaderBar({
                     page: 'data',
                     path: ROUTES.data,
                     label:
-                      language === 'zh'
-                        ? 'Data'
-                        : language === 'id'
-                          ? 'Data'
-                          : 'Data',
+                      t('nav.data', language),
                     requiresAuth: false,
                   },
                   {
                     page: 'strategy-market',
                     path: ROUTES.strategyMarket,
                     label:
-                      language === 'zh'
-                        ? 'Market'
-                        : language === 'id'
-                          ? 'Pasar'
-                          : 'Market',
+                      t('nav.market', language),
                     requiresAuth: true,
                     hidden: true,
                   },
@@ -301,9 +293,7 @@ export default function HeaderBar({
                         }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors hover:bg-[rgba(26,24,19,0.06)] text-nofx-text-muted hover:text-nofx-text"
                       >
-                        <Settings className="w-3.5 h-3.5" />
-                        Settings
-                      </button>
+                        <Settings className="w-3.5 h-3.5" />{t('common.settings', language)}</button>
 
                       {onLogout && (
                         <button
@@ -336,7 +326,8 @@ export default function HeaderBar({
               )
             )}
 
-            {/* Language switcher removed — the product UI is English-only. */}
+            {/* Language switcher */}
+            <LanguageSwitcher variant="inline" />
           </div>
         </div>
 
@@ -344,7 +335,11 @@ export default function HeaderBar({
         <motion.button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           className="shrink-0 text-nofx-text-muted hover:text-nofx-text lg:hidden"
-          aria-label={mobileMenuOpen ? 'Close navigation' : 'Open navigation'}
+          aria-label={
+            mobileMenuOpen
+              ? t('nav.closeNavigation', language)
+              : t('nav.openNavigation', language)
+          }
           whileTap={{ scale: 0.9 }}
         >
           {mobileMenuOpen ? (
@@ -387,22 +382,14 @@ export default function HeaderBar({
                       page: 'data',
                       path: ROUTES.data,
                       label:
-                        language === 'zh'
-                          ? 'Data'
-                          : language === 'id'
-                            ? 'Data'
-                            : 'Data',
+                        t('nav.data', language),
                       requiresAuth: false,
                     },
                     {
                       page: 'strategy-market',
                       path: ROUTES.strategyMarket,
                       label:
-                        language === 'zh'
-                          ? 'Market'
-                          : language === 'id'
-                            ? 'Pasar'
-                            : 'Market',
+                        t('nav.market', language),
                       requiresAuth: true,
                       hidden: true,
                     },
@@ -476,9 +463,7 @@ export default function HeaderBar({
                           </span>
                         )}
                         {tab.requiresAuth && !isLoggedIn && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded border border-zinc-800 text-zinc-500 font-normal tracking-wide uppercase align-middle relative -top-1">
-                            LOGIN_REQ
-                          </span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded border border-zinc-800 text-zinc-500 font-normal tracking-wide uppercase align-middle relative -top-1">{t('nav.loginRequired', language)}</span>
                         )}
                       </motion.button>
                     ))
@@ -550,7 +535,15 @@ export default function HeaderBar({
                   ))}
                 </div>
 
-                {/* Account (language switcher removed — English-only UI) */}
+                {/* Language switcher */}
+                <div className="flex items-center justify-between rounded-lg border border-white/10 px-3 py-2">
+                  <span className="text-xs font-mono uppercase tracking-wider text-zinc-500">
+                    {t('lang.label', language)}
+                  </span>
+                  <LanguageSwitcher variant="inline" className="border-0" />
+                </div>
+
+                {/* Account */}
                 <div className="grid grid-cols-1 gap-4">
                   {/* Auth Actions */}
                   {isLoggedIn && user ? (

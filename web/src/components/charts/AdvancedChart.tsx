@@ -12,7 +12,7 @@ import {
 } from 'lightweight-charts'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { httpClient } from '../../lib/httpClient'
-import { t } from '../../i18n/translations'
+import { t, type Language } from '../../i18n/translations'
 import {
   calculateSMA,
   calculateEMA,
@@ -77,14 +77,14 @@ const getQuoteUnit = (exchange: string): string => {
 // Get base volume unit
 const getBaseUnit = (exchange: string, symbol: string, language: string): string => {
   if (['alpaca'].includes(exchange)) {
-    return t('advancedChart.shares', language as 'en' | 'zh' | 'id')
+    return t('advancedChart.shares', language as Language)
   }
   if (['forex', 'metals'].includes(exchange)) {
     return ''
   }
   // Crypto: extract base asset from symbol
   const base = symbol.replace(/USDT$|USD$|BUSD$/, '')
-  return base || t('advancedChart.units', language as 'en' | 'zh' | 'id')
+  return base || t('advancedChart.units', language as Language)
 }
 
 // Format large numbers
@@ -145,7 +145,7 @@ export function AdvancedChart({
     { id: 'ma60', name: 'MA60', enabled: false, color: '#95E1D3', params: { period: 60 } },
     { id: 'ema12', name: 'EMA12', enabled: false, color: '#A8E6CF', params: { period: 12 } },
     { id: 'ema26', name: 'EMA26', enabled: false, color: '#FFD3B6', params: { period: 26 } },
-    { id: 'bb', name: 'Bollinger Bands', enabled: false, color: '#9B59B6' },
+    { id: 'bb', name: t('chart.bollingerBands', language), enabled: false, color: '#9B59B6' },
   ])
 
   // Fetch kline data from service
@@ -156,7 +156,7 @@ export function AdvancedChart({
       const result = await httpClient.request(klineUrl, { silent: true })
 
       if (!result.success || !result.data) {
-        throw new Error('Failed to fetch kline data')
+        throw new Error(t('chart.errFetchKline', language))
       }
 
       // Convert data format
@@ -736,7 +736,7 @@ export function AdvancedChart({
         setLoading(false)
       } catch (err: any) {
         console.error('[AdvancedChart] Error loading data:', err)
-        setError(err.message || 'Failed to load chart data')
+        setError(err.message || t('chart.errLoadChartData', language))
         setLoading(false)
       }
     }
@@ -881,7 +881,7 @@ export function AdvancedChart({
         const upperSeries = chartRef.current.addSeries(LineSeries, {
           color: indicator.color,
           lineWidth: 1,
-          title: 'BB Upper',
+          title: t('chart.bbUpper', language),
         })
         upperSeries.setData(bbData.map(d => ({ time: d.time as any, value: d.upper })))
 
@@ -889,14 +889,14 @@ export function AdvancedChart({
           color: indicator.color,
           lineWidth: 1,
           lineStyle: 2,
-          title: 'BB Middle',
+          title: t('chart.bbMiddle', language),
         })
         middleSeries.setData(bbData.map(d => ({ time: d.time as any, value: d.middle })))
 
         const lowerSeries = chartRef.current.addSeries(LineSeries, {
           color: indicator.color,
           lineWidth: 1,
-          title: 'BB Lower',
+          title: t('chart.bbLower', language),
         })
         lowerSeries.setData(bbData.map(d => ({ time: d.time as any, value: d.lower })))
 

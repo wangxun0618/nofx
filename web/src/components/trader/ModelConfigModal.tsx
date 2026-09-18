@@ -468,10 +468,10 @@ function Claw402ConfigForm({
           setClaw402Status(data.claw402_status || 'unknown')
           setKeyError('')
         } else {
-          setKeyError(data.error || 'Invalid key')
+          setKeyError(data.error || t('cred.invalidKey', language))
         }
       } catch {
-        setKeyError('Validation request failed')
+        setKeyError(t('cred.validationFailed', language))
       } finally {
         setValidating(false)
       }
@@ -503,7 +503,7 @@ function Claw402ConfigForm({
               : t('modelConfig.claw402Unreachable', language),
         })
       } else {
-        setTestResult({ status: 'error', message: data.error || 'Invalid key' })
+        setTestResult({ status: 'error', message: data.error || t('cred.invalidKey', language) })
       }
     } catch {
       setTestResult({
@@ -750,7 +750,7 @@ function Claw402ConfigForm({
                   cursor: 'pointer',
                 }}
               >
-                {language === 'zh' ? '🔑 Create Wallet' : '🔑 Create Wallet'}
+                {t('modelCfg.createWallet', language)}
               </button>
             )}
           </div>
@@ -769,14 +769,10 @@ function Claw402ConfigForm({
                 style={{ color: '#D6433A' }}
               >
                 🚨{' '}
-                {language === 'zh'
-                  ? 'Important: Backup your private key NOW!'
-                  : 'Important: Backup your private key NOW!'}
+                {t('modelCfg.backupNow', language)}
               </div>
               <div className="text-[11px] mb-2" style={{ color: '#D6433A' }}>
-                {language === 'zh'
-                  ? 'This is your wallet private key. If lost, it cannot be recovered and all assets will be permanently lost. Copy and save it securely.'
-                  : 'This is your wallet private key. If lost, it cannot be recovered and all assets will be permanently lost. Copy and save it securely.'}
+                {t('modelCfg.privateKeyWarning', language)}
               </div>
               <div className="flex items-center gap-2 mb-2">
                 <code
@@ -809,21 +805,15 @@ function Claw402ConfigForm({
               >
                 <div>
                   ✅{' '}
-                  {language === 'zh'
-                    ? 'Save to a password manager (1Password / Bitwarden)'
-                    : 'Save to a password manager (1Password / Bitwarden)'}
+                  {t('modelCfg.saveToPasswordManager', language)}
                 </div>
                 <div>
                   ✅{' '}
-                  {language === 'zh'
-                    ? 'Or write it down and store it safely'
-                    : 'Or write it down and store it safely'}
+                  {t('modelCfg.writeItDown', language)}
                 </div>
                 <div>
                   ❌{' '}
-                  {language === 'zh'
-                    ? 'Do NOT screenshot or share with anyone'
-                    : 'Do NOT screenshot or share with anyone'}
+                  {t('modelCfg.doNotScreenshot', language)}
                 </div>
               </div>
             </div>
@@ -906,9 +896,7 @@ function Claw402ConfigForm({
                     style={{ color: '#E0483B' }}
                   >
                     ⚠️{' '}
-                    {language === 'zh'
-                      ? 'Please confirm this is your wallet address (verify in MetaMask)'
-                      : 'Please confirm this is your wallet address (verify in MetaMask)'}
+                    {t('modelCfg.confirmWalletAddress', language)}
                   </div>
                 </div>
                 {usdcBalance !== null && (
@@ -931,12 +919,8 @@ function Claw402ConfigForm({
                       }}
                     >
                       {showDeposit
-                        ? language === 'zh'
-                          ? 'Hide'
-                          : 'Hide'
-                        : language === 'zh'
-                          ? '💳 Deposit'
-                          : '💳 Deposit'}
+                        ? t('common.hide', language)
+                        : t('common.deposit', language)}
                     </button>
                   </div>
                 )}
@@ -953,9 +937,7 @@ function Claw402ConfigForm({
                       style={{ color: '#2E8B57' }}
                     >
                       💳{' '}
-                      {language === 'zh'
-                        ? 'Deposit USDC (Base Chain)'
-                        : 'Deposit USDC (Base Chain)'}
+                      {t('modelCfg.depositTitle', language)}
                     </div>
                     <div className="flex gap-3 items-start mb-3">
                       <div
@@ -969,9 +951,7 @@ function Claw402ConfigForm({
                           className="text-[11px] mb-1"
                           style={{ color: '#8A8478' }}
                         >
-                          {language === 'zh'
-                            ? 'Scan QR or copy address to transfer'
-                            : 'Scan QR or copy address to transfer'}
+                          {t('modelCfg.scanQrOrCopy', language)}
                         </div>
                         <code
                           className="text-[10px] font-mono break-all select-all block mb-1.5"
@@ -1004,18 +984,14 @@ function Claw402ConfigForm({
                     >
                       <div>
                         📱{' '}
-                        {language === 'zh'
-                          ? 'Scan QR with exchange app to transfer'
-                          : 'Scan QR with exchange app to transfer'}
+                        {t('modelCfg.scanQrApp', language)}
                       </div>
                       <div>
                         •{' '}
-                        {language === 'zh'
-                          ? 'Choose Base network when withdrawing'
-                          : 'Choose Base network when withdrawing'}
+                        {t('modelCfg.chooseBase', language)}
                       </div>
                       <div>
-                        • {language === 'zh' ? 'Or bridge: ' : 'Or bridge: '}
+                        • {t('modelCfg.orBridge', language)}
                         <a
                           href="https://bridge.base.org"
                           target="_blank"
@@ -1028,9 +1004,7 @@ function Claw402ConfigForm({
                       </div>
                       <div>
                         •{' '}
-                        {language === 'zh'
-                          ? 'Min $1 USDC to start'
-                          : 'Min $1 USDC to start'}
+                        {t('modelCfg.minUsdc', language)}
                       </div>
                     </div>
                   </div>
@@ -1254,7 +1228,7 @@ function StandardProviderConfigForm({
           }}
         >
           Current model key status:{' '}
-          {selectedModel.has_api_key ? 'API Key configured' : 'API Key not configured'}
+          {selectedModel.has_api_key ? t('cred.keyConfigured', language) : t('cred.keyNotConfigured', language)}
         </div>
       )}
 
@@ -1277,7 +1251,7 @@ function StandardProviderConfigForm({
               d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
             />
           </svg>
-          {'API Key *'}
+          {t('cred.apiKeyLabel', language)}
         </label>
         <input
           type="password"
@@ -1285,7 +1259,7 @@ function StandardProviderConfigForm({
           onChange={(e) => onApiKeyChange(e.target.value)}
           placeholder={
             editingModelId && selectedModel.has_api_key
-              ? 'Saved. Re-enter to replace.'
+              ? t('cred.savedReenter', language)
               : t('enterAPIKey', language)
           }
           className="w-full px-4 py-3 rounded-xl"

@@ -56,7 +56,7 @@ export function ConfigStatusGrid({
   const getExchangeStateMeta = (state: ExchangeAccountState | undefined) => {
     if (!state) {
       return {
-        label: language === 'zh' ? 'NOT CHECKED' : 'NOT CHECKED',
+        label: t('status.notChecked', language),
         className: 'text-nofx-text-muted border-[rgba(26,24,19,0.14)] bg-nofx-bg-deeper',
       }
     }
@@ -69,27 +69,27 @@ export function ConfigStatusGrid({
         }
       case 'disabled':
         return {
-          label: language === 'zh' ? 'DISABLED' : 'DISABLED',
+          label: t('status.disabled', language),
           className: 'text-nofx-text-muted border-[rgba(26,24,19,0.14)] bg-nofx-bg-deeper',
         }
       case 'missing_credentials':
         return {
-          label: language === 'zh' ? 'INCOMPLETE' : 'INCOMPLETE',
+          label: t('status.incomplete', language),
           className: 'text-nofx-gold border-nofx-gold/20 bg-nofx-gold/10',
         }
       case 'invalid_credentials':
         return {
-          label: language === 'zh' ? 'INVALID KEYS' : 'INVALID KEYS',
+          label: t('status.invalidKeys', language),
           className: 'text-nofx-danger border-nofx-danger/20 bg-nofx-danger/10',
         }
       case 'permission_denied':
         return {
-          label: language === 'zh' ? 'NO PERMISSION' : 'NO PERMISSION',
+          label: t('status.noPermission', language),
           className: 'text-nofx-gold border-nofx-gold/20 bg-nofx-gold/10',
         }
       default:
         return {
-          label: language === 'zh' ? 'UNAVAILABLE' : 'UNAVAILABLE',
+          label: t('status.unavailable', language),
           className: 'text-nofx-text-muted border-[rgba(26,24,19,0.14)] bg-nofx-bg-deeper',
         }
     }
@@ -166,7 +166,7 @@ export function ConfigStatusGrid({
                     </span>
                   ) : (
                     <span className="text-[10px] font-mono text-nofx-text-muted uppercase tracking-wider">
-                      {language === 'zh' ? 'STANDBY' : 'STANDBY'}
+                      {t('status.standby', language)}
                     </span>
                   )}
                 </div>
@@ -231,7 +231,7 @@ export function ConfigStatusGrid({
                     <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px] font-mono">
                       <span className={`rounded border px-1.5 py-0.5 ${stateMeta.className}`}>
                         {isExchangeAccountStatesLoading && !state
-                          ? (language === 'zh' ? 'CHECKING...' : 'CHECKING...')
+                          ? (t('status.checking', language))
                           : stateMeta.label}
                       </span>
                       {state?.status !== 'ok' && state?.error_message ? (
@@ -281,7 +281,7 @@ export function ConfigStatusGrid({
                     </span>
                   ) : (
                     <span className="text-[10px] font-mono text-nofx-text-muted uppercase tracking-wider">
-                      {language === 'zh' ? 'STANDBY' : 'STANDBY'}
+                      {t('status.standby', language)}
                     </span>
                   )}
                 </div>

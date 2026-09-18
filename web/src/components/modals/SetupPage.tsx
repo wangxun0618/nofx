@@ -3,20 +3,21 @@ import { Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { invalidateSystemConfig } from '../../lib/config'
 import { useLanguage } from '../../contexts/LanguageContext'
+import { LanguageSwitcher } from '../common/LanguageSwitcher'
 
 const labels = {
   zh: {
-    welcome: 'Welcome to NOFX',
-    subtitle: 'Create your account to get started',
-    email: 'Email',
+    welcome: '欢迎使用 NOFX',
+    subtitle: '创建账户即可开始',
+    email: '邮箱',
     emailPlaceholder: 'you@example.com',
-    password: 'Password',
-    passwordPlaceholder: 'At least 8 characters',
-    passwordError: 'Password must be at least 8 characters',
-    submit: 'Get Started',
-    submitting: 'Creating account...',
-    setupFailed: 'Setup failed, please try again',
-    singleUser: 'Single-user system — this is the only account',
+    password: '密码',
+    passwordPlaceholder: '至少 8 个字符',
+    passwordError: '密码至少需要 8 个字符',
+    submit: '开始使用',
+    submitting: '正在创建账户…',
+    setupFailed: '初始化失败，请重试',
+    singleUser: '单用户系统 — 这是唯一的账户',
   },
   en: {
     welcome: 'Welcome to NOFX',
@@ -30,19 +31,6 @@ const labels = {
     submitting: 'Creating account...',
     setupFailed: 'Setup failed, please try again',
     singleUser: 'Single-user system — this is the only account',
-  },
-  id: {
-    welcome: 'Selamat Datang di NOFX',
-    subtitle: 'Buat akun untuk memulai',
-    email: 'Email',
-    emailPlaceholder: 'you@example.com',
-    password: 'Kata Sandi',
-    passwordPlaceholder: 'Minimal 8 karakter',
-    passwordError: 'Kata sandi minimal 8 karakter',
-    submit: 'Mulai',
-    submitting: 'Membuat akun...',
-    setupFailed: 'Gagal membuat akun, coba lagi',
-    singleUser: 'Sistem pengguna tunggal — ini satu-satunya akun',
   },
 } as const
 
@@ -85,6 +73,7 @@ export function SetupPage() {
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-nofx-bg">
+      <LanguageSwitcher />
       {/* Decorative background - simulates the main app behind a modal */}
 
       {/* Grid */}

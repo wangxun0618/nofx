@@ -1,6 +1,8 @@
 import { api } from '../api'
 import type { AIModel, Exchange } from '../../types'
 
+import { tg } from '../../i18n/translations'
+
 export function modelHasCredential(model: AIModel) {
   return Boolean(
     model.has_api_key ||
@@ -105,32 +107,32 @@ export async function resolveLaunchExchange(): Promise<
     return {
       exchange: null,
       reason:
-        'No Hyperliquid account is connected. Connect Hyperliquid and authorize the NOFX agent first.',
+        tg('lib.noHyperliquidAccount'),
     }
   }
   if (!hyperliquid.enabled) {
     return {
       exchange: null,
-      reason: 'The Hyperliquid account is disabled. Enable it first.',
+      reason: tg('lib.hyperliquidDisabled'),
     }
   }
   if (!exchangeHasKey(hyperliquid)) {
     return {
       exchange: null,
       reason:
-        'The Hyperliquid agent key is missing. Reconnect Hyperliquid and save the agent wallet.',
+        tg('lib.hyperliquidAgentKeyMissing'),
     }
   }
   if (!hyperliquid.hyperliquidBuilderApproved) {
     return {
       exchange: null,
       reason:
-        'Hyperliquid builder authorization is not complete. Finish wallet authorization first.',
+        tg('lib.hyperliquidBuilderIncomplete'),
     }
   }
   return {
     exchange: null,
     reason:
-      'The Hyperliquid wallet address is missing. Reconnect Hyperliquid first.',
+      tg('lib.hyperliquidAddressMissing'),
   }
 }

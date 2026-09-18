@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { t } from '../../i18n/translations'
+import { LanguageSwitcher } from '../common/LanguageSwitcher'
 
 export function RegistrationDisabled() {
   const { language } = useLanguage()
@@ -12,13 +13,14 @@ export function RegistrationDisabled() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center"
+      className="relative min-h-screen flex items-center justify-center"
       style={{ background: '#F1ECE2', color: '#1A1813' }}
     >
+      <LanguageSwitcher />
       <div className="text-center max-w-md px-6">
         <img
           src="/icons/nofx.svg"
-          alt="NoFx Logo"
+          alt={t('auth.noFxLogo', language)}
           className="w-16 h-16 mx-auto mb-4"
         />
         <h1 className="text-2xl font-semibold mb-3">

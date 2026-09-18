@@ -182,7 +182,7 @@ export function ChartTabs({ traderId, selectedSymbol, updateKey, exchangeId }: C
           >
             <CandlestickChart className="w-3.5 h-3.5" />
             <span className="hidden md:inline">{t('marketChart', language)}</span>
-            <span className="md:hidden">Kline</span>
+            <span className="md:hidden">{t('chart.kline', language)}</span>
           </button>
 
           {/* Market Type Pills - Only when kline active, HIDDEN on mobile to save space */}
@@ -232,7 +232,7 @@ export function ChartTabs({ traderId, selectedSymbol, updateKey, exchangeId }: C
                             type="text"
                             value={searchFilter}
                             onChange={(e) => setSearchFilter(e.target.value)}
-                            placeholder="Search symbol..."
+                            placeholder={t('common.searchSymbol', language)}
                             className="flex-1 bg-transparent text-[11px] text-nofx-text placeholder-nofx-text-muted focus:outline-none font-mono"
                             autoFocus
                           />

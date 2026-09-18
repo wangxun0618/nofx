@@ -2,6 +2,8 @@ import { motion } from 'framer-motion'
 import { TrendingUp, Layers, Zap, Hexagon, Crosshair } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../contexts/AuthContext'
+import { t } from '../../../i18n/translations'
+import { useLanguage } from '../../../contexts/LanguageContext'
 
 const traderPresets = [
   {
@@ -9,7 +11,7 @@ const traderPresets = [
     // ... (rest of agents array remains, but I can't skip lines in replacement content easily without context. Wait, let's just replace the top section)
     // Actually, I'll use multi_replace for targeted cleanup.
     class: 'US_STOCKS',
-    desc: 'Large-cap momentum and breakout trading.',
+    descKey: 'landing2.agentLargeCap',
     apy: '142%',
     winRate: '68%',
     risk: 'HIGH',
@@ -21,7 +23,7 @@ const traderPresets = [
   {
     name: 'BETA-X',
     class: 'MACRO_FX',
-    desc: 'FX trend and macro regime allocation.',
+    descKey: 'landing2.agentFx',
     apy: '89%',
     winRate: '55%',
     risk: 'MED',
@@ -33,7 +35,7 @@ const traderPresets = [
   {
     name: 'GAMMA-RAY',
     class: 'PRE_IPO',
-    desc: 'Private-market momentum basket engine.',
+    descKey: 'landing2.agentPrivate',
     apy: '24%',
     winRate: '99%',
     risk: 'LOW',
@@ -45,6 +47,7 @@ const traderPresets = [
 ]
 
 export default function AgentGrid() {
+  const { language } = useLanguage()
   const { user } = useAuth()
   const navigate = useNavigate()
 
@@ -80,8 +83,7 @@ export default function AgentGrid() {
             </h2>
           </div>
           <div className="font-mono text-right text-xs text-nofx-text-muted max-w-xs">
-            CREATE TRADERS FOR US STOCKS, COMMODITIES, FX AND PRE-IPO MARKETS.
-            DESCRIBE THE STRATEGY IN ONE SENTENCE.
+            {t('landing2.agentGridPitch', language)}
           </div>
         </div>
 
@@ -124,7 +126,7 @@ export default function AgentGrid() {
                     {preset.name}
                   </h3>
                   <p className="text-nofx-text-muted text-sm mb-8 leading-relaxed h-10">
-                    {preset.desc}
+                    {t(preset.descKey, language)}
                   </p>
 
                   {/* Stats Grid */}
@@ -139,7 +141,7 @@ export default function AgentGrid() {
                     </div>
                     <div className="bg-nofx-bg-deeper p-3 text-center group-hover:bg-nofx-bg transition-colors">
                       <div className="text-[10px] text-nofx-text-muted uppercase font-mono mb-1">
-                        Win %
+                        {t('landing2.winRateShort', language)}
                       </div>
                       <div className="text-nofx-text font-bold">
                         {preset.winRate}

@@ -7,6 +7,8 @@ import { getPostAuthPath, setUserMode, type UserMode } from '../lib/onboarding'
 import { ROUTES } from '../router/paths'
 import { useLanguage } from './LanguageContext'
 
+import { tg } from '../i18n/translations'
+
 interface User {
   id: string
   email: string
@@ -145,7 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Unexpected success response
         return {
           success: false,
-          message: data.message || 'Unexpected login response',
+          message: data.message || tg('lib.unexpectedLoginResponse'),
         }
       } else {
         return {
@@ -154,7 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     } catch (error) {
-      return { success: false, message: 'Login failed, please try again' }
+      return { success: false, message: tg('lib.loginFailedRetry') }
     }
   }
 
@@ -192,10 +194,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         return { success: true }
       } else {
-        return { success: false, message: data.error || 'Login failed' }
+        return { success: false, message: data.error || tg('lib.loginFailed') }
       }
     } catch (e) {
-      return { success: false, message: 'Login failed, please try again' }
+      return { success: false, message: tg('lib.loginFailedRetry') }
     }
   }
 
@@ -240,7 +242,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Only business errors reach here (system/network errors were intercepted)
       return {
         success: false,
-        message: result.message || 'Registration failed',
+        message: result.message || tg('lib.registrationFailed'),
       }
     } catch (error) {
       console.error('Auth register error:', error)
@@ -250,7 +252,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return {
         success: false,
         message:
-          error instanceof Error ? error.message : 'Detailed server error',
+          error instanceof Error ? error.message : tg('lib.detailedServerError'),
       }
     }
   }

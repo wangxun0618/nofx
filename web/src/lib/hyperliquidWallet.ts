@@ -1,3 +1,5 @@
+import { tg } from '../i18n/translations'
+
 /**
  * Shared helpers for Hyperliquid wallet flows: injected EVM provider
  * discovery, EIP-712 typed-data construction for Hyperliquid user-signed
@@ -60,7 +62,7 @@ export function getWalletProviderName(provider: WalletProvider) {
   if (provider.isTrust) return 'Trust Wallet'
   if (provider.isExodus) return 'Exodus'
   if (provider.isFrame) return 'Frame'
-  return 'Browser wallet'
+  return tg('lib.browserWallet')
 }
 
 /**
@@ -184,7 +186,7 @@ export function getWalletErrorMessage(error: unknown, fallback: string) {
       if (record[key]) queue.push(record[key])
     }
     if (record.code === 4001 || record.code === 'ACTION_REJECTED') {
-      return 'The wallet request was rejected.'
+      return tg('lib.walletRequestRejected')
     }
   }
 
@@ -211,7 +213,7 @@ export function formatUSDC(value?: number) {
 export function splitSignature(signature: string) {
   const hex = signature.startsWith('0x') ? signature.slice(2) : signature
   if (hex.length !== 130) {
-    throw new Error('Invalid wallet signature length')
+    throw new Error(tg('lib.invalidSignatureLength'))
   }
   const v = parseInt(hex.slice(128, 130), 16)
   return {
@@ -235,7 +237,7 @@ export async function getWalletChainIdHex(
   const raw = await provider.request({ method: 'eth_chainId' })
   const hex = typeof raw === 'string' ? raw.toLowerCase() : ''
   if (!/^0x[0-9a-f]{1,16}$/.test(hex)) {
-    throw new Error('Wallet returned an invalid chain id')
+    throw new Error(tg('lib.invalidChainId'))
   }
   return hex
 }
@@ -299,7 +301,7 @@ export async function signHyperliquidUserAction(
     params: [signerAddress, JSON.stringify(typedData)],
   })
   if (typeof raw !== 'string') {
-    throw new Error('Wallet returned an invalid signature')
+    throw new Error(tg('lib.invalidSignature'))
   }
   return { action: signedAction, signature: splitSignature(raw) }
 }

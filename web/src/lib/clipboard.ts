@@ -1,9 +1,10 @@
 import { notify } from './notify'
+import { tg } from '../i18n/translations'
 
 /**
  * Copy text to clipboard and show a toast notification.
  */
-export async function copyWithToast(text: string, successMsg = 'Copied') {
+export async function copyWithToast(text: string, successMsg?: string) {
   try {
     if (navigator?.clipboard?.writeText) {
       await navigator.clipboard.writeText(text)
@@ -18,11 +19,11 @@ export async function copyWithToast(text: string, successMsg = 'Copied') {
       document.execCommand('copy')
       document.body.removeChild(el)
     }
-    notify.success(successMsg)
+    notify.success(successMsg ?? tg('lib.copied'))
     return true
   } catch (err) {
     console.error('Clipboard copy failed:', err)
-    notify.error('Copy failed')
+    notify.error(tg('lib.copyFailed'))
     return false
   }
 }

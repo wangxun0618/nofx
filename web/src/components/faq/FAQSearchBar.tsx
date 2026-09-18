@@ -1,4 +1,6 @@
 import { Search, X } from 'lucide-react'
+import { t } from '../../i18n/translations'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 interface FAQSearchBarProps {
   searchTerm: string
@@ -9,8 +11,10 @@ interface FAQSearchBarProps {
 export function FAQSearchBar({
   searchTerm,
   onSearchChange,
-  placeholder = 'Search FAQ...',
+  placeholder,
 }: FAQSearchBarProps) {
+  const { language } = useLanguage()
+  const ph = placeholder ?? t('faq.searchPlaceholder', language)
   return (
     <div className="relative group">
       <Search
@@ -20,7 +24,7 @@ export function FAQSearchBar({
         type="text"
         value={searchTerm}
         onChange={(e) => onSearchChange(e.target.value)}
-        placeholder={placeholder}
+        placeholder={ph}
         className="w-full pl-12 pr-12 py-3 rounded-lg text-base transition-all focus:outline-none bg-nofx-bg-lighter border border-[rgba(26,24,19,0.14)] text-nofx-text placeholder-nofx-text-muted/50 focus:border-nofx-gold/50 focus:ring-1 focus:ring-nofx-gold/20 hover:border-nofx-gold/30 font-mono"
       />
       {searchTerm && (

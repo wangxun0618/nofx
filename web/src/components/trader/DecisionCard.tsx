@@ -64,7 +64,7 @@ function ActionCard({ action, language, onSymbolClick }: { action: DecisionActio
             className="font-mono font-bold text-lg cursor-pointer transition-all duration-200 hover:scale-110"
             style={{ color: '#1A1813' }}
             onClick={() => onSymbolClick?.(action.symbol)}
-            title="Click to view chart"
+            title={t('chart.viewChart', language)}
           >
             {action.symbol.replace('USDT', '')}
           </span>
@@ -225,7 +225,7 @@ export function DecisionCard({ decision, language, onSymbolClick }: DecisionCard
   const copyToClipboard = async (text: string, label: string) => {
     try {
       await navigator.clipboard.writeText(text)
-      alert(`${label} copied!`)
+      alert(t('decision.copied', language, { label }))
     } catch (err) {
       console.error('Failed to copy:', err)
     }
@@ -310,11 +310,11 @@ export function DecisionCard({ decision, language, onSymbolClick }: DecisionCard
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
-                    copyToClipboard(decision.system_prompt, 'System Prompt')
+                    copyToClipboard(decision.system_prompt, t('decision.systemPrompt', language))
                   }}
                   className="text-xs px-2.5 py-1 rounded hover:opacity-80 transition-opacity flex items-center gap-1"
                   style={{ background: 'rgba(224, 72, 59, 0.2)', color: '#E0483B', border: '1px solid rgba(224, 72, 59, 0.3)' }}
-                  title="Copy to clipboard"
+                  title={t('common.copyToClipboard', language)}
                 >
                   <span>📋</span>
                 </button>
@@ -325,7 +325,7 @@ export function DecisionCard({ decision, language, onSymbolClick }: DecisionCard
                   }}
                   className="text-xs px-2.5 py-1 rounded hover:opacity-80 transition-opacity flex items-center gap-1"
                   style={{ background: 'rgba(224, 72, 59, 0.2)', color: '#E0483B', border: '1px solid rgba(224, 72, 59, 0.3)' }}
-                  title="Download as file"
+                  title={t('common.downloadAsFile', language)}
                 >
                   <span>💾</span>
                 </button>
@@ -369,11 +369,11 @@ export function DecisionCard({ decision, language, onSymbolClick }: DecisionCard
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
-                    copyToClipboard(decision.input_prompt, 'User Prompt')
+                    copyToClipboard(decision.input_prompt, t('decision.userPrompt', language))
                   }}
                   className="text-xs px-2.5 py-1 rounded hover:opacity-80 transition-opacity flex items-center gap-1"
                   style={{ background: 'rgba(224, 72, 59, 0.2)', color: '#E0483B', border: '1px solid rgba(224, 72, 59, 0.3)' }}
-                  title="Copy to clipboard"
+                  title={t('common.copyToClipboard', language)}
                 >
                   <span>📋</span>
                 </button>
@@ -384,7 +384,7 @@ export function DecisionCard({ decision, language, onSymbolClick }: DecisionCard
                   }}
                   className="text-xs px-2.5 py-1 rounded hover:opacity-80 transition-opacity flex items-center gap-1"
                   style={{ background: 'rgba(224, 72, 59, 0.2)', color: '#E0483B', border: '1px solid rgba(224, 72, 59, 0.3)' }}
-                  title="Download as file"
+                  title={t('common.downloadAsFile', language)}
                 >
                   <span>💾</span>
                 </button>

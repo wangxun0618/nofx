@@ -117,7 +117,7 @@ export function ChartWithOrders({
       const result = await httpClient.request(klineUrl, { silent: true })
 
       if (!result.success || !result.data) {
-        throw new Error('Failed to fetch kline data from our service')
+        throw new Error(t('chart.errFetchKlineOurs', language))
       }
 
       const data = result.data
@@ -298,7 +298,7 @@ export function ChartWithOrders({
       }
     } catch (err) {
       console.error('[ChartWithOrders] Failed to initialize chart:', err)
-      setError('Failed to initialize chart')
+      setError(t('chart.errInitChart', language))
     }
   }, [height])
 

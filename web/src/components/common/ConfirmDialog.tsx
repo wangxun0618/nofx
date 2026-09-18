@@ -15,6 +15,8 @@ import {
   AlertDialogTitle,
 } from '../ui/alert-dialog'
 import { setGlobalConfirm } from '../../lib/notify'
+import { t } from '../../i18n/translations'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 interface ConfirmOptions {
   title?: string
@@ -55,11 +57,12 @@ export function ConfirmDialogProvider({
 }: {
   children: React.ReactNode
 }) {
+  const { language } = useLanguage()
   const [state, setState] = useState<ConfirmState>({
     isOpen: false,
     message: '',
-    okText: 'Confirm',
-    cancelText: 'Cancel',
+    okText: t('common.confirm', language),
+    cancelText: t('common.cancel', language),
   })
 
   const confirm = useCallback((options: ConfirmOptions): Promise<boolean> => {
@@ -68,8 +71,8 @@ export function ConfirmDialogProvider({
         isOpen: true,
         title: options.title,
         message: options.message,
-        okText: options.okText || 'Confirm',
-        cancelText: options.cancelText || 'Cancel',
+        okText: options.okText || t('common.confirm', language),
+        cancelText: options.cancelText || t('common.cancel', language),
         resolve,
       })
     })

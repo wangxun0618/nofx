@@ -1,50 +1,56 @@
 import { motion } from 'framer-motion'
 import { Terminal, Cpu, Share2, Shield, Activity, Code } from 'lucide-react'
+import { t } from '../../../i18n/translations'
+import { useLanguage } from '../../../contexts/LanguageContext'
 
 const features = [
     {
         icon: Terminal,
-        title: "AI DRIVEN",
-        description: "Powered by advanced LLMs (Claude, GPT-4, DeepSeek) to analyze market sentiment and technicals in real-time."
+        titleKey: 'landing2.featureAiDriven',
+        descKey: 'landing2.featureAiDrivenDesc',
     },
     {
         icon: Cpu,
-        title: "AUTONOMOUS",
-        description: "Fully automated trading loops. From data ingestion to order execution without human intervention."
+        titleKey: 'landing2.featureAutonomous',
+        descKey: 'landing2.featureAutonomousDesc',
     },
     {
         icon: Share2,
-        title: "PUNK SOCIAL",
-        description: "Follow and copy AI traders. A social layer built for the post-human economy."
+        titleKey: 'landing2.featurePunkSocial',
+        descKey: 'landing2.featurePunkSocialDesc',
     },
     {
         icon: Shield,
-        title: "NON-CUSTODIAL",
-        description: "Your funds, your keys. Connect via API keys or decentralized wallets. We never touch your assets."
+        titleKey: 'landing2.featureNonCustodial',
+        descKey: 'landing2.featureNonCustodialDesc',
     },
     {
         icon: Activity,
-        title: "HIGH FREQUENCY",
-        description: "Event-driven architecture capable of processing thousands of market signals per second."
+        titleKey: 'landing2.featureHighFrequency',
+        descKey: 'landing2.featureHighFrequencyDesc',
     },
     {
         icon: Code,
-        title: "OPEN SOURCE",
-        description: "Auditable codebase. Community driven strategies. Build your own trader upon our core."
+        titleKey: 'landing2.featureOpenSource',
+        descKey: 'landing2.featureOpenSourceDesc',
     }
 ]
 
 export default function BrandFeatures() {
+    const { language } = useLanguage()
     return (
         <section id="features" className="py-24 bg-nofx-bg relative">
             <div className="max-w-[1920px] mx-auto px-6 lg:px-16">
 
                 <div className="mb-16 border-l-4 border-nofx-gold pl-6">
                     <h2 className="text-4xl md:text-5xl font-black text-nofx-text uppercase tracking-tighter mb-4">
-                        Core Protocol <span className="text-nofx-text-muted">Specs</span>
+                        {t('landing2.coreProtocol', language)}{' '}
+                        <span className="text-nofx-text-muted">
+                            {t('landing2.specs', language)}
+                        </span>
                     </h2>
                     <p className="text-xl text-nofx-text-muted font-mono">
-                        Next generation infrastructure for algorithmic dominance.
+                        {t('landing2.specsSubtitle', language)}
                     </p>
                 </div>
 
@@ -65,11 +71,11 @@ export default function BrandFeatures() {
                             <f.icon className="w-10 h-10 text-nofx-gold mb-6" />
 
                             <h3 className="text-xl font-bold text-nofx-text mb-3 uppercase flex items-center gap-2">
-                                {f.title}
+                                {t(f.titleKey, language)}
                             </h3>
 
                             <p className="text-nofx-text-muted leading-relaxed text-sm md:text-base">
-                                {f.description}
+                                {t(f.descKey, language)}
                             </p>
 
                             <div className="absolute bottom-0 left-0 w-full h-1 bg-nofx-gold transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300" />

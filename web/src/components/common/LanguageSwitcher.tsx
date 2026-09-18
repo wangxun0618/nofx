@@ -1,31 +1,56 @@
 import { Globe } from 'lucide-react'
 import { useLanguage } from '../../contexts/LanguageContext'
-import type { Language } from '../../i18n/translations'
+import { t, type Language } from '../../i18n/translations'
 
-const languages: { code: Language; label: string }[] = [
-  { code: 'zh', label: 'Chinese' },
-  { code: 'en', label: 'EN' },
-  { code: 'id', label: 'ID' },
+const LANGUAGES: { code: Language; labelKey: string }[] = [
+  { code: 'zh', labelKey: 'lang.zh' },
+  { code: 'en', labelKey: 'lang.en' },
 ]
 
-export function LanguageSwitcher() {
+interface LanguageSwitcherProps {
+  /**
+   * `overlay` floats at the top-right of pages without a header bar
+   * (landing / login / register). `inline` sits inside a header bar.
+   */
+  variant?: 'overlay' | 'inline'
+  className?: string
+}
+
+export function LanguageSwitcher({
+  variant = 'overlay',
+  className = '',
+}: LanguageSwitcherProps) {
   const { language, setLanguage } = useLanguage()
 
+  const shell =
+    variant === 'overlay'
+      ? 'absolute top-4 right-4 z-50 border border-[rgba(26,24,19,0.14)] bg-nofx-bg-lighter'
+      : 'border border-[rgba(26,24,19,0.14)] bg-nofx-bg-deeper'
+
   return (
-    <div className="absolute top-4 right-4 z-50 flex items-center gap-1 rounded-lg p-1 border border-[rgba(26,24,19,0.14)] bg-nofx-bg-lighter backdrop-blur-sm">
-      <Globe size={14} className="text-nofx-text-muted ml-1.5 mr-0.5" />
-      {languages.map(({ code, label }) => (
+    <div
+      role="group"
+      aria-label={t('lang.label', language)}
+      className={`flex items-center gap-0.5 rounded-lg p-0.5 backdrop-blur-sm ${shell} ${className}`}
+    >
+      <Globe
+        size={13}
+        className="ml-1.5 mr-0.5 shrink-0 text-nofx-text-muted"
+        aria-hidden="true"
+      />
+      {LANGUAGES.map(({ code, labelKey }) => (
         <button
           key={code}
           type="button"
           onClick={() => setLanguage(code)}
-          className={`px-2.5 py-1 rounded text-xs font-semibold transition-all ${
+          aria-pressed={language === code}
+          className={`whitespace-nowrap rounded px-2 py-1 text-xs font-semibold transition-all ${
             language === code
               ? 'bg-nofx-gold/15 text-nofx-gold'
-              : 'text-nofx-text-muted hover:text-nofx-text bg-transparent'
+              : 'bg-transparent text-nofx-text-muted hover:text-nofx-text'
           }`}
         >
-          {label}
+          {t(labelKey, language)}
         </button>
       ))}
     </div>

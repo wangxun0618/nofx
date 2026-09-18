@@ -1,6 +1,8 @@
 import { CryptoService } from '../crypto'
 import { httpClient } from '../httpClient'
 
+import { tg } from '../../i18n/translations'
+
 export const API_BASE = '/api'
 
 export { CryptoService, httpClient }
@@ -31,7 +33,7 @@ export async function handleJSONResponse<T>(res: Response): Promise<T> {
     } catch {
       /* ignore JSON parse errors */
     }
-    throw new Error(message || 'Request failed')
+    throw new Error(message || tg('lib.requestFailed'))
   }
   if (!text) {
     return {} as T

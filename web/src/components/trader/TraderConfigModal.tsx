@@ -379,17 +379,17 @@ export function TraderConfigModal({
                   </div>
                   <p className="text-sm text-nofx-text-muted mb-2">
                     {selectedStrategy.description ||
-                      (language === 'zh' ? 'No description' : 'No description')}
+                      (t('common.noDescription', language))}
                   </p>
                   {selectedStrategy.config.strategy_type === 'grid_trading' &&
                   selectedStrategy.config.grid_config ? (
                     <div className="grid grid-cols-2 gap-2 text-xs text-nofx-text-muted">
                       <div>
-                        {language === 'zh' ? 'Symbol' : 'Symbol'}:{' '}
+                        {t('common.symbol', language)}:{' '}
                         {selectedStrategy.config.grid_config.symbol || '-'}
                       </div>
                       <div>
-                        {language === 'zh' ? 'Grids' : 'Grids'}:{' '}
+                        {t('common.grids', language)}:{' '}
                         {selectedStrategy.config.grid_config.grid_count}
                       </div>
                     </div>
@@ -402,38 +402,28 @@ export function TraderConfigModal({
                           <div>
                             {t('coinSource', language)}:{' '}
                             {aiConfig.coin_source.source_type === 'static'
-                              ? language === 'zh'
-                                ? 'Fixed US stocks'
-                                : 'Fixed US stocks'
+                              ? t('traderCfg.fixedUsStocks', language)
                               : aiConfig.coin_source.source_type ===
                                   'vergex_signal'
-                                ? language === 'zh'
-                                  ? 'Vergex signal board'
-                                  : 'Vergex signal board'
+                                ? t('traderCfg.vergexSignalBoard', language)
                                 : aiConfig.coin_source.source_type ===
                                     'hyper_rank'
-                                  ? language === 'zh'
-                                    ? 'Claw402 board'
-                                    : 'Claw402 board'
+                                  ? t('traderCfg.claw402Board', language)
                                   : aiConfig.coin_source.source_type ===
                                       'hyper_all'
-                                    ? language === 'zh'
-                                      ? 'Hyperliquid all markets'
-                                      : 'Hyperliquid all markets'
+                                    ? t('traderCfg.hlAllMarkets', language)
                                     : aiConfig.coin_source.source_type ===
                                         'hyper_main'
-                                      ? language === 'zh'
-                                        ? 'Hyperliquid main markets'
-                                        : 'Hyperliquid main markets'
+                                      ? t('traderCfg.hlMainMarkets', language)
                                       : aiConfig.coin_source.source_type ===
                                           'ai500'
                                         ? 'AI500'
                                         : aiConfig.coin_source.source_type ===
                                             'oi_top'
-                                          ? 'OI Top'
+                                          ? t('traderCfg.oiTop', language)
                                           : aiConfig.coin_source.source_type ===
                                               'oi_low'
-                                            ? 'OI Low'
+                                            ? t('traderCfg.oiLow', language)
                                             : '-'}
                           </div>
                           <div>

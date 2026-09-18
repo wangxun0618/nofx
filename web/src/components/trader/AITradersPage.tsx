@@ -680,7 +680,7 @@ export function AITradersPage({ onTraderSelect }: AITradersPageProps) {
         .getElementById('autopilot-launch-panel')
         ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       toast.info(
-        'Deposit USDC to your Hyperliquid account, the balance check updates automatically.'
+        t('autopilot.depositHyperliquid', language)
       )
     } else {
       return
@@ -743,7 +743,7 @@ export function AITradersPage({ onTraderSelect }: AITradersPageProps) {
             >
               <div className="flex items-center gap-2">
                 <Plus className="w-3 h-3" />
-                <span>MODELS_CONFIG</span>
+                <span>{t('terminal.modelsConfig', language)}</span>
               </div>
             </button>
 
@@ -753,7 +753,7 @@ export function AITradersPage({ onTraderSelect }: AITradersPageProps) {
             >
               <div className="flex items-center gap-2">
                 <Plus className="w-3 h-3" />
-                <span>EXCHANGE_KEYS</span>
+                <span>{t('terminal.exchangeKeys', language)}</span>
               </div>
             </button>
 
@@ -763,7 +763,7 @@ export function AITradersPage({ onTraderSelect }: AITradersPageProps) {
             >
               <div className="flex items-center gap-2">
                 <MessageCircle className="w-3 h-3" />
-                <span>TELEGRAM_BOT</span>
+                <span>{t('terminal.telegramBot', language)}</span>
               </div>
             </button>
 

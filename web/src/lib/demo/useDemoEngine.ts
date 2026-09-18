@@ -20,6 +20,7 @@ import {
   DEMO_ACTIVE_SYMBOL,
   demoSeedPrice,
 } from './demoUniverse'
+import { tg } from '../../i18n/translations'
 
 /**
  * useDemoEngine — a client-side showcase data generator. When `active`, it
@@ -426,7 +427,7 @@ function build(S: SimState): DemoDataset {
       price: p.mark,
       confidence: Math.round(rnd(62, 88)),
       reasoning:
-        'The live direction board is unchanged; cost/liq structure supports the level.',
+        tg('demo.noteBoardUnchanged'),
       timestamp: new Date(S.decisionTs - k * 300_000).toISOString(),
     }))
     return {
@@ -435,7 +436,7 @@ function build(S: SimState): DemoDataset {
       system_prompt: '',
       input_prompt: '',
       cot_trace:
-        'US-equity tape is broadly bid: SP500 and semis (NVDA, MU, TSM) remain bullish on the live direction board. Positions stay open until the board changes.',
+        tg('demo.noteUsEquityBid'),
       decision_json: '',
       account_state: {} as never,
       positions: [],

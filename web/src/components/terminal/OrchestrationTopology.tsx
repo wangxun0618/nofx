@@ -1,4 +1,6 @@
 import { useMemo } from 'react'
+import { t } from '../../i18n/translations'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 /**
  * OrchestrationTopology renders the decision funnel as a chain of tightly-packed
@@ -16,7 +18,6 @@ export interface FunnelItem {
 export interface FunnelLayer {
   key: string
   title: string
-  zh: string
   items: FunnelItem[]
 }
 interface OrchestrationTopologyProps {
@@ -86,6 +87,7 @@ function splitDedup(items: FunnelItem[]) {
 }
 
 export function OrchestrationTopology({ layers, className }: OrchestrationTopologyProps) {
+  const { language } = useLanguage()
   const { prepared, cellsByLayer, realByLayer, height, cy, colX } = useMemo(() => {
     const prep = layers.map((l) => ({ ...l, ...splitDedup(l.items) }))
     const xs = prep.map((_, i) => LAYER_START + i * LAYER_STEP)
@@ -158,7 +160,7 @@ export function OrchestrationTopology({ layers, className }: OrchestrationTopolo
 
   return (
     <svg width="100%" viewBox={`0 0 ${VB_W} ${height}`} role="img"
-      aria-label="Decision funnel matrix: flow, signal, decision, execute, hold"
+      aria-label={t('terminal.funnelMatrixAria', language)}
       className={className} style={{ display: 'block' }}>
 
       {prepared.map((d, li) => (

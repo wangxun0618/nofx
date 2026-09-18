@@ -1,7 +1,8 @@
 import { Brain, Landmark, Rocket, Sparkles } from 'lucide-react'
+import { t, type Language } from '../../i18n/translations'
 
 interface BeginnerGuideCardsProps {
-  language: string
+  language: Language
   claw402Ready: boolean
   exchangeReady: boolean
   strategyReady: boolean
@@ -38,98 +39,62 @@ export function BeginnerGuideCards({
     {
       key: 'model',
       icon: Brain,
-      title: isZh ? '1. Fast AI' : '1. Fast AI',
-      desc: isZh
-        ? 'Start with Claw402 + DeepSeek. No model picking needed for the first run.'
-        : 'Start with Claw402 + DeepSeek. No model picking needed for the first run.',
+      title: t('onboarding.step1Title', language),
+      desc: t('onboarding.step1Desc', language),
       meta: walletAddress
         ? isZh
           ? `Wallet ${truncateAddress(walletAddress)}`
           : `Wallet ${truncateAddress(walletAddress)}`
-        : isZh
-          ? 'Pay per call with Base USDC'
-          : 'Pay per call with Base USDC',
+        : t('onboarding.payPerCall', language),
       ready: claw402Ready,
       actionLabel: claw402Ready
-        ? isZh
-          ? 'Configured'
-          : 'Configured'
-        : isZh
-          ? 'One-click setup'
-          : 'One-click setup',
+        ? t('status.configured', language)
+        : t('onboarding.oneClickSetup', language),
       onAction: onQuickSetupClaw402,
       disabled: claw402Ready,
     },
     {
       key: 'exchange',
       icon: Landmark,
-      title: isZh ? '2. Add Exchange' : '2. Add Exchange',
-      desc: isZh
-        ? 'Connect an exchange so the AI can actually place trades.'
-        : 'Connect an exchange so the AI can actually place trades.',
+      title: t('onboarding.step2Title', language),
+      desc: t('onboarding.step2Desc', language),
       meta: exchangeReady
-        ? isZh
-          ? 'Ready'
-          : 'Ready'
-        : isZh
-          ? 'Binance / OKX / Bybit / Hyperliquid'
-          : 'Binance / OKX / Bybit / Hyperliquid',
+        ? t('status.ready', language)
+        : t('onboarding.exchangeOptions', language),
       ready: exchangeReady,
       actionLabel: exchangeReady
-        ? isZh
-          ? 'Manage'
-          : 'Manage'
-        : isZh
-          ? 'Configure'
-          : 'Configure',
+        ? t('status.manage', language)
+        : t('status.configure', language),
       onAction: onOpenExchange,
       disabled: false,
     },
     {
       key: 'strategy',
       icon: Sparkles,
-      title: isZh ? '3. Pick Strategy' : '3. Pick Strategy',
-      desc: isZh
-        ? 'You can start with a default strategy and fine-tune later.'
-        : 'You can start with a default strategy and fine-tune later.',
+      title: t('onboarding.step3Title', language),
+      desc: t('onboarding.step3Desc', language),
       meta: strategyReady
-        ? isZh
-          ? 'Strategy ready'
-          : 'Strategy ready'
-        : isZh
-          ? 'Optional, but worth a quick look'
-          : 'Optional, but worth a quick look',
+        ? t('onboarding.strategyReady', language)
+        : t('onboarding.optionalWorthLook', language),
       ready: strategyReady,
-      actionLabel: isZh ? 'Open strategy' : 'Open strategy',
+      actionLabel: t('onboarding.openStrategy', language),
       onAction: onOpenStrategy,
       disabled: false,
     },
     {
       key: 'trader',
       icon: Rocket,
-      title: isZh ? '4. Create Trader' : '4. Create Trader',
-      desc: isZh
-        ? 'Last step: bind your model and exchange, then start running.'
-        : 'Last step: bind your model and exchange, then start running.',
+      title: t('onboarding.step4Title', language),
+      desc: t('onboarding.step4Desc', language),
       meta: traderReady
-        ? isZh
-          ? 'Trader created, you can add more'
-          : 'Trader created, you can add more'
+        ? t('onboarding.traderCreated', language)
         : canCreateTrader
-          ? isZh
-            ? 'Ready to create'
-            : 'Ready to create'
-        : isZh
-          ? 'Finish the first three steps first'
-          : 'Finish the first three steps first',
+          ? t('onboarding.readyToCreate', language)
+        : t('onboarding.finishFirstThree', language),
       ready: traderReady,
       actionLabel: traderReady
-        ? isZh
-          ? 'Create another'
-          : 'Create another'
-        : isZh
-          ? 'Create now'
-          : 'Create now',
+        ? t('onboarding.createAnother', language)
+        : t('onboarding.createNow', language),
       onAction: onCreateTrader,
       disabled: !canCreateTrader,
     },
@@ -140,16 +105,14 @@ export function BeginnerGuideCards({
       <div className="flex items-center justify-between gap-4">
         <div>
           <div className="text-xs font-semibold uppercase tracking-[0.3em] text-nofx-gold/80">
-            {isZh ? 'Quickstart' : 'Quickstart'}
+            {t('onboarding.quickstart', language)}
           </div>
           <h2 className="mt-1 text-xl font-bold text-nofx-text">
-            {isZh
-              ? 'Follow these 4 steps to get started fast'
-              : 'Follow these 4 steps to get started fast'}
+            {t('onboarding.followSteps', language)}
           </h2>
         </div>
         {/* <div className="rounded-full border border-nofx-gold/20 bg-nofx-bg-deeper px-3 py-1 text-xs text-nofx-text-muted">
-          {isZh ? 'Hidden in advanced mode' : 'Hidden in advanced mode'}
+          Hidden in advanced mode
         </div> */}
       </div>
 
@@ -173,12 +136,8 @@ export function BeginnerGuideCards({
                   }`}
                 >
                   {card.ready
-                    ? isZh
-                      ? 'Ready'
-                      : 'Ready'
-                    : isZh
-                      ? 'Pending'
-                      : 'Pending'}
+                    ? t('status.ready', language)
+                    : t('status.pending', language)}
                 </span>
               </div>
 

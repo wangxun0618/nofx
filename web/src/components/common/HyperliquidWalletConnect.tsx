@@ -29,6 +29,7 @@ import {
   subscribeWalletProviders,
   type WalletProvider,
 } from '../../lib/hyperliquidWallet'
+import { t } from '../../i18n/translations'
 
 interface HyperliquidWalletConnectProps {
   language: Language
@@ -71,10 +72,10 @@ const HYPERLIQUID_BUILDER_ADDRESS = '0x891dc6f05ad47a3c1a05da55e7a7517971faaf0d'
 // this exact string when approving the builder during wallet connect.
 const HYPERLIQUID_BUILDER_MAX_FEE = '0.05%'
 
-function copy(text: string, label: string) {
+function copy(text: string, successKey: string, language: Language) {
   navigator.clipboard?.writeText(text).then(
-    () => toast.success(`${label} copied`),
-    () => toast.error('Copy failed')
+    () => toast.success(t(successKey, language)),
+    () => toast.error(t('hlw.copyFailed', language))
   )
 }
 
@@ -148,66 +149,46 @@ export function HyperliquidWalletConnect({
     useState<ServerReadyProof | null>(null)
   const text = useMemo(
     () => ({
-      title: language === 'zh' ? 'Hyperliquid Wallet' : 'Hyperliquid Wallet',
+      title: t('hlw.title', language),
       connect:
-        language === 'zh' ? 'Connect Hyperliquid' : 'Connect Hyperliquid',
-      connected: language === 'zh' ? 'Connected' : 'Connected',
+        t('hlw.connect', language),
+      connected: t('hlw.connected', language),
       mainWallet:
-        language === 'zh' ? 'Connect your wallet' : 'Connect your wallet',
+        t('hlw.connectWallet', language),
       generateAgent:
-        language === 'zh'
-          ? 'Create a trading key for NOFX'
-          : 'Create a trading key for NOFX',
+        t('hlw.createKey', language),
       approveAgent:
-        language === 'zh'
-          ? 'Approve it in your wallet (trade-only, cannot withdraw)'
-          : 'Approve it in your wallet (trade-only, cannot withdraw)',
+        t('hlw.approveInWallet', language),
       approveBuilder:
-        language === 'zh'
-          ? 'Approve the small per-trade builder fee'
-          : 'Approve the small per-trade builder fee',
-      save: language === 'zh' ? 'Save to NOFX — done' : 'Save to NOFX — done',
+        t('hlw.approveBuilderFee', language),
+      save: t('hlw.save', language),
       done:
-        language === 'zh'
-          ? 'All set — trading authorized'
-          : 'All set — trading authorized',
+        t('hlw.done', language),
       balance:
-        language === 'zh' ? 'Hyperliquid balance' : 'Hyperliquid balance',
-      withdrawable: language === 'zh' ? 'Withdrawable' : 'Withdrawable',
-      equity: language === 'zh' ? 'Equity' : 'Equity',
-      marginUsed: language === 'zh' ? 'Margin used' : 'Margin used',
-      unrealizedPnl: language === 'zh' ? 'Unrealized PnL' : 'Unrealized PnL',
-      refresh: language === 'zh' ? 'Refresh' : 'Refresh',
+        t('hlw.balance', language),
+      withdrawable: t('hlw.withdrawable', language),
+      equity: t('hlw.equity', language),
+      marginUsed: t('hlw.marginUsed', language),
+      unrealizedPnl: t('hlw.unrealizedPnl', language),
+      refresh: t('common.refresh', language),
       noCustody:
-        language === 'zh'
-          ? 'Funds stay in your Hyperliquid account; NOFX only stores the authorized agent wallet.'
-          : 'Funds stay in your Hyperliquid account; NOFX only stores the authorized agent wallet.',
+        t('hlw.noCustody', language),
       agentExpiry:
-        language === 'zh'
-          ? 'Agent authorization expires'
-          : 'Agent authorization expires',
-      agentExpired: language === 'zh' ? 'Expired' : 'Expired',
+        t('hlw.agentExpiry', language),
+      agentExpired: t('hlw.expired', language),
       agentNoAuth:
-        language === 'zh'
-          ? 'No NOFX agent authorization found'
-          : 'No NOFX agent authorization found',
+        t('hlw.agentNoAuth', language),
       renewAgent:
-        language === 'zh'
-          ? 'Renew agent authorization (+180d)'
-          : 'Renew agent authorization (+180d)',
+        t('hlw.renewAgent', language),
       renewHint:
-        language === 'zh'
-          ? 'Hyperliquid forbids reusing an agent, so renewal creates a new agent approved for 180 days, then updates the stored key in NOFX (sign-in required).'
-          : 'Hyperliquid forbids reusing an agent, so renewal creates a new agent approved for 180 days, then updates the stored key in NOFX (sign-in required).',
+        t('hlw.renewHint', language),
       noWalletTitle:
-        language === 'zh' ? 'No EVM wallet detected' : 'No EVM wallet detected',
+        t('hlw.noWalletTitle', language),
       noWalletDetail:
-        language === 'zh'
-          ? 'Install Rabby or MetaMask, create or import a wallet, then return here to connect Hyperliquid.'
-          : 'Install Rabby or MetaMask, create or import a wallet, then return here to connect Hyperliquid.',
-      installRabby: language === 'zh' ? 'Install Rabby' : 'Install Rabby',
+        t('hlw.noWalletDetail', language),
+      installRabby: t('hlw.installRabby', language),
       installMetaMask:
-        language === 'zh' ? 'Install MetaMask' : 'Install MetaMask',
+        t('hlw.installMetaMask', language),
     }),
     [language]
   )
@@ -414,8 +395,8 @@ export function HyperliquidWalletConnect({
         setBalanceError('')
         setError(
           next
-            ? 'Wallet account changed. Review and restart authorization.'
-            : 'Wallet disconnected. Connect a wallet to continue.'
+            ? t('hlw.walletAccountChanged', language)
+            : t('hlw.walletDisconnected', language)
         )
       }
       provider.on?.('accountsChanged', handler)
@@ -536,7 +517,7 @@ export function HyperliquidWalletConnect({
       setBalanceError(
         err instanceof Error
           ? err.message
-          : 'Failed to load Hyperliquid balance'
+          : t('hlw.failedLoadBalance', language)
       )
     } finally {
       setBalanceLoading(false)
@@ -623,30 +604,30 @@ export function HyperliquidWalletConnect({
     ? state.mainWallet
     : serverReadyProof?.wallet || undefined
   const connectionProgress = [
-    { label: 'Wallet', done: Boolean(state.mainWallet) },
+    { label: t('hlw.progressWallet', language), done: Boolean(state.mainWallet) },
     {
-      label: 'Authorize',
+      label: t('hlw.progressAuthorize', language),
       done: Boolean(agentApprovedReady && builderReady),
     },
-    { label: 'Ready', done: complete },
+    { label: t('hlw.progressReady', language), done: complete },
   ]
   const currentPrompt = !state.mainWallet
-    ? 'Connect your wallet to begin'
+    ? t('hlw.connectToBegin', language)
     : !agentReady
-      ? 'Prepare secure trading access'
+      ? t('hlw.prepareAccess', language)
       : !agentApprovedReady
-        ? 'Approve trade-only access · 1 of 2'
+        ? t('hlw.approveTradeOnly1', language)
         : !builderReady
-          ? 'Finish authorization · 2 of 2'
+          ? t('hlw.finishAuth2', language)
           : !complete
-            ? 'Verify the saved connection'
-            : 'Hyperliquid is ready'
+            ? t('hlw.verifySavedConnection', language)
+            : t('hlw.hyperliquidReady', language)
 
   async function connectWallet() {
     setError('')
     const expectedWallet = serverReadyProof?.wallet || state.mainWallet
     if (walletProviders.length > 0 && !selectedWalletProvider) {
-      setError('Choose the wallet extension you want to connect.')
+      setError(t('hlw.chooseWalletExtension', language))
       return
     }
     const provider =
@@ -654,9 +635,7 @@ export function HyperliquidWalletConnect({
       (await getWalletProviderForAddress(expectedWallet))
     if (!provider) {
       setError(
-        language === 'zh'
-          ? 'No EVM wallet detected. Install MetaMask, Rabby, OKX or Coinbase Wallet.'
-          : 'No EVM wallet detected. Install MetaMask, Rabby, OKX or Coinbase Wallet.'
+        t('hlw.noWalletDetailShort', language)
       )
       return
     }
@@ -667,7 +646,7 @@ export function HyperliquidWalletConnect({
         Array.isArray(accounts) && typeof accounts[0] === 'string'
           ? accounts[0]
           : ''
-      if (!first) throw new Error('Wallet returned no account')
+      if (!first) throw new Error(t('hlw.noAccountReturned', language))
       const normalized = normalizeAddress(first)
       if (
         serverReadyProof?.wallet &&
@@ -676,7 +655,10 @@ export function HyperliquidWalletConnect({
         currentMainWalletRef.current = undefined
         setState({})
         throw new Error(
-          `Connected wallet ${shortAddress(normalized)} does not match the configured Hyperliquid account ${shortAddress(serverReadyProof.wallet)}. Switch the active account in your wallet extension and retry.`
+          t('hlw.walletMismatch', language, {
+            wallet: shortAddress(normalized),
+            expected: shortAddress(serverReadyProof.wallet),
+          })
         )
       }
       walletProviderRef.current = provider
@@ -720,10 +702,10 @@ export function HyperliquidWalletConnect({
         })
       }
     } catch (err) {
-      const message = getWalletErrorMessage(err, 'Wallet connection failed')
+      const message = getWalletErrorMessage(err, t('hlw.walletConnectionFailed', language))
       setError(
         /at least one account|no accounts?|account is required/i.test(message)
-          ? 'No account is available in this wallet. Create or import an account in the selected wallet, then try again.'
+          ? t('hlw.noAccountAvailable', language)
           : message
       )
     } finally {
@@ -745,10 +727,10 @@ export function HyperliquidWalletConnect({
         builderApproved: false,
         savedExchangeId: undefined,
       }))
-      toast.success('NOFX agent wallet generated')
+      toast.success(t('hlw.agentWalletGenerated', language))
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : 'Failed to generate agent wallet'
+        err instanceof Error ? err.message : t('hlw.failedGenerateAgent', language)
       )
     } finally {
       setBusy(false)
@@ -764,7 +746,8 @@ export function HyperliquidWalletConnect({
     const provider =
       walletProviderRef.current ||
       (await getWalletProviderForAddress(expectedWallet))
-    if (!provider || !expectedWallet) throw new Error('Wallet is not connected')
+    if (!provider || !expectedWallet)
+      throw new Error(t('hlw.walletNotConnected', language))
     walletProviderRef.current = provider
     assertCurrentWallet(expectedWallet)
     const { action: signedAction, signature } = await signHyperliquidUserAction(
@@ -788,9 +771,7 @@ export function HyperliquidWalletConnect({
       normalizeAddress(currentMainWalletRef.current || '') !==
       normalizeAddress(expectedWallet)
     ) {
-      throw new Error(
-        'Wallet account changed. Review and restart authorization.'
-      )
+      throw new Error(t('hlw.walletAccountChanged', language))
     }
   }
 
@@ -798,9 +779,7 @@ export function HyperliquidWalletConnect({
     try {
       await onSaved?.()
     } catch {
-      toast.error(
-        'Connection saved. Refresh the page to update dashboard data.'
-      )
+      toast.error(t('hlw.connectionSavedRefresh', language))
     }
   }
 
@@ -835,10 +814,10 @@ export function HyperliquidWalletConnect({
           ? { ...prev, agentApproved: true, savedExchangeId: undefined }
           : prev
       )
-      toast.success('Hyperliquid agent approved')
+      toast.success(t('hlw.agentApproved', language))
       void refreshAgentInfo()
     } catch (err) {
-      setError(getWalletErrorMessage(err, 'Agent approval failed'))
+      setError(getWalletErrorMessage(err, t('hlw.agentApprovalFailed', language)))
     } finally {
       setBusy(false)
     }
@@ -847,9 +826,7 @@ export function HyperliquidWalletConnect({
   async function renewAgentAuthorization() {
     setError('')
     if (!isLoggedIn) {
-      setError(
-        'Renewal requires signing in: Hyperliquid forbids reusing the same agent, so renewal creates a new agent and updates the stored key.'
-      )
+      setError(t('hlw.renewRequiresSignIn', language))
       return
     }
     const walletSnapshot = state.mainWallet
@@ -882,8 +859,8 @@ export function HyperliquidWalletConnect({
       if (!existing) {
         throw new Error(
           eligible.length > 1
-            ? 'Multiple enabled Hyperliquid configs match this wallet. Select the exact saved connection before renewing.'
-            : 'No matching enabled NOFX config was found. Save the connection before renewing its agent.'
+            ? t('hlw.multipleConfigsRenew', language)
+            : t('hlw.noConfigRenew', language)
         )
       }
       const wallet = await api.generateWallet()
@@ -953,7 +930,7 @@ export function HyperliquidWalletConnect({
             }
           : prev
       )
-      toast.success('Agent renewed (new agent, valid 180 days)')
+      toast.success(t('hlw.agentRenewed', language))
       await refreshAgentInfo(
         walletSnapshot,
         newAgentAddress,
@@ -961,7 +938,7 @@ export function HyperliquidWalletConnect({
         existing.id
       )
     } catch (err) {
-      setError(getWalletErrorMessage(err, 'Agent renewal failed'))
+      setError(getWalletErrorMessage(err, t('hlw.agentRenewalFailed', language)))
     } finally {
       setBusy(false)
     }
@@ -1044,7 +1021,7 @@ export function HyperliquidWalletConnect({
         createdExchangeId || state.savedExchangeId
       )
       await refreshAfterSave()
-      toast.success('Trading authorization finalized')
+      toast.success(t('hlw.tradingAuthFinalized', language))
     } catch (err) {
       if (approvalComplete) {
         setState((prev) =>
@@ -1056,8 +1033,8 @@ export function HyperliquidWalletConnect({
       }
       setError(
         approvalComplete
-          ? `Wallet authorization succeeded, but NOFX could not save the connection. Use “Save connection” to retry. ${err instanceof Error ? err.message : ''}`
-          : getWalletErrorMessage(err, 'Trading authorization failed')
+          ? `${t('hlw.authSucceededNotSaved', language)}${err instanceof Error ? ` ${err.message}` : ''}`
+          : getWalletErrorMessage(err, t('hlw.tradingAuthFailed', language))
       )
     } finally {
       setBusy(false)
@@ -1067,7 +1044,7 @@ export function HyperliquidWalletConnect({
   async function saveExchange() {
     setError('')
     if (!isLoggedIn) {
-      setError('Please sign in before saving the agent wallet for trading.')
+      setError(t('hlw.pleaseSignInBeforeSave', language))
       return
     }
     const walletSnapshot = state.mainWallet
@@ -1088,9 +1065,7 @@ export function HyperliquidWalletConnect({
           ? eligible[0]
           : undefined
       if (!state.savedExchangeId && eligible.length > 1) {
-        throw new Error(
-          'Multiple enabled Hyperliquid configs match this wallet. Select the exact connection before saving.'
-        )
+        throw new Error(t('hlw.multipleConfigsSave', language))
       }
       assertCurrentWallet(walletSnapshot)
       if (existing) {
@@ -1122,8 +1097,8 @@ export function HyperliquidWalletConnect({
         )
         toast.success(
           state.agentPrivateKey
-            ? 'Hyperliquid account updated in NOFX'
-            : 'Existing Hyperliquid account authorization updated'
+            ? t('hlw.accountUpdatedInNofx', language)
+            : t('hlw.accountAuthUpdated', language)
         )
         await refreshAgentInfo(
           walletSnapshot,
@@ -1135,9 +1110,7 @@ export function HyperliquidWalletConnect({
         return
       }
       if (!state.agentPrivateKey) {
-        throw new Error(
-          'Generate and authorize a new agent wallet before saving'
-        )
+        throw new Error(t('hlw.generateAgentBeforeSave', language))
       }
       const result = await api.createExchangeEncrypted({
         exchange_type: 'hyperliquid',
@@ -1160,7 +1133,7 @@ export function HyperliquidWalletConnect({
             }
           : prev
       )
-      toast.success('Hyperliquid account saved to NOFX')
+      toast.success(t('hlw.accountSavedToNofx', language))
       await refreshAgentInfo(
         walletSnapshot,
         state.agentAddress,
@@ -1169,7 +1142,7 @@ export function HyperliquidWalletConnect({
       )
       await refreshAfterSave()
     } catch (err) {
-      setError(getWalletErrorMessage(err, 'Failed to save Hyperliquid account'))
+      setError(getWalletErrorMessage(err, t('hlw.failedSaveAccount', language)))
     } finally {
       setBusy(false)
     }
@@ -1221,7 +1194,7 @@ export function HyperliquidWalletConnect({
         >
           <div className="flex items-start justify-between gap-4 border-b border-[rgba(26,24,19,0.14)] p-4 sm:p-5">
             <div className="min-w-0">
-              <h2 className="font-bold text-nofx-text">Connect Hyperliquid</h2>
+              <h2 className="font-bold text-nofx-text">{t('hlw.connect', language)}</h2>
               <p className="mt-1 text-xs leading-5 text-nofx-text-muted">
                 {currentPrompt}
               </p>
@@ -1240,7 +1213,7 @@ export function HyperliquidWalletConnect({
           <div className="space-y-4 p-4 sm:p-5">
             <div
               className="grid grid-cols-3 gap-2"
-              aria-label="Connection progress"
+              aria-label={t('hlw.connectionProgress', language)}
             >
               {connectionProgress.map((step, index) => (
                 <div key={step.label} className="min-w-0 text-center">
@@ -1268,13 +1241,10 @@ export function HyperliquidWalletConnect({
                 <Shield className="mt-0.5 h-4 w-4 shrink-0 text-nofx-success" />
                 <div>
                   <p className="text-xs font-semibold text-nofx-text">
-                    NOFX receives trade-only access; it can never withdraw your
-                    funds.
+                    {t('hlw.tradeOnlyAccess', language)}
                   </p>
                   <p className="mt-1 text-[11px] leading-5 text-nofx-text-muted">
-                    Two wallet approvals: authorize the NOFX Agent, then approve
-                    a maximum 0.05% builder fee. Your main wallet key never
-                    leaves your wallet.
+                    {t('hlw.twoApprovals', language)}
                   </p>
                 </div>
               </div>
@@ -1284,18 +1254,19 @@ export function HyperliquidWalletConnect({
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-3 text-xs">
                   <span className="font-semibold text-nofx-text">
-                    Choose wallet
+                    {t('hlw.chooseWallet', language)}
                   </span>
                   {serverReadyProof?.wallet && (
                     <span className="text-nofx-text-muted">
-                      Expected {shortAddress(serverReadyProof.wallet)}
+                      {t('hlw.expected', language)}{' '}
+                      {shortAddress(serverReadyProof.wallet)}
                     </span>
                   )}
                 </div>
                 <div
                   className="grid grid-cols-2 gap-2"
                   role="group"
-                  aria-label="Wallet extension"
+                  aria-label={t('hlw.walletExtension', language)}
                 >
                   {walletProviders.map((provider, index) => {
                     const selected = selectedWalletProvider === provider
@@ -1372,14 +1343,14 @@ export function HyperliquidWalletConnect({
                   <ActionButton
                     busy={busy}
                     onClick={connectWallet}
-                    label="Connect wallet"
+                    label={t('hlw.connectStep', language)}
                   />
                 )}
                 {state.mainWallet && !agentReady && (
                   <ActionButton
                     busy={busy}
                     onClick={generateAgentWallet}
-                    label="Prepare secure access"
+                    label={t('hlw.prepareStep', language)}
                   />
                 )}
                 {agentReady && !agentApprovedReady && (
@@ -1392,8 +1363,8 @@ export function HyperliquidWalletConnect({
                     }
                     label={
                       state.reusedSavedExchange || state.savedExchangeId
-                        ? 'Re-authorize trade-only access'
-                        : 'Approve trade-only access'
+                        ? t('hlw.reauthorizeTradeOnly', language)
+                        : t('hlw.approveTradeOnly', language)
                     }
                   />
                 )}
@@ -1401,14 +1372,14 @@ export function HyperliquidWalletConnect({
                   <ActionButton
                     busy={busy}
                     onClick={approveBuilderFee}
-                    label="Approve fee & finish"
+                    label={t('hlw.approveFeeStep', language)}
                   />
                 )}
                 {builderReady && !state.savedExchangeId && (
                   <ActionButton
                     busy={busy}
                     onClick={saveExchange}
-                    label="Save connection"
+                    label={t('hlw.saveStep', language)}
                   />
                 )}
               </div>
@@ -1419,10 +1390,10 @@ export function HyperliquidWalletConnect({
             >
               {state.mainWallet && (
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-nofx-text-muted">Main</span>
+                  <span className="text-nofx-text-muted">{t('hlw.mainLabel', language)}</span>
                   <button
                     type="button"
-                    onClick={() => copy(state.mainWallet!, 'Main wallet')}
+                    onClick={() => copy(state.mainWallet!, 'hlw.mainWalletCopied', language)}
                     className="font-mono text-nofx-text hover:text-nofx-gold flex items-center gap-1"
                   >
                     {shortAddress(state.mainWallet)}{' '}
@@ -1432,10 +1403,10 @@ export function HyperliquidWalletConnect({
               )}
               {complete && state.agentAddress && (
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-nofx-text-muted">Agent</span>
+                  <span className="text-nofx-text-muted">{t('hlw.agentLabel', language)}</span>
                   <button
                     type="button"
-                    onClick={() => copy(state.agentAddress!, 'Agent wallet')}
+                    onClick={() => copy(state.agentAddress!, 'hlw.agentWalletCopied', language)}
                     className="font-mono text-nofx-text hover:text-nofx-gold flex items-center gap-1"
                   >
                     {shortAddress(state.agentAddress)}{' '}
@@ -1444,7 +1415,7 @@ export function HyperliquidWalletConnect({
                 </div>
               )}
               <div className="flex items-center justify-between gap-3">
-                <span className="text-nofx-text-muted">Network</span>
+                <span className="text-nofx-text-muted">{t('common.network', language)}</span>
                 <span className="font-mono text-nofx-text">
                   Hyperliquid Mainnet
                 </span>
@@ -1455,9 +1426,9 @@ export function HyperliquidWalletConnect({
                     {text.agentExpiry}
                   </span>
                   {agentInfoLoading && !agentInfo ? (
-                    <span className="font-mono text-nofx-text-muted">
-                      Loading…
-                    </span>
+                      <span className="font-mono text-nofx-text-muted">
+                        {t('hlw.loading', language)}
+                      </span>
                   ) : agentInfo ? (
                     (() => {
                       const { dateStr, daysLeft } = formatAgentExpiry(
@@ -1539,16 +1510,16 @@ export function HyperliquidWalletConnect({
                         {text.withdrawable}
                       </div>
                       <div className="mt-1 font-mono text-sm font-bold text-nofx-success">
-                        {balanceLoading && !account
-                          ? 'Loading…'
+                        {                        balanceLoading && !account
+                          ? t('hlw.loading', language)
                           : `${formatUSDC(account?.withdrawable)} USDC`}
                       </div>
                     </div>
                     <div className="rounded-lg bg-nofx-bg-deeper p-2">
                       <div className="text-nofx-text-muted">{text.equity}</div>
                       <div className="mt-1 font-mono text-sm font-bold text-nofx-text">
-                        {balanceLoading && !account
-                          ? 'Loading…'
+                        {                        balanceLoading && !account
+                          ? t('hlw.loading', language)
                           : `${formatUSDC(account?.accountValue)} USDC`}
                       </div>
                     </div>
@@ -1586,9 +1557,7 @@ export function HyperliquidWalletConnect({
                     onClick={resetTradingAuthorization}
                     className="w-full flex items-center justify-center gap-2 rounded-xl border border-nofx-gold/30 bg-nofx-gold/10 px-4 py-3 text-sm font-bold text-nofx-gold transition hover:bg-nofx-gold/20"
                   >
-                    {language === 'zh'
-                      ? 'Re-authorize trading'
-                      : 'Re-authorize trading'}
+                    {t('hlw.reAuthorize', language)}
                   </button>
                 </>
               )}
@@ -1601,14 +1570,14 @@ export function HyperliquidWalletConnect({
                 rel="noopener noreferrer"
                 className="text-xs text-nofx-text-muted hover:text-nofx-gold flex items-center gap-1"
               >
-                Open Hyperliquid <ExternalLink className="w-3 h-3" />
+                {t('hlw.openHyperliquid', language)} <ExternalLink className="w-3 h-3" />
               </a>
               <button
                 type="button"
                 onClick={resetFlow}
                 className="text-xs text-nofx-text-muted hover:text-nofx-danger"
               >
-                Reset
+                {t('hlw.reset', language)}
               </button>
             </div>
           </div>

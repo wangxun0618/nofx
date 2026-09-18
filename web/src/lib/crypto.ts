@@ -1,3 +1,5 @@
+import { tg } from '../i18n/translations'
+
 export interface EncryptedPayload {
   wrappedKey: string // RSA-OAEP(K)
   iv: string // 12 bytes
@@ -59,7 +61,7 @@ export class CryptoService {
       footerIndex === -1 ||
       headerIndex >= footerIndex
     ) {
-      throw new Error('Invalid PEM formatted public key')
+      throw new Error(tg('lib.invalidPemPublicKey'))
     }
 
     const pemContents = pem
@@ -91,7 +93,7 @@ export class CryptoService {
   ): Promise<EncryptedPayload> {
     if (!this.publicKey) {
       throw new Error(
-        'Crypto service not initialized. Call initialize() first.'
+        tg('lib.cryptoNotInitialized')
       )
     }
 

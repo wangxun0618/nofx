@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { HelpCircle } from 'lucide-react'
 import katex from 'katex'
 import 'katex/dist/katex.min.css'
-import { t } from '../../i18n/translations'
+import { t, type Language } from '../../i18n/translations'
 
 export interface MetricDefinition {
   key: string
@@ -19,122 +19,122 @@ export const METRIC_DEFINITIONS: Record<string, MetricDefinition> = {
   total_return: {
     key: 'total_return',
     nameEn: 'Total Return',
-    nameZh: 'Total Return',
+    nameZh: '总收益率',
     formula: 'R_{total} = \\frac{V_{end} - V_{start}}{V_{start}} \\times 100\\%',
     descriptionEn: 'Measures overall portfolio performance from start to end',
-    descriptionZh: 'Measures overall portfolio performance from start to end',
+    descriptionZh: '衡量投资组合从期初到期末的整体收益表现',
   },
   annualized_return: {
     key: 'annualized_return',
     nameEn: 'Annualized Return',
-    nameZh: 'Annualized Return',
+    nameZh: '年化收益率',
     formula: 'R_{ann} = \\left(1 + R_{total}\\right)^{\\frac{252}{n}} - 1',
     descriptionEn: 'Standardized yearly return rate (252 trading days)',
-    descriptionZh: 'Standardized yearly return rate (252 trading days)',
+    descriptionZh: '按 252 个交易日折算的标准年化收益率',
   },
   max_drawdown: {
     key: 'max_drawdown',
     nameEn: 'Maximum Drawdown',
-    nameZh: 'Maximum Drawdown',
+    nameZh: '最大回撤',
     formula: 'MDD = \\max_{t} \\left( \\frac{Peak_t - Trough_t}{Peak_t} \\right)',
     descriptionEn: 'Largest peak-to-trough decline during the period',
-    descriptionZh: 'Largest peak-to-trough decline during the period',
+    descriptionZh: '区间内净值从最高点到最低点的最大跌幅',
   },
   sharpe_ratio: {
     key: 'sharpe_ratio',
     nameEn: 'Sharpe Ratio',
-    nameZh: 'Sharpe Ratio',
+    nameZh: '夏普比率',
     formula: 'SR = \\frac{\\bar{r} - r_f}{\\sigma}',
     descriptionEn: 'Risk-adjusted return per unit of volatility (r̄=avg return, rf=risk-free rate, σ=std dev)',
-    descriptionZh: 'Risk-adjusted return per unit of volatility (r̄=avg return, rf=risk-free rate, σ=std dev)',
+    descriptionZh: '每承担一单位波动率所获得的超额收益（r̄=平均收益，rf=无风险利率，σ=标准差）',
   },
   sortino_ratio: {
     key: 'sortino_ratio',
     nameEn: 'Sortino Ratio',
-    nameZh: 'Sortino Ratio',
+    nameZh: '索提诺比率',
     formula: 'Sortino = \\frac{\\bar{r} - r_f}{\\sigma_d}',
     descriptionEn: 'Return per unit of downside risk (σd=downside deviation)',
-    descriptionZh: 'Return per unit of downside risk (σd=downside deviation)',
+    descriptionZh: '每承担一单位下行风险所获得的收益（σd=下行标准差）',
   },
   calmar_ratio: {
     key: 'calmar_ratio',
     nameEn: 'Calmar Ratio',
-    nameZh: 'Calmar Ratio',
+    nameZh: '卡玛比率',
     formula: 'Calmar = \\frac{R_{ann}}{|MDD|}',
     descriptionEn: 'Annualized return divided by maximum drawdown',
-    descriptionZh: 'Annualized return divided by maximum drawdown',
+    descriptionZh: '年化收益率与最大回撤之比',
   },
   win_rate: {
     key: 'win_rate',
     nameEn: 'Win Rate',
-    nameZh: 'Win Rate',
+    nameZh: '胜率',
     formula: 'WinRate = \\frac{N_{win}}{N_{total}} \\times 100\\%',
     descriptionEn: 'Percentage of profitable trades',
-    descriptionZh: 'Percentage of profitable trades',
+    descriptionZh: '盈利交易占全部已平仓交易的比例',
   },
   profit_factor: {
     key: 'profit_factor',
     nameEn: 'Profit Factor',
-    nameZh: 'Profit Factor',
+    nameZh: '利润因子',
     formula: 'PF = \\frac{\\sum Profits}{|\\sum Losses|}',
     descriptionEn: 'Ratio of gross profit to gross loss',
-    descriptionZh: 'Ratio of gross profit to gross loss',
+    descriptionZh: '总盈利与总亏损之比（大于 1 表示已平仓部分整体盈利）',
   },
   volatility: {
     key: 'volatility',
     nameEn: 'Volatility',
-    nameZh: 'Volatility',
+    nameZh: '波动率',
     formula: '\\sigma = \\sqrt{\\frac{1}{n}\\sum_{i=1}^{n}(r_i - \\bar{r})^2}',
     descriptionEn: 'Standard deviation of returns',
-    descriptionZh: 'Standard deviation of returns',
+    descriptionZh: '收益率的标准差',
   },
   var_95: {
     key: 'var_95',
     nameEn: 'VaR (95%)',
-    nameZh: 'VaR (95%)',
+    nameZh: 'VaR（95%）',
     formula: 'P(R < VaR_{95\\%}) = 5\\%',
     descriptionEn: '95% confidence level maximum expected loss',
-    descriptionZh: '95% confidence level maximum expected loss',
+    descriptionZh: '95% 置信水平下的最大预期亏损',
   },
   alpha: {
     key: 'alpha',
     nameEn: 'Alpha',
-    nameZh: 'Alpha',
+    nameZh: '阿尔法',
     formula: '\\alpha = R_{portfolio} - R_{benchmark}',
     descriptionEn: 'Excess return over benchmark',
-    descriptionZh: 'Excess return over benchmark',
+    descriptionZh: '相对基准的超额收益',
   },
   beta: {
     key: 'beta',
     nameEn: 'Beta',
-    nameZh: 'Beta',
+    nameZh: '贝塔',
     formula: '\\beta = \\frac{Cov(R_p, R_m)}{Var(R_m)}',
     descriptionEn: 'Portfolio sensitivity to market movements',
-    descriptionZh: 'Portfolio sensitivity to market movements',
+    descriptionZh: '投资组合对市场波动的敏感度',
   },
   information_ratio: {
     key: 'information_ratio',
     nameEn: 'Information Ratio',
-    nameZh: 'Information Ratio',
+    nameZh: '信息比率',
     formula: 'IR = \\frac{\\alpha}{\\sigma_{tracking}}',
     descriptionEn: 'Alpha per unit of tracking error',
-    descriptionZh: 'Alpha per unit of tracking error',
+    descriptionZh: '每单位跟踪误差所获得的超额收益',
   },
   avg_trade_pnl: {
     key: 'avg_trade_pnl',
     nameEn: 'Avg Trade PnL',
-    nameZh: 'Avg Trade PnL',
+    nameZh: '单笔平均盈亏',
     formula: '\\bar{PnL} = \\frac{\\sum PnL_i}{N}',
     descriptionEn: 'Average profit/loss per trade',
-    descriptionZh: 'Average profit/loss per trade',
+    descriptionZh: '每笔交易的平均盈利或亏损',
   },
   expectancy: {
     key: 'expectancy',
     nameEn: 'Expectancy',
-    nameZh: 'Expectancy',
+    nameZh: '期望收益',
     formula: 'E = (WinRate \\times \\bar{W}) - (LossRate \\times \\bar{L})',
     descriptionEn: 'Expected return per trade',
-    descriptionZh: 'Expected return per trade',
+    descriptionZh: '每笔交易的期望收益',
   },
 }
 
@@ -242,7 +242,7 @@ export function MetricTooltip({
 
   const name = language === 'zh' ? metric.nameZh : metric.nameEn
   const description = language === 'zh' ? metric.descriptionZh : metric.descriptionEn
-  const formulaLabel = t('metricTooltip.formula', language as 'en' | 'zh' | 'id')
+  const formulaLabel = t('metricTooltip.formula', language as Language)
 
   const tooltipContent = (
     <div

@@ -15,7 +15,7 @@ export function LandingPage() {
   const [loginOverlayOpen, setLoginOverlayOpen] = useState(false)
   const [loginOverlayFeature, setLoginOverlayFeature] = useState('')
   const { user, logout } = useAuth()
-  const { language, setLanguage } = useLanguage()
+  const { language } = useLanguage()
   const isLoggedIn = !!user
 
   const handleLoginRequired = (featureName: string) => {
@@ -30,7 +30,6 @@ export function LandingPage() {
         isLoggedIn={isLoggedIn}
         isHomePage={true}
         language={language}
-        onLanguageChange={setLanguage}
         user={user}
         onLogout={logout}
         onLoginRequired={handleLoginRequired}

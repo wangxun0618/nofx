@@ -1,5 +1,7 @@
 import { useMemo } from 'react'
 import type { DecisionRecord } from '../../types'
+import { t } from '../../i18n/translations'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 /**
  * ExecutionLog renders the AI trading agent's real decisions and order results
@@ -102,6 +104,7 @@ interface ExecutionLogProps {
 }
 
 export function ExecutionLog({ decisions, height = 440 }: ExecutionLogProps) {
+  const { language } = useLanguage()
   // Newest cycle first.
   const cycles = useMemo(() => {
     const list = decisions ?? []
@@ -112,7 +115,7 @@ export function ExecutionLog({ decisions, height = 440 }: ExecutionLogProps) {
     <div style={{ fontFamily: 'var(--tm-mono)' }}>
       {/* header */}
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 2 }}>
-        <span className="tm-px" style={{ fontSize: 11 }}>Execution log</span>
+        <span className="tm-px" style={{ fontSize: 11 }}>{t('terminal.executionLog', language)}</span>
         <span
           className="tm-sc"
           style={{ marginLeft: 'auto', color: cycles.length ? 'var(--tm-up)' : 'var(--tm-muted)' }}
@@ -137,7 +140,7 @@ export function ExecutionLog({ decisions, height = 440 }: ExecutionLogProps) {
       <div className="tm-hair" style={{ marginBottom: 0 }} />
 
       {!cycles.length ? (
-        <div className="tm-sc" style={{ padding: '16px 0' }}>No execution events yet.</div>
+        <div className="tm-sc" style={{ padding: '16px 0' }}>{t('terminal.noExecutionEvents', language)}</div>
       ) : (
         <div
           style={{

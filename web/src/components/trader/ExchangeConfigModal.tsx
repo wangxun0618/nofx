@@ -321,7 +321,7 @@ export function ExchangeConfigModal({
         if (!apiKey.trim() || !secretKey.trim() || !passphrase.trim()) return
         await onSave(exchangeId, exchangeType, trimmedAccountName, apiKey.trim(), secretKey.trim(), passphrase.trim(), testnet)
       } else if (currentExchangeType === 'hyperliquid') {
-        toast.error(language === 'zh' ? 'Use the wallet authorization flow to connect Hyperliquid.' : 'Use the wallet authorization flow to connect Hyperliquid.')
+        toast.error(t('exchangeCfg.useWalletFlow', language))
         return
       } else if (currentExchangeType === 'aster') {
         if (!asterUser.trim() || !asterSigner.trim() || !asterPrivateKey.trim()) return
@@ -566,7 +566,7 @@ export function ExchangeConfigModal({
                       onChange={(e) => setApiKey(e.target.value)}
                       placeholder={
                         editingExchangeId && selectedExchange?.has_api_key
-                          ? 'Saved. Re-enter to replace.'
+                          ? t('cred.savedReenter', language)
                           : t('enterAPIKey', language)
                       }
                       className="w-full px-4 py-3 rounded-xl"
@@ -586,7 +586,7 @@ export function ExchangeConfigModal({
                       onChange={(e) => setSecretKey(e.target.value)}
                       placeholder={
                         editingExchangeId && selectedExchange?.has_secret_key
-                          ? 'Saved. Re-enter to replace.'
+                          ? t('cred.savedReenter', language)
                           : t('enterSecretKey', language)
                       }
                       className="w-full px-4 py-3 rounded-xl"
@@ -607,7 +607,7 @@ export function ExchangeConfigModal({
                         onChange={(e) => setPassphrase(e.target.value)}
                         placeholder={
                           editingExchangeId && selectedExchange?.has_passphrase
-                            ? 'Saved. Re-enter to replace.'
+                            ? t('cred.savedReenter', language)
                             : t('enterPassphrase', language)
                         }
                         className="w-full px-4 py-3 rounded-xl"
@@ -696,12 +696,10 @@ export function ExchangeConfigModal({
                       <span style={{ fontSize: '16px' }}>🔐</span>
                       <div>
                         <div className="text-sm font-semibold mb-1" style={{ color: '#E0483B' }}>
-                          {language === 'zh' ? 'Hyperliquid requires wallet authorization' : 'Hyperliquid requires wallet authorization'}
+                          {t('exchangeCfg.walletAuthRequired', language)}
                         </div>
                         <div className="text-xs leading-5" style={{ color: '#8A8478' }}>
-                          {language === 'zh'
-                            ? 'Manual private-key/API-key entry is disabled. Use MetaMask, Rabby, OKX, Coinbase Wallet or another EVM wallet to connect, authorize the agent, and approve the builder fee.'
-                            : 'Manual private-key/API-key entry is disabled. Use MetaMask, Rabby, OKX, Coinbase Wallet or another EVM wallet to connect, authorize the agent, and approve the builder fee.'}
+                          {t('hlw.manualDisabled', language)}
                         </div>
                       </div>
                     </div>
