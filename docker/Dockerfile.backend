@@ -38,12 +38,22 @@ RUN wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-${TA_LIB_VERSION}-src.
 # ──────────────────────────────────────────────────────────────
 FROM golang:${GO_VERSION} AS backend-builder
 
-RUN apk update && apk add --no-cache git make gcc g++ musl-dev
+# Swap the apk mirror before installing: dl-cdn (Fastly) can be very slow
+# from some networks/VMs, while the Tsinghua mirror is fast.
+RUN sed -i 's#https://dl-cdn.alpinelinux.org#https://mirrors.tuna.tsinghua.edu.cn#g' /etc/apk/repositories \
+    && apk update && apk add --no-cache git make gcc g++ musl-dev
 
 COPY --from=ta-lib-builder /usr/local /usr/local
 
 WORKDIR /app
 COPY go.mod go.sum ./
+
+# Optional build-time override for Go's module proxy. Networks that cannot
+# reach proxy.golang.org can pass e.g. GOPROXY=https://goproxy.cn,direct.
+# When left empty, the go tool falls back to its default proxy.
+ARG GOPROXY
+ENV GOPROXY=${GOPROXY}
+
 RUN go mod download
 
 COPY . .

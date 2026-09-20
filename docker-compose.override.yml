@@ -1,0 +1,20 @@
+# Local build overrides — created for this machine's network conditions.
+#
+# Docker Compose loads this file automatically on top of docker-compose.yml,
+# so a plain `docker compose up -d --build` picks it up.
+#
+# Why it exists:
+#   * proxy.golang.org is unreachable here, so the Go module download step
+#     needs a reachable mirror (goproxy.cn).
+#   * Docker Hub images are served through the registry mirrors configured in
+#     ~/.colima/default/colima.yaml (docker.1panel.live, dockerproxy.net).
+#
+# Delete this file if your network can reach the official endpoints directly.
+
+services:
+  nofx:
+    build:
+      args:
+        # Falls back to Go's default proxy when empty; overridden here because
+        # the default is not reachable from this network.
+        GOPROXY: https://goproxy.cn,direct
