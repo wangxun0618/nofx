@@ -151,20 +151,27 @@ export interface IndicatorConfig {
   enable_quant_oi?: boolean;
   enable_quant_netflow?: boolean;
 
-  // OI ranking data (market open interest increase/decrease ranking)
-  enable_oi_ranking?: boolean;
-  oi_ranking_duration?: string;  // "1h", "4h", "24h"
-  oi_ranking_limit?: number;
-
-  // NetFlow ranking data (institutional/retail fund flow ranking)
-  enable_netflow_ranking?: boolean;
-  netflow_ranking_duration?: string;  // "1h", "4h", "24h"
-  netflow_ranking_limit?: number;
-
-  // Price ranking data (gainers/losers ranking)
-  enable_price_ranking?: boolean;
-  price_ranking_duration?: string;  // "1h", "4h", "24h" or "1h,4h,24h"
-  price_ranking_limit?: number;
+  // ========== Pluggable market insights ==========
+  // Market-wide context sources (fund flow, open-interest structure, liquidation
+  // clusters). Each source is a provider registered on the backend; call
+  // GET /api/market-insights/providers for the catalogue.
+  enable_market_insights?: boolean;
+  // Allow-list of provider names. Empty means "run every enabled provider",
+  // which keeps newly added sources working without a config change.
+  market_insight_sources?: string[];
+  // Row count a ranking provider emits (default 10).
+  market_insight_limit?: number;
+  // Optional CoinAnk key. Only the liquidation-cluster provider needs it; every
+  // built-in source is free and keyless.
+  coinank_api_key?: string;
+  // HyperData Terminal sidecar. It is not a library but a separate process that
+  // is consumed over HTTP, which is what lets it be upgraded independently.
+  // Off by default because it is unavailable until that process is running.
+  enable_hyperdata?: boolean;
+  // Sidecar origin. Empty falls back to http://127.0.0.1:8420.
+  hyperdata_base_url?: string;
+  // Only needed when the sidecar was started with its own API key.
+  hyperdata_api_key?: string;
 }
 
 export interface KlineConfig {

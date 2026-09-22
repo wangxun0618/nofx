@@ -1,6 +1,6 @@
 /**
  * Shared constants for the dashboard demo/showcase mode. US-equity-led synthetic
- * universe (these are real xyz-dex markets so the cost/liq heatmap still resolves)
+ * universe (real xyz-dex symbols, so live quotes, books and candles resolve)
  * plus plausible seed prices for the synthetic order book / candle feeds.
  *
  * This drives the "Demo" presentation mode only. It never touches the backend,
@@ -17,7 +17,7 @@ export const DEMO_UNIVERSE = [
   'HOOD', 'SNOW',
 ]
 
-// Lead instrument for the price panels (real heatmap + resolvable book/candles).
+// Lead instrument for the price panels (resolvable book + candles).
 export const DEMO_ACTIVE_SYMBOL = 'SP500'
 
 const DEMO_SEED_PX: Record<string, number> = {

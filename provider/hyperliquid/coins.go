@@ -28,6 +28,17 @@ type CoinInfo struct {
 	Change24hPct float64 `json:"change_24h_pct,omitempty"`
 	MaxLeverage  int     `json:"max_leverage,omitempty"`
 	SzDecimals   int     `json:"sz_decimals,omitempty"`
+	Dex          string  `json:"dex,omitempty"` // perp dex the asset belongs to ("" = main, "xyz" = equities board)
+
+	// Derivatives context, sourced from the same free `metaAndAssetCtxs` call.
+	// These power the market-insight providers and are also shown in the
+	// symbol picker, so they are part of the public payload.
+	FundingRate     float64 `json:"funding_rate,omitempty"`      // current hourly funding rate (decimal, e.g. 0.0000125)
+	OpenInterest    float64 `json:"open_interest,omitempty"`     // open interest in coin units
+	OpenInterestUsd float64 `json:"open_interest_usd,omitempty"` // open interest notional in USD
+	Premium         float64 `json:"premium,omitempty"`           // mark price premium over oracle price (decimal)
+	OraclePrice     float64 `json:"oracle_price,omitempty"`
+	MidPrice        float64 `json:"mid_price,omitempty"`
 }
 
 // XYZCategory returns the NOFX product category for a Hyperliquid XYZ base symbol.
@@ -82,11 +93,19 @@ type metaResponse struct {
 	} `json:"universe"`
 }
 
-// assetCtx represents asset context with market data.
+// assetCtx represents asset context with market data. Field set mirrors the
+// free `metaAndAssetCtxs` response; everything declared here is available
+// without an API key, so nothing that the insight providers need is dropped.
 type assetCtx struct {
-	DayNtlVlm string `json:"dayNtlVlm"` // 24h notional volume
-	MarkPx    string `json:"markPx"`
-	PrevDayPx string `json:"prevDayPx"`
+	Funding      string `json:"funding"`      // hourly funding rate (decimal, e.g. 0.0000125)
+	OpenInterest string `json:"openInterest"` // open interest in coin units
+	DayNtlVlm    string `json:"dayNtlVlm"`    // 24h notional volume in USD
+	DayBaseVlm   string `json:"dayBaseVlm"`   // 24h base volume in coin units
+	MarkPx       string `json:"markPx"`
+	MidPx        string `json:"midPx"`
+	OraclePx     string `json:"oraclePx"`
+	PrevDayPx    string `json:"prevDayPx"`
+	Premium      string `json:"premium"` // mark premium over oracle (decimal)
 }
 
 func fetchPerpDexCoins(ctx context.Context, client *http.Client, dex string) ([]CoinInfo, error) {
@@ -139,22 +158,40 @@ func fetchPerpDexCoins(ctx context.Context, client *http.Client, dex string) ([]
 	coins := make([]CoinInfo, 0, len(meta.Universe))
 	for i, u := range meta.Universe {
 		var vol, mark, prevDay, change24hPct float64
+		var funding, oi, oiUsd, premium, oraclePx, midPx float64
 		if i < len(ctxs) {
 			vol, _ = strconv.ParseFloat(ctxs[i].DayNtlVlm, 64)
 			mark, _ = strconv.ParseFloat(ctxs[i].MarkPx, 64)
 			prevDay, _ = strconv.ParseFloat(ctxs[i].PrevDayPx, 64)
+			funding, _ = strconv.ParseFloat(ctxs[i].Funding, 64)
+			oi, _ = strconv.ParseFloat(ctxs[i].OpenInterest, 64)
+			premium, _ = strconv.ParseFloat(ctxs[i].Premium, 64)
+			oraclePx, _ = strconv.ParseFloat(ctxs[i].OraclePx, 64)
+			midPx, _ = strconv.ParseFloat(ctxs[i].MidPx, 64)
+			// `openInterest` is denominated in coin units; convert to a USD
+			// notional so different assets can be ranked on one scale.
+			if oi > 0 && mark > 0 {
+				oiUsd = oi * mark
+			}
 			if prevDay > 0 && mark > 0 {
 				change24hPct = ((mark - prevDay) / prevDay) * 100
 			}
 		}
 		coins = append(coins, CoinInfo{
-			Symbol:       u.Name,
-			Volume24h:    vol,
-			MarkPrice:    mark,
-			PrevDayPrice: prevDay,
-			Change24hPct: change24hPct,
-			MaxLeverage:  u.MaxLeverage,
-			SzDecimals:   u.SzDecimals,
+			Symbol:          u.Name,
+			Volume24h:       vol,
+			MarkPrice:       mark,
+			PrevDayPrice:    prevDay,
+			Change24hPct:    change24hPct,
+			MaxLeverage:     u.MaxLeverage,
+			SzDecimals:      u.SzDecimals,
+			Dex:             dex,
+			FundingRate:     funding,
+			OpenInterest:    oi,
+			OpenInterestUsd: oiUsd,
+			Premium:         premium,
+			OraclePrice:     oraclePx,
+			MidPrice:        midPx,
 		})
 	}
 
@@ -325,4 +362,71 @@ func GetMainCoinSymbols(ctx context.Context, limit int) ([]string, error) {
 // ForceRefresh forces a refresh of the coin cache
 func (p *CoinProvider) ForceRefresh(ctx context.Context) error {
 	return p.fetchCoins(ctx)
+}
+
+// xyzPerpDex is the Hyperliquid perp dex that hosts tokenized equities and other
+// non-crypto instruments. The main crypto dex is addressed with an empty string.
+const xyzPerpDex = "xyz"
+
+// GetAssetContexts returns every tradable Hyperliquid perp — main crypto dex plus
+// the "xyz" equities dex — together with its derivatives context: funding rate,
+// open interest (coin units and USD notional) and mark-vs-oracle premium.
+//
+// Everything here comes from the free `metaAndAssetCtxs` endpoint, so no API key
+// is involved. The result is volume-sorted and served through the same short TTL
+// cache as GetPerpDexCoins, which means a rate-limited upstream degrades to stale
+// data rather than to an error.
+func GetAssetContexts(ctx context.Context) ([]CoinInfo, error) {
+	merged := make([]CoinInfo, 0, 256)
+	var firstErr error
+
+	for _, dex := range []string{"", xyzPerpDex} {
+		coins, err := GetPerpDexCoins(ctx, dex)
+		if err != nil {
+			// One dex failing must not hide the other; remember the first error
+			// and only surface it when nothing at all came back.
+			if firstErr == nil {
+				firstErr = err
+			}
+			logger.Infof("⚠️ Hyperliquid asset contexts unavailable for dex %q: %v", dex, err)
+			continue
+		}
+		merged = append(merged, coins...)
+	}
+
+	if len(merged) == 0 {
+		if firstErr != nil {
+			return nil, firstErr
+		}
+		return nil, fmt.Errorf("no asset contexts returned")
+	}
+
+	sort.Slice(merged, func(i, j int) bool {
+		return merged[i].Volume24h > merged[j].Volume24h
+	})
+	return merged, nil
+}
+
+// FindAssetContext returns the derivatives context for a single symbol, matching
+// on the raw board name, the normalized symbol and the xyz alias form so callers
+// can pass whatever the rest of the system uses.
+func FindAssetContext(ctx context.Context, symbol string) (*CoinInfo, error) {
+	contexts, err := GetAssetContexts(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	want := NormalizeCoin(symbol)
+	wantBase := NormalizeCoinBase(symbol)
+
+	for i := range contexts {
+		coin := &contexts[i]
+		if coin.Symbol == symbol || NormalizeCoin(coin.Symbol) == want {
+			return coin, nil
+		}
+		if wantBase != "" && NormalizeCoinBase(coin.Symbol) == wantBase {
+			return coin, nil
+		}
+	}
+	return nil, nil
 }

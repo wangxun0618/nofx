@@ -10,8 +10,17 @@ func TestDefaultStrategyUsesHyperliquidVolumeUniverse(t *testing.T) {
 	if ind.NofxOSAPIKey != "" {
 		t.Fatalf("default should not include a NofxOS API key")
 	}
-	if ind.EnableQuantData || ind.EnableQuantOI || ind.EnableQuantNetflow || ind.EnableOIRanking || ind.EnableNetFlowRanking || ind.EnablePriceRanking {
+	if ind.EnableQuantData || ind.EnableQuantOI || ind.EnableQuantNetflow {
 		t.Fatalf("default strategy must not enable NofxOS datasets: %+v", ind)
+	}
+	if !ind.EnableMarketInsights {
+		t.Fatalf("default strategy must enable the free market-insight sources")
+	}
+	if len(ind.MarketInsightSources) != 0 {
+		t.Fatalf("default source allow-list must be empty (= run every registered provider), got %v", ind.MarketInsightSources)
+	}
+	if ind.CoinankAPIKey != "" {
+		t.Fatalf("default strategy must not ship a third-party CoinAnk key")
 	}
 	if !ind.EnableRawKlines {
 		t.Fatalf("raw Hyperliquid klines must stay enabled")

@@ -869,20 +869,38 @@ type IndicatorConfig struct {
 	EnableQuantOI      bool `json:"enable_quant_oi"`      // whether to show OI data
 	EnableQuantNetflow bool `json:"enable_quant_netflow"` // whether to show Netflow data
 
-	// OI ranking data (market-wide open interest increase/decrease rankings)
-	EnableOIRanking   bool   `json:"enable_oi_ranking"`             // whether to enable OI ranking data
-	OIRankingDuration string `json:"oi_ranking_duration,omitempty"` // duration: 1h, 4h, 24h
-	OIRankingLimit    int    `json:"oi_ranking_limit,omitempty"`    // number of entries (default 10)
+	// ========== Pluggable market insights ==========
+	// Market-wide context sources: fund flow, open-interest structure,
+	// liquidation clusters. Each source is a marketdata.Provider; see
+	// marketdata/providers for the catalogue. Sources are free by default and
+	// no third-party account is required.
+	EnableMarketInsights bool `json:"enable_market_insights"`
+	// MarketInsightSources is an allow-list of provider names. Empty means
+	// "run every provider that reports itself enabled", which keeps newly
+	// registered sources working without a config migration.
+	MarketInsightSources []string `json:"market_insight_sources,omitempty"`
+	// MarketInsightLimit is how many rows a ranking-style provider emits
+	// (default 10).
+	MarketInsightLimit int `json:"market_insight_limit,omitempty"`
+	// CoinankAPIKey enables the optional CoinAnk liquidation provider. When
+	// empty that provider reports itself disabled, so no third-party account is
+	// ever required for the built-in sources.
+	CoinankAPIKey string `json:"coinank_api_key,omitempty"`
 
-	// NetFlow ranking data (market-wide fund flow rankings - institution/personal)
-	EnableNetFlowRanking   bool   `json:"enable_netflow_ranking"`             // whether to enable NetFlow ranking data
-	NetFlowRankingDuration string `json:"netflow_ranking_duration,omitempty"` // duration: 1h, 4h, 24h
-	NetFlowRankingLimit    int    `json:"netflow_ranking_limit,omitempty"`    // number of entries (default 10)
-
-	// Price ranking data (market-wide gainers/losers)
-	EnablePriceRanking   bool   `json:"enable_price_ranking"`             // whether to enable price ranking data
-	PriceRankingDuration string `json:"price_ranking_duration,omitempty"` // durations: "1h" or "1h,4h,24h"
-	PriceRankingLimit    int    `json:"price_ranking_limit,omitempty"`    // number of entries per ranking (default 10)
+	// ========== HyperData Terminal (optional local sidecar) ==========
+	// HyperData Terminal is a separate open-source process that aggregates
+	// order flow, whale positions and liquidation data from five exchanges. It
+	// is not a library, so it is consumed over HTTP and can be upgraded on its
+	// own schedule without touching this codebase. Disabled by default because
+	// it requires that process to be running; when it is not reachable the
+	// HyperData providers fail soft and the remaining sources run as usual.
+	EnableHyperData bool `json:"enable_hyperdata"`
+	// HyperDataBaseURL is the sidecar's origin. Empty falls back to
+	// providers.DefaultHyperDataBaseURL (http://127.0.0.1:8420).
+	HyperDataBaseURL string `json:"hyperdata_base_url,omitempty"`
+	// HyperDataAPIKey is only needed when the sidecar was started with
+	// HYPERDATA_API_KEY set. Requests then carry it as X-API-Key.
+	HyperDataAPIKey string `json:"hyperdata_api_key,omitempty"`
 }
 
 // KlineConfig K-line configuration
@@ -1000,19 +1018,20 @@ func GetDefaultStrategyConfig(lang string) StrategyConfig {
 			BOLLPeriods:       []int{20},
 			// Hyperliquid strategies must use native Hyperliquid market data by default.
 			// NofxOS datasets do not cover all Hyperliquid XYZ assets, so keep them off.
-			NofxOSAPIKey:           "",
-			EnableQuantData:        false,
-			EnableQuantOI:          false,
-			EnableQuantNetflow:     false,
-			EnableOIRanking:        false,
-			OIRankingDuration:      "1h",
-			OIRankingLimit:         10,
-			EnableNetFlowRanking:   false,
-			NetFlowRankingDuration: "1h",
-			NetFlowRankingLimit:    10,
-			EnablePriceRanking:     false,
-			PriceRankingDuration:   "1h,4h,24h",
-			PriceRankingLimit:      10,
+			NofxOSAPIKey:       "",
+			EnableQuantData:    false,
+			EnableQuantOI:      false,
+			EnableQuantNetflow: false,
+			// Market insights are served by the free Hyperliquid providers, so
+			// they are on by default for every new strategy. An empty source
+			// allow-list selects every registered provider.
+			EnableMarketInsights: true,
+			MarketInsightLimit:   10,
+			// The HyperData sidecar providers stay off until the user runs the
+			// process: enabling them by default would make every cycle log a
+			// connection failure and burn the fetch timeout.
+			EnableHyperData:  false,
+			HyperDataBaseURL: "",
 		},
 		RiskControl: RiskControlConfig{
 			MaxPositions:                 AutopilotDefaultMaxPositions,   // Eight-position default book (CODE ENFORCED)
@@ -1028,18 +1047,18 @@ func GetDefaultStrategyConfig(lang string) StrategyConfig {
 	}
 
 	config.PromptSections = PromptSectionsConfig{
-			RoleDefinition: `# You are the NOFX auto-trader
+		RoleDefinition: `# You are the NOFX auto-trader
 
 Trade only the Hyperliquid instruments presented in this cycle's candidate list. Never invent tickers or rotate outside the provided universe. Market data, indicators and candles are your evidence; the risk rules in this prompt are binding.`,
-			TradingFrequency: `# Trading Frequency
+		TradingFrequency: `# Trading Frequency
 
 - Open long or short based on the evidence in the candidate data.
 - Hold a position while its thesis remains intact.
 - Close when the thesis is invalidated, the position hits its protective stop, or it leaves the valid candidate universe.`,
-			EntryStandards: `# Entry Standards
+		EntryStandards: `# Entry Standards
 
 Require a clear directional edge backed by the provided market data. Do not open a position on weak, contradictory, or missing evidence.`,
-			DecisionProcess: `# Decision Process
+		DecisionProcess: `# Decision Process
 
 1. Read the candidate list and the market data for each symbol.
 2. Weigh trend, momentum, open interest and funding context.
@@ -1357,35 +1376,41 @@ func (c *StrategyConfig) EstimateTokens() TokenEstimate {
 		breakdown.QuantData = (numCoins * quantCharsPerCoin) / 4
 	}
 
-	// --- Ranking Data ---
-	rankingChars := 0
-	if c.Indicators.EnableOIRanking {
-		limit := c.Indicators.OIRankingLimit
+	// --- Market insights (pluggable sources) ---
+	// RankingData carries the market-wide insight budget: each registered source
+	// contributes a heading, a short orientation paragraph and its table rows.
+	if c.Indicators.EnableMarketInsights {
+		limit := c.Indicators.MarketInsightLimit
 		if limit <= 0 {
 			limit = 10
 		}
-		rankingChars += limit * 60
-	}
-	if c.Indicators.EnableNetFlowRanking {
-		limit := c.Indicators.NetFlowRankingLimit
-		if limit <= 0 {
-			limit = 10
+		// An empty allow-list means "every provider that reports itself enabled"
+		// under this configuration, so the count has to mirror the registry's
+		// own selection rule rather than a hard-coded total.
+		numSources := len(c.Indicators.MarketInsightSources)
+		if numSources == 0 {
+			// Always-on free sources: directional signal, capital flow and
+			// open-interest structure.
+			numSources = 3
+			if c.Indicators.EnableHyperData {
+				// Order flow plus tracked positioning.
+				numSources += 2
+			}
+			if c.Indicators.CoinankAPIKey != "" {
+				numSources++
+			}
 		}
-		rankingChars += limit * 80
+		// The prose part does not scale with the row count, so it is budgeted
+		// separately: ignoring it under-counts the direction block, which is
+		// mostly orientation text around a small table.
+		const (
+			insightOverheadChars = 700
+			insightCharsPerRow   = 90
+		)
+		breakdown.RankingData = (numSources*insightOverheadChars + numSources*limit*insightCharsPerRow) / 4
+	} else {
+		breakdown.RankingData = 0
 	}
-	if c.Indicators.EnablePriceRanking {
-		limit := c.Indicators.PriceRankingLimit
-		if limit <= 0 {
-			limit = 10
-		}
-		// Count durations (comma-separated)
-		numDurations := 1
-		if c.Indicators.PriceRankingDuration != "" {
-			numDurations = len(strings.Split(c.Indicators.PriceRankingDuration, ","))
-		}
-		rankingChars += limit * numDurations * 40
-	}
-	breakdown.RankingData = rankingChars / 4
 
 	// --- Total with 15% safety margin ---
 	subtotal := breakdown.SystemPrompt + breakdown.MarketData + breakdown.RankingData + breakdown.QuantData + breakdown.FixedOverhead

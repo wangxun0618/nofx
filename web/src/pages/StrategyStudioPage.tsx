@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
+  Activity,
   Bot,
   Check,
   Loader2,
@@ -25,7 +26,7 @@ import type {
   StrategyConfig,
 } from '../types'
 import { launchAutopilot } from '../lib/launch/launchAutopilot'
-import type { MarketSymbol } from '../lib/api/data'
+import type { MarketInsightSource, MarketSymbol } from '../lib/api/data'
 import { buildDashboardPath, ROUTES } from '../router/paths'
 import { t, type Language } from '../i18n/translations'
 
@@ -163,6 +164,13 @@ function defaultCoinSource(
   }
 }
 
+// Provider name → the config field holding that source's credential. Kept
+// explicit rather than derived from the name so a new keyed source is one line
+// here plus the provider itself (see docs/architecture/market-data-providers).
+const MARKET_SOURCE_KEY_FIELDS: Record<string, 'coinank_api_key'> = {
+  coinank_liquidation: 'coinank_api_key',
+}
+
 function defaultIndicators(
   indicators?: Partial<IndicatorConfig>
 ): IndicatorConfig {
@@ -194,9 +202,15 @@ function defaultIndicators(
     enable_quant_data: false,
     enable_quant_oi: false,
     enable_quant_netflow: false,
-    enable_oi_ranking: false,
-    enable_netflow_ranking: false,
-    enable_price_ranking: false,
+    // Market insights are the one indicator family this editor exposes, so carry
+    // the incoming values through instead of resetting them to the defaults.
+    enable_market_insights: indicators?.enable_market_insights ?? true,
+    market_insight_sources: indicators?.market_insight_sources ?? [],
+    market_insight_limit: indicators?.market_insight_limit ?? 10,
+    coinank_api_key: indicators?.coinank_api_key ?? '',
+    enable_hyperdata: indicators?.enable_hyperdata ?? false,
+    hyperdata_base_url: indicators?.hyperdata_base_url ?? '',
+    hyperdata_api_key: indicators?.hyperdata_api_key ?? '',
   }
 }
 
@@ -281,6 +295,8 @@ export function StrategyStudioPage() {
   const [symbolsLoading, setSymbolsLoading] = useState(false)
   const [symbolsError, setSymbolsError] = useState('')
   const [hasChanges, setHasChanges] = useState(false)
+  const [marketSources, setMarketSources] = useState<MarketInsightSource[]>([])
+  const [marketSourcesError, setMarketSourcesError] = useState('')
 
   const aiConfig = editingConfig?.ai_config || null
   const coinSource = aiConfig?.coin_source
@@ -348,10 +364,25 @@ export function StrategyStudioPage() {
     }
   }, [])
 
+  const loadMarketSources = useCallback(async () => {
+    try {
+      const result = await api.getMarketInsightSources(true)
+      setMarketSources(result)
+      setMarketSourcesError('')
+    } catch (err) {
+      setMarketSourcesError(
+        err instanceof Error
+          ? err.message
+          : t('lib.fetchMarketInsightSources', language)
+      )
+    }
+  }, [])
+
   useEffect(() => {
     void loadStrategies()
     void loadSymbols()
-  }, [loadStrategies, loadSymbols])
+    void loadMarketSources()
+  }, [loadStrategies, loadSymbols, loadMarketSources])
 
   const patchAI = (patch: Partial<AIStrategyConfig>) => {
     setEditingConfig((prev) => {
@@ -392,6 +423,30 @@ export function StrategyStudioPage() {
         ...risk,
         ...patch,
       }),
+    })
+  }
+
+  // Market-insight source selection. An empty allow-list means "every source",
+  // which keeps newly registered providers on by default; the UI materialises the
+  // full list before toggling so the user's intent stays explicit.
+  const isMarketSourceSelected = (name: string) => {
+    const list = indicators?.market_insight_sources || []
+    return list.length === 0 || list.includes(name)
+  }
+
+  const toggleMarketSource = (name: string) => {
+    const all = marketSources.map((source) => source.name)
+    if (all.length === 0) return
+
+    const current = indicators?.market_insight_sources || []
+    const effective = current.length === 0 ? all : current
+    const next = effective.includes(name)
+      ? effective.filter((item) => item !== name)
+      : [...effective, name]
+
+    // Collapse back to "all" when nothing is excluded, so saved configs stay short.
+    patchIndicators({
+      market_insight_sources: next.length === all.length ? [] : next,
     })
   }
 
@@ -1039,6 +1094,251 @@ export function StrategyStudioPage() {
                     {text(language, '暂无可用市场。', 'No markets available.')}
                   </div>
                 ) : null}
+              </section>
+
+              <section className="rounded-lg border border-[rgba(26,24,19,0.14)] bg-nofx-bg-lighter p-4">
+                <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-nofx-text">
+                      <Activity className="h-4 w-4 text-nofx-gold" />
+                      {text(language, '市场数据源', 'Market data sources')}
+                    </div>
+                    <div className="mt-1 text-xs text-nofx-text-muted">
+                      {text(
+                        language,
+                        '把全市场情报注入 AI 的决策上下文：资金流、持仓结构、强平密集区。内置的 Hyperliquid 数据源完全免费，无需 API Key。',
+                        'Injects market-wide context into the AI decision: fund flow, position structure, liquidation clusters. The built-in Hyperliquid sources are free and need no API key.'
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void loadMarketSources()}
+                    className="inline-flex items-center gap-2 rounded-lg border border-[rgba(26,24,19,0.14)] bg-nofx-bg-deeper px-3 py-2 text-xs text-nofx-text-muted hover:text-nofx-text"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    {t('common.refresh', language)}
+                  </button>
+                </div>
+
+                <label className="mb-3 flex items-center gap-2 text-sm text-nofx-text">
+                  <input
+                    type="checkbox"
+                    checked={indicators?.enable_market_insights ?? false}
+                    onChange={(event) =>
+                      patchIndicators({
+                        enable_market_insights: event.target.checked,
+                      })
+                    }
+                    className="h-4 w-4 accent-nofx-gold"
+                  />
+                  {text(language, '启用市场情报', 'Enable market insights')}
+                </label>
+
+                <div
+                  className={`space-y-2 ${
+                    indicators?.enable_market_insights
+                      ? ''
+                      : 'pointer-events-none opacity-45'
+                  }`}
+                >
+                  {marketSources.map((source) => {
+                    const enabled = isMarketSourceSelected(source.name)
+                    return (
+                      <button
+                        key={source.name}
+                        type="button"
+                        onClick={() => toggleMarketSource(source.name)}
+                        className={`flex w-full items-start justify-between gap-3 rounded-lg border p-3 text-left transition ${
+                          enabled
+                            ? 'border-nofx-gold bg-nofx-gold/10'
+                            : 'border-[rgba(26,24,19,0.14)] bg-nofx-bg-deeper hover:border-[rgba(26,24,19,0.24)]'
+                        }`}
+                      >
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-mono text-xs font-semibold text-nofx-text">
+                              {source.name}
+                            </span>
+                            {source.requires_key ? (
+                              <span className="rounded bg-nofx-gold/15 px-1.5 py-0.5 text-[10px] text-nofx-gold">
+                                {text(language, '需要 API Key', 'API key required')}
+                              </span>
+                            ) : source.requires_service ? (
+                              // Locally hosted: no credential, but unavailable
+                              // until the user starts the process.
+                              <span
+                                className="rounded bg-nofx-text-muted/15 px-1.5 py-0.5 text-[10px] text-nofx-text-muted"
+                                title={source.requires_service}
+                              >
+                                {text(language, '需要本地服务', 'Needs a local service')}
+                              </span>
+                            ) : (
+                              <span className="rounded bg-nofx-success/15 px-1.5 py-0.5 text-[10px] text-nofx-success">
+                                {text(language, '免费', 'Free')}
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-1 text-xs text-nofx-text-muted">
+                            {source.description}
+                          </div>
+                          {/* Repeated inline, not just in the badge tooltip:
+                              hover is unavailable on touch, and this is the one
+                              thing the user has to act on. */}
+                          {source.requires_service ? (
+                            <div className="mt-1 text-xs text-nofx-text-muted">
+                              {text(
+                                language,
+                                `依赖本地进程：${source.requires_service}`,
+                                `Needs a local process: ${source.requires_service}`
+                              )}
+                            </div>
+                          ) : null}
+                        </div>
+                        {enabled ? (
+                          <Check className="mt-0.5 h-4 w-4 shrink-0 text-nofx-gold" />
+                        ) : null}
+                      </button>
+                    )
+                  })}
+
+                  {marketSources.length === 0 ? (
+                    <div className="rounded-lg border border-[rgba(26,24,19,0.14)] bg-nofx-bg-deeper px-3 py-3 text-sm text-nofx-text-muted">
+                      {marketSourcesError ||
+                        text(
+                          language,
+                          '暂无可用数据源。',
+                          'No data sources available.'
+                        )}
+                    </div>
+                  ) : null}
+                </div>
+
+                {/* Credential inputs: only shown for a *selected* source that
+                    needs a key, so an optional provider stays invisible until the
+                    user opts into it. Its provider is disabled server-side until
+                    the key is non-empty. */}
+                {marketSources
+                  .filter(
+                    (source) =>
+                      source.requires_key &&
+                      MARKET_SOURCE_KEY_FIELDS[source.name] &&
+                      isMarketSourceSelected(source.name)
+                  )
+                  .map((source) => {
+                    const field = MARKET_SOURCE_KEY_FIELDS[source.name]
+                    return (
+                      <div key={source.name} className="mt-4">
+                        <label className="block text-sm text-nofx-text">
+                          {source.name}
+                          <span className="ml-2 text-xs text-nofx-text-muted">
+                            {text(language, 'API Key', 'API key')}
+                          </span>
+                        </label>
+                        <input
+                          type="password"
+                          value={indicators?.[field] ?? ''}
+                          onChange={(event) =>
+                            patchIndicators({ [field]: event.target.value })
+                          }
+                          placeholder={text(
+                            language,
+                            '填入后该数据源才会启用',
+                            'Required to enable this source'
+                          )}
+                          className="mt-1 w-full rounded-lg border border-[rgba(26,24,19,0.14)] bg-nofx-bg px-3 py-2 font-mono text-sm text-nofx-text"
+                        />
+                      </div>
+                    )
+                  })}
+
+                <div className="mt-4 flex flex-wrap items-center gap-4">
+                  <label className="flex items-center gap-2 text-sm text-nofx-text">
+                    {text(language, '榜单行数', 'Rows per board')}
+                    <select
+                      value={indicators?.market_insight_limit ?? 10}
+                      onChange={(event) =>
+                        patchIndicators({
+                          market_insight_limit: Number(event.target.value),
+                        })
+                      }
+                      className="rounded-lg border border-[rgba(26,24,19,0.14)] bg-nofx-bg px-2 py-1.5 text-sm text-nofx-text"
+                    >
+                      {[5, 10, 15, 20].map((value) => (
+                        <option key={value} value={value}>
+                          {value}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                {/* HyperData Terminal is a separate process, so it is switched on
+                    independently of the source allow-list. Enabling it while the
+                    process is down is harmless: those providers fail soft and
+                    the coverage block names them in the prompt. */}
+                <div className="mt-5 rounded-lg border border-[rgba(26,24,19,0.14)] bg-nofx-bg-deeper p-3">
+                  <label className="flex items-start gap-2 text-sm text-nofx-text">
+                    <input
+                      type="checkbox"
+                      checked={indicators?.enable_hyperdata ?? false}
+                      onChange={(event) =>
+                        patchIndicators({ enable_hyperdata: event.target.checked })
+                      }
+                      className="mt-0.5"
+                    />
+                    <span>
+                      {text(
+                        language,
+                        '启用 HyperData Terminal 侧车（订单流 / 追踪持仓）',
+                        'Enable the HyperData Terminal sidecar (order flow / tracked positions)'
+                      )}
+                      <span className="mt-1 block text-xs text-nofx-text-muted">
+                        {text(
+                          language,
+                          '需要在本机另外运行该开源服务，默认监听 127.0.0.1:8420。它以独立进程升级，不影响本项目构建；未运行时这两个数据源会自动跳过。',
+                          'Requires that open-source service to be running locally; it listens on 127.0.0.1:8420 by default. It upgrades as an independent process. When it is not running, those two sources are skipped automatically.'
+                        )}
+                      </span>
+                    </span>
+                  </label>
+
+                  {indicators?.enable_hyperdata ? (
+                    <div className="mt-3 space-y-3">
+                      <div>
+                        <label className="block text-xs text-nofx-text-muted">
+                          {text(language, '服务地址', 'Service URL')}
+                        </label>
+                        <input
+                          type="text"
+                          value={indicators?.hyperdata_base_url ?? ''}
+                          onChange={(event) =>
+                            patchIndicators({ hyperdata_base_url: event.target.value })
+                          }
+                          placeholder="http://127.0.0.1:8420"
+                          className="mt-1 w-full rounded-lg border border-[rgba(26,24,19,0.14)] bg-nofx-bg px-3 py-2 font-mono text-sm text-nofx-text"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-nofx-text-muted">
+                          {text(
+                            language,
+                            '服务访问密钥（仅当该服务启动时设置了密钥）',
+                            'Service key (only if the service was started with one)'
+                          )}
+                        </label>
+                        <input
+                          type="password"
+                          value={indicators?.hyperdata_api_key ?? ''}
+                          onChange={(event) =>
+                            patchIndicators({ hyperdata_api_key: event.target.value })
+                          }
+                          className="mt-1 w-full rounded-lg border border-[rgba(26,24,19,0.14)] bg-nofx-bg px-3 py-2 font-mono text-sm text-nofx-text"
+                        />
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
               </section>
 
               <details className="hidden rounded-lg border border-[rgba(26,24,19,0.14)] bg-nofx-bg-deeper p-4">

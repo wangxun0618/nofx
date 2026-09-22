@@ -23,10 +23,10 @@ func validateStrategyConfig(config *store.StrategyConfig) []string {
 		return warnings
 	}
 
-	// Validate NofxOS API key if any NofxOS feature is enabled
-	if (config.Indicators.EnableQuantData || config.Indicators.EnableOIRanking ||
-		config.Indicators.EnableNetFlowRanking || config.Indicators.EnablePriceRanking) &&
-		config.Indicators.NofxOSAPIKey == "" {
+	// Validate the NofxOS API key if any NofxOS-backed feature is enabled.
+	// Market insights are excluded: the built-in sources read free Hyperliquid
+	// data and never require a NofxOS key.
+	if config.Indicators.EnableQuantData && config.Indicators.NofxOSAPIKey == "" {
 		warnings = append(warnings, "NofxOS API key is not configured. NofxOS data sources may not work properly.")
 	}
 
@@ -627,14 +627,12 @@ func (s *Server) handleStrategyTestRun(c *gin.Context) {
 	}
 	quantDataMap := engine.FetchQuantDataBatch(symbols)
 
-	// Fetch OI ranking data (market-wide position changes)
-	oiRankingData := engine.FetchOIRankingData()
-
-	// Fetch NetFlow ranking data (market-wide fund flow)
-	netFlowRankingData := engine.FetchNetFlowRankingData()
-
-	// Fetch Price ranking data (market-wide gainers/losers)
-	priceRankingData := engine.FetchPriceRankingData()
+	// Collect market insights from the pluggable providers
+	language := "en"
+	if engine.GetLanguage() == kernel.LangChinese {
+		language = "zh"
+	}
+	insights := engine.CollectInsights(symbols, nil, language)
 
 	// Build real context (for generating User Prompt)
 	testContext := &kernel.Context{
@@ -651,14 +649,12 @@ func (s *Server) handleStrategyTestRun(c *gin.Context) {
 			MarginUsedPct:    0,
 			PositionCount:    0,
 		},
-		Positions:          []kernel.PositionInfo{},
-		CandidateCoins:     candidates,
-		PromptVariant:      req.PromptVariant,
-		MarketDataMap:      marketDataMap,
-		QuantDataMap:       quantDataMap,
-		OIRankingData:      oiRankingData,
-		NetFlowRankingData: netFlowRankingData,
-		PriceRankingData:   priceRankingData,
+		Positions:      []kernel.PositionInfo{},
+		CandidateCoins: candidates,
+		PromptVariant:  req.PromptVariant,
+		MarketDataMap:  marketDataMap,
+		QuantDataMap:   quantDataMap,
+		Insights:       insights,
 	}
 
 	// Build System Prompt

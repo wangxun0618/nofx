@@ -17,6 +17,7 @@ import { KlineChart } from './KlineChart'
 import { ExecutionLog } from './ExecutionLog'
 import { RiskRadar } from './RiskRadar'
 import { EdgeProfile } from './EdgeProfile'
+import { MarketInsightsPanel } from './MarketInsightsPanel'
 import { useDemoEngine } from '../../lib/demo/useDemoEngine'
 
 // fixed height for the row-1 panels so the row stays balanced at any width
@@ -448,6 +449,37 @@ export function TerminalDashboard({
               },
             ]}
           />
+        </div>
+        <div className="tm-rule" />
+
+        {/* ── market intelligence: the pluggable data sources the AI reasons over.
+              Rendering the registry here (rather than a bespoke widget) means the
+              terminal can never drift from what actually reaches the prompt. ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr)' }}>
+          <div style={{ ...sc, borderRight: cellBorder }}>
+            <MarketInsightsPanel provider="directional_signal" height={286} />
+          </div>
+          <div style={{ ...sc, borderRight: cellBorder }}>
+            <MarketInsightsPanel provider="hyperliquid_flow" height={286} />
+          </div>
+          <div style={sc}>
+            <MarketInsightsPanel provider="hyperliquid_leverage" height={286} />
+          </div>
+        </div>
+        <div className="tm-rule" />
+
+        {/* Sidecar-backed sources plus the gap report. The coverage panel is the
+            reason a missing feed cannot be mistaken for a quiet market. */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)' }}>
+          <div style={{ ...sc, borderRight: cellBorder }}>
+            <MarketInsightsPanel provider="hyperdata_orderflow" height={240} />
+          </div>
+          <div style={{ ...sc, borderRight: cellBorder }}>
+            <MarketInsightsPanel provider="hyperdata_positioning" height={240} />
+          </div>
+          <div style={sc}>
+            <MarketInsightsPanel provider="data_coverage" height={240} />
+          </div>
         </div>
         <div className="tm-rule" />
 

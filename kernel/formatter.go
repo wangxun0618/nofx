@@ -3,7 +3,6 @@ package kernel
 import (
 	"fmt"
 	"nofx/market"
-	"nofx/provider/nofxos"
 	"sort"
 	"strings"
 	"time"
@@ -89,13 +88,20 @@ func formatContextData(ctx *Context, lang Language) string {
 		}
 	}
 
-	// 7. OI ranking data (if available)
-	if ctx.OIRankingData != nil {
-		nofxosLang := nofxos.LangEnglish
+	// 7. Market insights from the pluggable providers
+	if len(ctx.Insights) > 0 {
+		insightLang := "en"
 		if lang == LangChinese {
-			nofxosLang = nofxos.LangChinese
+			insightLang = "zh"
 		}
-		sb.WriteString(nofxos.FormatOIRankingForAI(ctx.OIRankingData, nofxosLang))
+		for _, insight := range ctx.Insights {
+			block := insight.PromptBlock(insightLang)
+			if strings.TrimSpace(block) == "" {
+				continue
+			}
+			sb.WriteString(block)
+			sb.WriteString("\n")
+		}
 	}
 
 	return sb.String()

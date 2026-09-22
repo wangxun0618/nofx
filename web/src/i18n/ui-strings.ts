@@ -465,6 +465,41 @@ export const uiStringPairs = {
   'terminal.sync': { en: 'sync', zh: '同步中' },
   'terminal.bars': { en: 'bars', zh: '根' },
   'terminal.liveCandles': { en: 'Live candles', zh: '实时 K 线' },
+
+  // Market-intelligence panels. These render the same pluggable registry the
+  // strategy engine feeds into its prompt, so the terminal mirrors the AI view.
+  'terminal.marketFlow': { en: 'Cross-market flow', zh: '跨市场资金流' },
+  'terminal.oiStructure': { en: 'Open-interest structure', zh: '持仓结构' },
+  'terminal.marketDirection': { en: 'Directional signal', zh: '方向信号' },
+  'terminal.directionChanges': { en: 'Bias changes', zh: '方向变更' },
+  'terminal.directionNoFlow': {
+    en: 'Order flow is not among the components this cycle; the verdict rests on momentum and premium.',
+    zh: '本周期没有订单流分量，结论仅基于动量与溢价。',
+  },
+  'terminal.orderflow': { en: 'Order flow', zh: '订单流' },
+  'terminal.leverageSentiment': { en: 'Leverage sentiment', zh: '杠杆情绪' },
+  'terminal.orderflowUntracked': {
+    en: 'Not tracked by the instance:',
+    zh: '该实例未追踪：',
+  },
+  'terminal.positioning': { en: 'Tracked positions', zh: '追踪持仓' },
+  'terminal.positionSampleNotice': {
+    en: 'Sampled wallets, not a market census',
+    zh: '抽样钱包，非全市场普查',
+  },
+  'terminal.dataCoverage': { en: 'Data coverage', zh: '数据覆盖度' },
+  'terminal.sidecarUnavailable': {
+    en: 'HyperData Terminal is not reachable — see Data coverage',
+    zh: '无法连接 HyperData Terminal，详见「数据覆盖度」',
+  },
+  'terminal.coverageComplete': {
+    en: 'Every selected source contributed this cycle',
+    zh: '本周期所有已选数据源均正常返回',
+  },
+  'terminal.marketInsightsEmpty': {
+    en: 'No market data source is active',
+    zh: '当前没有启用的市场数据源',
+  },
   'chart.kline': { en: 'Kline', zh: 'K 线' },
 } satisfies Record<string, TranslationPair>
 

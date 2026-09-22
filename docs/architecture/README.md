@@ -57,6 +57,7 @@ NOFX is a full-stack AI trading platform for cryptocurrency and US stock markets
 | Module | Description | Documentation |
 |--------|-------------|---------------|
 | **Strategy Studio** | Strategy configuration, coin selection, data assembly, AI prompts | [STRATEGY_MODULE.md](STRATEGY_MODULE.md) |
+| **Market Data Providers** | Pluggable market-intelligence sources feeding the AI prompt | [market-data-providers.md](market-data-providers.md) |
 
 ### Module Overview
 
@@ -69,6 +70,15 @@ Complete strategy configuration system including:
 - Risk control enforcement
 
 **[Read Full Documentation →](STRATEGY_MODULE.md)**
+
+#### Market Data Providers
+Pluggable registry of market-wide intelligence sources:
+- `marketdata.Provider` / `Registry` / `Insight` abstraction
+- Built-in free sources on Hyperliquid (fund flow, open-interest structure)
+- Opt-in CoinAnk price-bucketed liquidation clusters
+- Adding a source touches exactly one wiring point
+
+**[Read Full Documentation →](market-data-providers.md)**
 
 ---
 

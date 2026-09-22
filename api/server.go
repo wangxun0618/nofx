@@ -325,6 +325,17 @@ CRITICAL: Always use the "id" field for strategy_id.`,
 			s.routeWithSchema(protected, "GET", "/strategies/default-config", "Get default strategy config with all fields and sensible values — use as reference for building configs",
 				`No parameters needed. Returns a complete StrategyConfig object with all fields populated with recommended defaults. Read this before building a custom config.`,
 				s.handleGetDefaultStrategyConfig)
+			// Market insights (pluggable data sources)
+			s.routeWithSchema(protected, "GET", "/market-insights/providers", "List the available market-insight data sources",
+				`Returns: {"sources":[{"name":"<provider id>","description":"<string>","requires_key":<bool>,"requires_service":"<external process, omitted when none>"}]}
+Sources with requires_key=false are free and keyless. A non-empty requires_service means the source needs another process running (it still needs no credential). Put an allow-list of these names in indicators.market_insight_sources, or leave that list empty to run every enabled source.`,
+				s.handleMarketInsightProviders)
+			s.routeWithSchema(protected, "GET", "/market-insights", "Collect market-wide insights (fund flow, position structure, liquidation clusters)",
+				`Query: lang=en|zh (prompt language), sources=<comma-separated provider names, optional>, hyperdata=1 to include the sidecar-backed sources, hyperdata_url=<origin, optional>
+Returns: {"insights":[{"provider":"<id>","title":"<string>","markdown":"<prompt block>","payload":<structured rows>}],"fetched_at":"<ISO8601>"}
+Runs the same pluggable registry the strategy engine uses, so this is exactly the data the AI reasons over. Free sources need no API key. When a selected source produces nothing, a "data_coverage" insight is appended naming it, so a missing feed is never mistaken for a quiet market.`,
+				s.handleMarketInsights)
+
 			s.route(protected, "POST", "/strategies/preview-prompt", "Preview the AI prompt that will be generated from a config", s.handlePreviewPrompt)
 			s.route(protected, "POST", "/strategies/test-run", "Test-run strategy AI analysis", s.handleStrategyTestRun)
 			s.route(protected, "GET", "/strategies/:id", "Get strategy by ID", s.handleGetStrategy)
@@ -354,13 +365,17 @@ StrategyConfig fields:
   indicators.rsi_periods: [7,14] default
   indicators.atr_periods: [14] default
   indicators.boll_periods: [20] default
-  indicators.nofxos_api_key: ALWAYS "cm_568c67eae410d912c54c"
-  indicators.enable_quant_data: ALWAYS true
-  indicators.enable_quant_oi: ALWAYS true
-  indicators.enable_quant_netflow: ALWAYS true
-  indicators.enable_oi_ranking: ALWAYS true, oi_ranking_duration:"1h", oi_ranking_limit:10
-  indicators.enable_netflow_ranking: ALWAYS true, netflow_ranking_duration:"1h", netflow_ranking_limit:10
-  indicators.enable_price_ranking: ALWAYS true, price_ranking_duration:"1h,4h,24h", price_ranking_limit:10
+  indicators.nofxos_api_key: leave empty. The previously bundled key is dead — every NofxOS quant endpoint it authenticated now returns 402.
+  indicators.enable_quant_data: false. Do NOT set true without a valid indicators.nofxos_api_key; without a working key these calls fail every cycle.
+  indicators.enable_quant_oi: only meaningful when enable_quant_data is true
+  indicators.enable_quant_netflow: only meaningful when enable_quant_data is true
+  indicators.enable_market_insights: ALWAYS true (market-wide context fed to the AI)
+  indicators.market_insight_sources: [] = every enabled source; or an explicit allow-list e.g. ["directional_signal","hyperliquid_flow"]
+  indicators.market_insight_limit: rows per board (default 10)
+  indicators.coinank_api_key: only for the opt-in coinank_liquidation source — leave empty to skip it
+  indicators.enable_hyperdata: false by default. Only set true when the HyperData Terminal sidecar is running; it provides hyperdata_orderflow (multi-venue CVD) and hyperdata_positioning (tracked positions)
+  indicators.hyperdata_base_url: sidecar origin, e.g. "http://127.0.0.1:8420" (default when empty)
+  indicators.hyperdata_api_key: only when the sidecar was started with its own API key
   risk_control.max_positions: max simultaneous positions (1=single coin, 3=diversified, 5=wide)
   risk_control.btc_eth_max_leverage: BTC/ETH leverage (conservative:3-5, moderate:5-10, aggressive:10-20)
   risk_control.altcoin_max_leverage: altcoin leverage (usually lower than BTC leverage)

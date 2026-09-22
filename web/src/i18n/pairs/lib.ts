@@ -65,6 +65,14 @@ export const libPairs: PairMap = {
   },
   'lib.fetchCompetitionData': { en: 'Failed to fetch competition data', zh: '获取竞赛数据失败' },
   'lib.fetchPositionHistory': { en: 'Failed to fetch position history', zh: '获取持仓历史失败' },
+  'lib.fetchMarketInsightSources': {
+    en: 'Failed to fetch market data sources',
+    zh: '获取市场数据源失败',
+  },
+  'lib.fetchMarketInsights': {
+    en: 'Failed to fetch market insights',
+    zh: '获取市场情报失败',
+  },
 
   // ── api/config.ts ──────────────────────────────────────────────────────
   'lib.fetchModelConfigs': { en: 'Failed to fetch model configs', zh: '获取模型配置失败' },

@@ -663,34 +663,26 @@ func (at *AutoTrader) buildTradingContext() (*kernel.Context, error) {
 		logger.Infof("📊 [%s] Successfully fetched quantitative data for %d symbols", at.name, len(ctx.QuantDataMap))
 	}
 
-	// 9. Get OI ranking data (market-wide position changes)
-	if strategyConfig.Indicators.EnableOIRanking {
-		logger.Infof("📊 [%s] Fetching OI ranking data...", at.name)
-		ctx.OIRankingData = at.strategyEngine.FetchOIRankingData()
-		if ctx.OIRankingData != nil {
-			logger.Infof("📊 [%s] OI ranking data ready: %d top, %d low positions",
-				at.name, len(ctx.OIRankingData.TopPositions), len(ctx.OIRankingData.LowPositions))
+	// 9. Collect market insights from the pluggable providers.
+	// Adding a new data source requires no change here: the strategy engine asks
+	// the registry, which runs whatever the strategy enabled.
+	if strategyConfig.Indicators.EnableMarketInsights {
+		candidateSymbols := make([]string, 0, len(candidateCoins))
+		for _, coin := range candidateCoins {
+			candidateSymbols = append(candidateSymbols, coin.Symbol)
 		}
-	}
+		positionSymbols := make([]string, 0, len(positionInfos))
+		for _, pos := range positionInfos {
+			positionSymbols = append(positionSymbols, pos.Symbol)
+		}
 
-	// 10. Get NetFlow ranking data (market-wide fund flow)
-	if strategyConfig.Indicators.EnableNetFlowRanking {
-		logger.Infof("💰 [%s] Fetching NetFlow ranking data...", at.name)
-		ctx.NetFlowRankingData = at.strategyEngine.FetchNetFlowRankingData()
-		if ctx.NetFlowRankingData != nil {
-			logger.Infof("💰 [%s] NetFlow ranking data ready: inst_in=%d, inst_out=%d",
-				at.name, len(ctx.NetFlowRankingData.InstitutionFutureTop), len(ctx.NetFlowRankingData.InstitutionFutureLow))
+		language := "en"
+		if strategyConfig.Language == "zh" {
+			language = "zh"
 		}
-	}
 
-	// 11. Get Price ranking data (market-wide gainers/losers)
-	if strategyConfig.Indicators.EnablePriceRanking {
-		logger.Infof("📈 [%s] Fetching Price ranking data...", at.name)
-		ctx.PriceRankingData = at.strategyEngine.FetchPriceRankingData()
-		if ctx.PriceRankingData != nil {
-			logger.Infof("📈 [%s] Price ranking data ready for %d durations",
-				at.name, len(ctx.PriceRankingData.Durations))
-		}
+		logger.Infof("📊 [%s] Collecting market insights...", at.name)
+		ctx.Insights = at.strategyEngine.CollectInsights(candidateSymbols, positionSymbols, language)
 	}
 
 	return ctx, nil

@@ -17,6 +17,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Architecture documentation with system design details
 - User guides with FAQ and troubleshooting
 - Community documentation with bounty programs
+- **Pluggable market-intelligence layer** (`marketdata`): the `Provider` / `Registry` / `Insight` abstraction — adding a data source means implementing the interface and listing it in `marketdata/providers/registry.go`, with no change to the engine, the trading loop or the prompt builder
+- Two fully free, keyless built-in sources: `hyperliquid_flow` (cross-market fund flow: turnover, movers, funding crowding) and `hyperliquid_leverage` (open-interest structure, leverage crowding, mark-vs-oracle dislocation)
+- Optional `coinank_liquidation` source: rebuilds **price-bucketed liquidation clusters** from individual liquidation fills, replacing the retired Vergex heatmap; it enables itself once a CoinAnk API key is configured
+- New endpoints: `GET /api/market-insights/providers` (list every source) and `GET /api/market-insights` (collect the board)
+- Strategy Studio "Market data sources" section: master switch, source cards with free / API-key badges, row count and credential input
+- Terminal panels for cross-market fund flow and open-interest structure, rendering exactly the data the AI reads when deciding
+- **`directional_signal` source**: votes price momentum, perpetual premium and aggressive order flow into a per-instrument `bias` and a signal-strength `score`, with **every component listed** so the verdict can be audited. Replaces the retired Vergex board without claiming to be authoritative
+- **Direction-change timeline**: `marketdata.DirectionTracker` records bias flips (the X→Y transition plus a reason derived from a diff of the component votes), persisted to `data/direction_history.json` so it survives restarts
+- **HyperData Terminal sidecar integration**: optional `hyperdata_orderflow` (multi-venue CVD with per-venue attribution, account long/short ratio, basis) and `hyperdata_positioning` (largest tracked positions, distance to liquidation) sources, consumed over HTTP from that independent open-source project's REST API
+- **Upstream upgrade tooling** under `deploy/hyperdata/`: a commit pin in `upstream.env`, `sidecar.sh` (install / update / status / contract / run), a `Dockerfile` that refuses to build off-pin, and `docker-compose.hyperdata.yml` for running the sidecar as its own service
+- **Live upstream drift report** (`TestHyperDataUpstreamHasNotDrifted`): probes a running sidecar and classifies every difference from the recorded fixtures as `MISSING` / `TYPE CHANGED` (breaking) or `ADDED` (informational), so an upgrade is triaged before it is adopted. It is a Go test rather than a second probe script, so the HTTP contract has one definition instead of two that can disagree
+- **The upstream pin is enforced, not documented**: `TestUpstreamPinIsStillMeaningful` fails the build unless the pinned commit, `hyperDataTestedMajor` and the recorded health fixture all describe the same upstream major, so a half-finished bump cannot pass quietly
+- **Contract tests for the HTTP source**: fixtures pin the upstream response shapes, with a second group asserting **tolerated drift** (added fields, loosened types, `null`), so an upstream change fails a test instead of silently degrading in a live cycle
+- **Data-source coverage block**: sources that contributed nothing are written into the prompt as a `data_coverage` block, so the model cannot read a dead feed as a quiet market
+- `marketdata.ServiceBacked`, an optional interface for sources that need another process running but no credential
 
 ### Changed
 - Reorganized documentation structure into logical categories
@@ -24,10 +39,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AI inference now talks to eight native providers directly (DeepSeek, OpenAI, Claude, Qwen, Gemini, Grok, Kimi, MiniMax) with your own API keys — no gateway sits in between
 - The built-in autopilot strategy now defaults to the native Hyperliquid top-volume universe (`hyper_main`: 24h volume, top 30 instruments) instead of the retired signal board
 - Product copy across the landing page, launch flow, strategy studio and terminal no longer mentions pay-per-call model billing
+- Market-level data went from four hardcoded chains (context fields typed as concrete sources, a single client on the engine, three `if` blocks in the loop, formatter calls in the prompt) to a single `Registry.Collect` call
+- Source failures went from silently dropped to recorded and reported at the end of the prompt, because a silent drop leaves the model unable to tell "nothing happened" from "the source is dead"
+- `IndicatorConfig` token estimation now counts the sources actually enabled and budgets orientation prose separately from table rows — the old formula counted rows only and materially under-estimated the direction block
 
 ### Removed
 - The Claw402 / x402 pay-per-call gateway: model routing, direction-board data, the USDC wallet package, per-call billing records, the launch preflight balance gate and the onboarding wallet flow
-- The Vergex signal board, direction-change leaderboard and cost/liquidation heatmap data sources together with their terminal and strategy-studio surfaces
+- The Vergex signal board, direction-change leaderboard and cost/liquidation heatmap data sources together with their terminal and strategy-studio surfaces (the direction board and its change history are now rebuilt as `directional_signal`; the heatmap is covered by `coinank_liquidation`, `hyperliquid_leverage` and `hyperdata_positioning`; the `signal_managed_exit` mode is **not** restored, because it is trade-layer semantics rather than a data-source capability)
+- Three nofxos ranking capabilities: `OIRankingData` with `GetOIRanking`, `netflow.go`, `price.go` and their formatters (the endpoints return 402)
 - Dead frontend routes and components: `/data`, `/strategy-market`, the beginner-onboarding wallet page, the beginner guide cards and the onboarding mode selector
 
 ---

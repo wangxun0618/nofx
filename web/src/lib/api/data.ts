@@ -42,6 +42,196 @@ export interface SymbolListResponse {
   count: number
 }
 
+// ── Market insights (pluggable data sources) ────────────────────────────────
+// Mirrors marketdata.Provider on the backend. The catalogue comes from the
+// registry, so a newly registered source appears here without a frontend change.
+
+export interface MarketInsightSource {
+  name: string
+  description: string
+  requires_key: boolean
+  /**
+   * Names an external process the source needs. Locally hosted sources need no
+   * credential but are still unavailable until the user starts something, which
+   * `requires_key` cannot express.
+   */
+  requires_service?: string
+}
+
+/** One instrument's cross-market flow contribution. */
+export interface MarketFlowRow {
+  symbol: string
+  dex?: string
+  volume_24h: number
+  change_24h_pct: number
+  open_interest_usd: number
+  funding_rate_1h: number
+  funding_annual_pct: number
+}
+
+export interface MarketFlowPayload {
+  most_traded: MarketFlowRow[]
+  most_crowded_long: MarketFlowRow[]
+  most_crowded_short: MarketFlowRow[]
+  gainers: MarketFlowRow[]
+  losers: MarketFlowRow[]
+  universe_size: number
+}
+
+/** One instrument's open-interest and leverage structure. */
+export interface MarketLeverageRow {
+  symbol: string
+  dex?: string
+  open_interest_usd: number
+  volume_24h: number
+  max_leverage: number
+  funding_annual_pct: number
+  premium_pct: number
+}
+
+export interface MarketLeveragePayload {
+  largest_open_interest: MarketLeverageRow[]
+  long_crowded: MarketLeverageRow[]
+  short_crowded: MarketLeverageRow[]
+  candidates: MarketLeverageRow[]
+  universe_size: number
+}
+
+/** One realised-liquidation price bucket. */
+export interface MarketLiquidationBin {
+  bucket_start_price: number
+  bucket_end_price: number
+  long_liq_usd: number
+  short_liq_usd: number
+}
+
+export interface MarketLiquidationPayload {
+  symbols: { symbol: string; bins: MarketLiquidationBin[] }[]
+}
+
+/** One auditable input behind a directional verdict. */
+export interface MarketDirectionComponent {
+  /** Stable component id: momentum, premium or flow. */
+  name: string
+  vote: 'bullish' | 'bearish' | 'neutral'
+  /** Human-readable magnitude, e.g. "+1.90σ" or "-0.050%". */
+  detail: string
+}
+
+export interface MarketDirectionRow {
+  symbol: string
+  bias: 'bullish' | 'bearish' | 'neutral'
+  score: number
+  bullish: number
+  bearish: number
+  neutral: number
+  components: MarketDirectionComponent[]
+}
+
+/** A recorded bias transition plus the component evidence that caused it. */
+export interface MarketDirectionChange {
+  symbol: string
+  from_bias: string
+  to_bias: string
+  from_score: number
+  to_score: number
+  reason: string
+  changed_at: string
+}
+
+export interface MarketDirectionPayload {
+  top_bullish: MarketDirectionRow[]
+  top_bearish: MarketDirectionRow[]
+  instruments: MarketDirectionRow[]
+  recent_changes?: MarketDirectionChange[]
+  universe_size: number
+  components: string[]
+}
+
+/** One instrument's aggressive order flow. */
+export interface MarketOrderflowRow {
+  symbol: string
+  cumulative_cvd: number
+  cvd_hyperliquid: number
+  cvd_binance: number
+  net_volume?: number
+  net_volume_window?: string
+  trades_per_second: number
+  aggregate_signal?: string
+  venues?: string[]
+  metrics_available: boolean
+}
+
+export interface MarketOrderflowPayload {
+  rows: MarketOrderflowRow[]
+  long_short?: Record<
+    string,
+    { long_ratio: number; short_ratio: number; long_short_ratio: number; timestamp: number }
+  >
+  basis?: Record<
+    string,
+    { spot_price: number; perp_price: number; basis_pct: number; timestamp: number }
+  >
+  venue_status?: string[]
+  unavailable_symbols?: string[]
+  hyperdata_version?: string
+  version_warning?: string
+}
+
+/** One tracked position, relative to its liquidation price. */
+export interface MarketPositioningRow {
+  symbol: string
+  side: string
+  size_usd: number
+  entry_price: number
+  mark_price: number
+  liq_price: number
+  distance_pct: number
+  leverage: number
+  unrealized_pnl: number
+}
+
+export interface MarketPositioningPayload {
+  largest: MarketPositioningRow[]
+  near_liquidation: MarketPositioningRow[]
+  danger_threshold_pct?: number
+  scan_age_seconds?: number
+  tracked_positions: number
+  hyperdata_version?: string
+}
+
+/**
+ * A source that was selected but produced nothing this cycle. The backend emits
+ * these as a `data_coverage` block so a missing feed is never mistaken for a
+ * quiet market.
+ */
+export interface MarketInsightFailure {
+  provider: string
+  reason: string
+}
+
+export interface MarketInsight {
+  provider: string
+  title: string
+  markdown: string
+  markdown_zh?: string
+  payload?:
+    | MarketFlowPayload
+    | MarketLeveragePayload
+    | MarketLiquidationPayload
+    | MarketDirectionPayload
+    | MarketOrderflowPayload
+    | MarketPositioningPayload
+    | MarketInsightFailure[]
+    | Record<string, unknown>
+  fetched_at: string
+}
+
+export interface MarketInsightsResponse {
+  insights: MarketInsight[]
+  fetched_at: string
+}
+
 export const dataApi = {
   async getSymbols(exchange = 'hyperliquid-xyz'): Promise<SymbolListResponse> {
     const result = await httpClient.get<SymbolListResponse>(
@@ -205,5 +395,49 @@ export const dataApi = {
     )
     if (!result.success) throw new Error(tg('lib.fetchPositionHistory'))
     return result.data!
+  },
+
+  /**
+   * Lists every market-intelligence source the backend ships, regardless of
+   * whether the active strategy enables it.
+   */
+  async getMarketInsightSources(
+    silent?: boolean
+  ): Promise<MarketInsightSource[]> {
+    const result = await httpClient.request<{ sources: MarketInsightSource[] }>(
+      `${API_BASE}/market-insights/providers`,
+      { silent }
+    )
+    if (!result.success) throw new Error(tg('lib.fetchMarketInsightSources'))
+    return result.data?.sources || []
+  },
+
+  /**
+   * Collects the market-wide insight board. This is the same registry the
+   * strategy engine reads, so the terminal shows exactly what the AI sees.
+   */
+  async getMarketInsights(params?: {
+    lang?: string
+    sources?: string[]
+    /** Requests the sidecar-backed sources, which need HyperData running. */
+    hyperdata?: boolean
+    hyperdataUrl?: string
+    silent?: boolean
+  }): Promise<MarketInsightsResponse> {
+    const query = new URLSearchParams()
+    if (params?.lang) query.set('lang', params.lang)
+    if (params?.sources?.length) query.set('sources', params.sources.join(','))
+    if (params?.hyperdata) {
+      query.set('hyperdata', '1')
+      if (params.hyperdataUrl) query.set('hyperdata_url', params.hyperdataUrl)
+    }
+    const suffix = query.toString() ? `?${query.toString()}` : ''
+
+    const result = await httpClient.request<MarketInsightsResponse>(
+      `${API_BASE}/market-insights${suffix}`,
+      { silent: params?.silent }
+    )
+    if (!result.success) throw new Error(tg('lib.fetchMarketInsights'))
+    return result.data || { insights: [], fetched_at: '' }
   },
 }

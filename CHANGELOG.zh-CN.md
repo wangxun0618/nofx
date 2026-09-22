@@ -17,6 +17,21 @@ NOFX 项目的所有重要更改都将记录在此文件中。
 - 架构文档，包含系统设计细节
 - 用户指南，包含 FAQ 和故障排除
 - 社区文档，包含悬赏计划
+- **可插拔市场情报层**（`marketdata`）：`Provider` / `Registry` / `Insight` 抽象，新增数据源只需实现接口并登记到 `marketdata/providers/registry.go`，引擎、交易循环与提示词构建器均无需改动
+- 两个完全免费、无需 API Key 的内置数据源：`hyperliquid_flow`（跨市场资金流：成交额、涨跌幅、资金费率拥挤度）与 `hyperliquid_leverage`（持仓量结构、杠杆拥挤度、mark 对 oracle 偏离）
+- 可选数据源 `coinank_liquidation`：由逐笔强平记录在本地重建**价格分桶强平簇**，替代原 Vergex 强平热力图；填入 CoinAnk API Key 后自动启用
+- 新增 API：`GET /api/market-insights/providers`（列出全部数据源）与 `GET /api/market-insights`（抓取数据）
+- 策略工作室「市场数据源」配置区：总开关、数据源卡片（含「免费 / 需要 API Key」徽章）、榜单行数与凭据输入
+- 终端新增「跨市场资金流」与「持仓结构」面板，渲染的正是 AI 决策时读取的同一份数据
+- **方向信号源 `directional_signal`**：由价格动量、永续溢价与激进订单流三路投票，本地计算每个品种的 `bias` 与信号强度 `score`，并把**每一个分量逐条列出**供审计——用于替代原 Vergex 方向榜，但**不声明为权威结论**
+- **方向变更时间线**：`marketdata.DirectionTracker` 记录 bias 翻转（含 X→Y 与由分量票 diff 算出的原因），落盘到 `data/direction_history.json` 并跨重启存活
+- **HyperData Terminal 侧车接入**：新增 `hyperdata_orderflow`（多交易所 CVD 逐所归因、账户多空比、基差）与 `hyperdata_positioning`（最大被追踪仓位、距强平距离）两个可选数据源，通过 HTTP 消费该独立开源项目的 REST API
+- **上游升级机制**：`deploy/hyperdata/` 下提供钉住 commit 的 `upstream.env`、`sidecar.sh`（install / update / status / contract / run）、会拒绝构建偏离 pin 代码的 `Dockerfile`；`docker-compose.hyperdata.yml` 可把侧车作为独立服务并行部署
+- **活体上游漂移报告**（`TestHyperDataUpstreamHasNotDrifted`）：探测运行中的侧车，把与录制 fixture 的每处差异分类为 `MISSING` / `TYPE CHANGED`（破坏性）或 `ADDED`（信息性），使升级在采纳前就能被分诊。它做成一个 Go 测试而不是第二个探测脚本，因此 HTTP 契约只有一份定义，而不是两份可能互相矛盾的东西
+- **上游版本钉是被强制的，而不只是文档**：`TestUpstreamPinIsStillMeaningful` 会在「钉住的 commit、`hyperDataTestedMajor`、录制的 health fixture」三者主版本不一致时让构建失败，因此只改一半的版本推进无法悄悄通过
+- **数据源契约测试**：以 fixture 钉住上游响应形状，并单独覆盖「允许的漂移」（新增字段、类型放宽、`null`），上游改字段会在测试里失败而不是在实盘周期里静默降级
+- **数据源覆盖度块**：本轮未贡献数据的源会以 `data_coverage` 块写进提示词，避免模型把「源挂了」误读成「市场很安静」
+- 新增 `marketdata.ServiceBacked` 可选接口，用于表达「需要另一个进程在运行但不需要凭证」的数据源
 
 ### 变更
 - 重组文档结构为逻辑分类
@@ -24,10 +39,14 @@ NOFX 项目的所有重要更改都将记录在此文件中。
 - AI 推理改为直连 8 家原生服务商（DeepSeek、OpenAI、Claude、Qwen、Gemini、Grok、Kimi、MiniMax），使用你自己的 API Key，中间不再有任何网关
 - 内置自动交易策略的默认候选池改为 Hyperliquid 原生成交量榜（`hyper_main`：24 小时成交量前 30），不再依赖已下线的信号看板
 - 落地页、启动流程、策略工作室与终端的产品文案不再出现「按次计费」表述
+- 市场级数据由四条硬编码链路（`Context` 字段类型强绑、引擎单一 client、交易循环三段 if、提示词直接调格式化函数）重构为单一的 `Registry.Collect` 调用
+- 数据源失败从「静默丢弃」改为「记录并在提示词末尾报告」，因为静默丢弃会让模型无法区分「无事发生」与「数据源已死」
+- `IndicatorConfig` 的 token 估算改为按实际启用的数据源数量计算，并把「说明性文字」与「表格行」分开预算——旧公式只按行数估算，会显著低估方向信号块
 
 ### 移除
 - Claw402 / x402 按次付费网关：模型路由、方向看板数据、USDC 钱包包、按次计费记录、启动预检余额门槛与新手引导钱包流程
-- Vergex 信号榜、方向变化排行榜与持仓成本/强平热力图数据源，及对应的终端与策略工作室界面
+- Vergex 信号榜、方向变化排行榜与持仓成本/强平热力图数据源，及对应的终端与策略工作室界面（其中方向榜与方向变更历史已由 `directional_signal` 重建，强平热力图已由 `coinank_liquidation`、`hyperliquid_leverage` 与 `hyperdata_positioning` 替代；`signal_managed_exit` 出场模式**未**恢复，因为它属于交易层语义而非数据源能力）
+- nofxos 三个排行能力：`OIRankingData` 与 `GetOIRanking`、`netflow.go`、`price.go` 及其格式化函数（对应端点已返回 402）
 - 前端死路由与死组件：`/data`、`/strategy-market`、新手引导钱包页、新手引导卡片与新手/进阶模式选择器
 
 ---

@@ -3,7 +3,6 @@ package kernel
 import (
 	"fmt"
 	"nofx/market"
-	"nofx/provider/nofxos"
 	"nofx/store"
 	"strings"
 	"time"
@@ -649,25 +648,21 @@ func (e *StrategyEngine) BuildUserPrompt(ctx *Context) string {
 	}
 	sb.WriteString("\n")
 
-	// Get language for market data formatting
-	nofxosLang := nofxos.LangEnglish
-	if e.GetLanguage() == LangChinese {
-		nofxosLang = nofxos.LangChinese
-	}
-
-	// OI Ranking data (market-wide open interest changes)
-	if ctx.OIRankingData != nil {
-		sb.WriteString(nofxos.FormatOIRankingForAI(ctx.OIRankingData, nofxosLang))
-	}
-
-	// NetFlow Ranking data (market-wide fund flow)
-	if ctx.NetFlowRankingData != nil {
-		sb.WriteString(nofxos.FormatNetFlowRankingForAI(ctx.NetFlowRankingData, nofxosLang))
-	}
-
-	// Price Ranking data (market-wide gainers/losers)
-	if ctx.PriceRankingData != nil {
-		sb.WriteString(nofxos.FormatPriceRankingForAI(ctx.PriceRankingData, nofxosLang))
+	// Market insights from the pluggable providers. Each provider renders its own
+	// block, so registering a new source never requires touching this function.
+	if len(ctx.Insights) > 0 {
+		language := "en"
+		if e.GetLanguage() == LangChinese {
+			language = "zh"
+		}
+		for _, insight := range ctx.Insights {
+			block := insight.PromptBlock(language)
+			if strings.TrimSpace(block) == "" {
+				continue
+			}
+			sb.WriteString(block)
+			sb.WriteString("\n")
+		}
 	}
 
 	sb.WriteString("---\n\n")

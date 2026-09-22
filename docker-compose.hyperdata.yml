@@ -1,0 +1,56 @@
+# HyperData Terminal sidecar, opt-in.
+#
+# Layer this on docker-compose.yml so the sidecar joins the same network as the
+# backend:
+#
+#   set -a; . deploy/hyperdata/upstream.env; set +a
+#   docker compose -f docker-compose.yml -f docker-compose.hyperdata.yml \
+#     --profile hyperdata up -d --build
+#
+# Sourcing upstream.env is what keeps the image and the pin in agreement: the
+# revision is not duplicated here, so there is no second place to forget. The
+# `${VAR:?}` form below makes a missing pin or key a hard error rather than a
+# sidecar that starts and answers nothing.
+#
+# The file is additive and profile-gated, so it does nothing unless both the
+# `-f` flag and `--profile hyperdata` are given.
+
+services:
+  hyperdata:
+    profiles: ["hyperdata"]
+    build:
+      context: ./deploy/hyperdata
+      dockerfile: Dockerfile
+      args:
+        HYPERDATA_REPO: "${HYPERDATA_REPO:?source deploy/hyperdata/upstream.env first}"
+        HYPERDATA_REF: "${HYPERDATA_REF:-main}"
+        HYPERDATA_REVISION: "${HYPERDATA_REVISION:?source deploy/hyperdata/upstream.env first}"
+    # Tagged by revision so a rebuild after a pin bump cannot be mistaken for the
+    # previous one in `docker images`.
+    image: nofx-hyperdata:${HYPERDATA_REVISION:?source deploy/hyperdata/upstream.env first}
+    container_name: nofx-hyperdata
+    restart: unless-stopped
+    stop_grace_period: 30s
+    environment:
+      - TZ=${TZ:-Asia/Shanghai}
+      # Upstream refuses a non-loopback bind without a key, and the Dockerfile
+      # sets HYPERDATA_API_HOST=0.0.0.0. Supplying the key is therefore part of
+      # starting the container at all, and the scheduler fails fast with this
+      # message rather than leaving a sidecar that answers nothing.
+      - HYPERDATA_API_KEY=${HYPERDATA_API_KEY:?set HYPERDATA_API_KEY in .env}
+      # Optional. Public WebSocket feeds work without these; they raise per-venue
+      # data quality (see upstream docs/DATA_INTEGRITY.md).
+      - BINANCE_API_KEY=${BINANCE_API_KEY:-}
+      - BINANCE_API_SECRET=${BINANCE_API_SECRET:-}
+    volumes:
+      # Named on the host so the sidecar's SQLite history survives a recreate.
+      - ./data/hyperdata:/app/data
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - nofx-network
+    # No `ports:` on purpose. The API serves wallet-derived positions, liquidation
+    # danger zones and live order flow; upstream explicitly warns against exposing
+    # it, and the backend reaches it over the compose network at
+    # http://hyperdata:8420. To inspect it from the host:
+    #   docker compose exec hyperdata \
+    #     curl -s localhost:8420/v1/health

@@ -3,9 +3,6 @@ package nofxos
 import (
 	"encoding/json"
 	"fmt"
-	"log"
-	"strings"
-	"time"
 )
 
 // OIPosition represents open interest data for a single coin
@@ -35,52 +32,6 @@ type OIRankingResponse struct {
 		RankType       string       `json:"rank_type"`
 		Limit          int          `json:"limit"`
 	} `json:"data"`
-}
-
-// OIRankingData contains both top and low OI rankings
-type OIRankingData struct {
-	TimeRange    string       `json:"time_range"`
-	Duration     string       `json:"duration"`
-	TopPositions []OIPosition `json:"top_positions"`
-	LowPositions []OIPosition `json:"low_positions"`
-	FetchedAt    time.Time    `json:"fetched_at"`
-}
-
-// GetOIRanking retrieves OI ranking data (both top increase and low decrease)
-func (c *Client) GetOIRanking(duration string, limit int) (*OIRankingData, error) {
-	if duration == "" {
-		duration = "1h"
-	}
-	if limit <= 0 {
-		limit = 20
-	}
-
-	result := &OIRankingData{
-		Duration:  duration,
-		FetchedAt: time.Now(),
-	}
-
-	// Fetch top ranking (OI increase)
-	topPositions, timeRange, err := c.fetchOIRanking("top", duration, limit)
-	if err != nil {
-		log.Printf("⚠️  Failed to fetch OI top ranking: %v", err)
-	} else {
-		result.TopPositions = topPositions
-		result.TimeRange = timeRange
-	}
-
-	// Fetch low ranking (OI decrease)
-	lowPositions, _, err := c.fetchOIRanking("low", duration, limit)
-	if err != nil {
-		log.Printf("⚠️  Failed to fetch OI low ranking: %v", err)
-	} else {
-		result.LowPositions = lowPositions
-	}
-
-	log.Printf("✓ Fetched OI ranking data: %d top, %d low (duration: %s)",
-		len(result.TopPositions), len(result.LowPositions), duration)
-
-	return result, nil
 }
 
 func (c *Client) fetchOIRanking(rankType, duration string, limit int) ([]OIPosition, string, error) {
@@ -152,86 +103,4 @@ func (c *Client) GetOILowSymbols() ([]string, error) {
 	}
 
 	return symbols, nil
-}
-
-// FormatOIRankingForAI formats OI ranking data for AI consumption
-func FormatOIRankingForAI(data *OIRankingData, lang Language) string {
-	if data == nil {
-		return ""
-	}
-
-	if lang == LangChinese {
-		return formatOIRankingZH(data)
-	}
-	return formatOIRankingEN(data)
-}
-
-func formatOIRankingZH(data *OIRankingData) string {
-	var sb strings.Builder
-
-	sb.WriteString(fmt.Sprintf("## Open Interest Change Ranking (%s)\n\n", data.Duration))
-
-	if len(data.TopPositions) > 0 {
-		sb.WriteString("### OI Increase Ranking\n")
-		sb.WriteString("Capital inflow, trend continuation or new position signal:\n\n")
-		sb.WriteString("| Rank | Symbol | OI Change(USDT) | OI Change% | Price Change% |\n")
-		sb.WriteString("|------|------|----------------|---------|----------|\n")
-		for _, pos := range data.TopPositions {
-			sb.WriteString(fmt.Sprintf("| %d | %s | %s | %+.2f%% | %+.2f%% |\n",
-				pos.Rank, pos.Symbol, formatValue(pos.OIDeltaValue),
-				pos.OIDeltaPercent, pos.PriceDeltaPercent))
-		}
-		sb.WriteString("\n")
-	}
-
-	if len(data.LowPositions) > 0 {
-		sb.WriteString("### OI Decrease Ranking\n")
-		sb.WriteString("Capital outflow, trend reversal or position close signal:\n\n")
-		sb.WriteString("| Rank | Symbol | OI Change(USDT) | OI Change% | Price Change% |\n")
-		sb.WriteString("|------|------|----------------|---------|----------|\n")
-		for _, pos := range data.LowPositions {
-			sb.WriteString(fmt.Sprintf("| %d | %s | %s | %+.2f%% | %+.2f%% |\n",
-				pos.Rank, pos.Symbol, formatValue(pos.OIDeltaValue),
-				pos.OIDeltaPercent, pos.PriceDeltaPercent))
-		}
-		sb.WriteString("\n")
-	}
-
-	sb.WriteString("**Interpretation**: OI up + Price up = longs dominant | OI up + Price down = shorts dominant | OI down + Price up = shorts closing | OI down + Price down = longs closing\n\n")
-	return sb.String()
-}
-
-func formatOIRankingEN(data *OIRankingData) string {
-	var sb strings.Builder
-
-	sb.WriteString(fmt.Sprintf("## Open Interest Changes (%s)\n\n", data.Duration))
-
-	if len(data.TopPositions) > 0 {
-		sb.WriteString("### OI Increase Ranking\n")
-		sb.WriteString("Capital inflow signals - trend continuation or new positions:\n\n")
-		sb.WriteString("| Rank | Symbol | OI Change (USDT) | OI Change % | Price Change % |\n")
-		sb.WriteString("|------|--------|------------------|-------------|----------------|\n")
-		for _, pos := range data.TopPositions {
-			sb.WriteString(fmt.Sprintf("| %d | %s | %s | %+.2f%% | %+.2f%% |\n",
-				pos.Rank, pos.Symbol, formatValue(pos.OIDeltaValue),
-				pos.OIDeltaPercent, pos.PriceDeltaPercent))
-		}
-		sb.WriteString("\n")
-	}
-
-	if len(data.LowPositions) > 0 {
-		sb.WriteString("### OI Decrease Ranking\n")
-		sb.WriteString("Capital outflow signals - trend reversal or position closing:\n\n")
-		sb.WriteString("| Rank | Symbol | OI Change (USDT) | OI Change % | Price Change % |\n")
-		sb.WriteString("|------|--------|------------------|-------------|----------------|\n")
-		for _, pos := range data.LowPositions {
-			sb.WriteString(fmt.Sprintf("| %d | %s | %s | %+.2f%% | %+.2f%% |\n",
-				pos.Rank, pos.Symbol, formatValue(pos.OIDeltaValue),
-				pos.OIDeltaPercent, pos.PriceDeltaPercent))
-		}
-		sb.WriteString("\n")
-	}
-
-	sb.WriteString("**Key**: OI up + Price up = Bulls dominant | OI up + Price down = Bears dominant | OI down + Price up = Short covering | OI down + Price down = Long liquidation\n\n")
-	return sb.String()
 }

@@ -1,6 +1,7 @@
 package market
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -256,8 +257,17 @@ func GetWithTimeframes(symbol string, timeframes []string, primaryTimeframe stri
 	}, nil
 }
 
-// getOpenInterestData retrieves OI data
+// getOpenInterestData retrieves open interest for a symbol, denominated in coin
+// units.
+//
+// Hyperliquid is consulted first: it is the venue this product actually trades, it
+// covers the whole xyz equities board, and its board is served from one cached
+// call. Binance remains as a fallback for symbols the Hyperliquid board lacks.
 func getOpenInterestData(symbol string) (*OIData, error) {
+	if coin, ok := hyperliquidContext(symbol); ok && coin.OpenInterest > 0 {
+		return &OIData{Latest: coin.OpenInterest, Average: coin.OpenInterest}, nil
+	}
+
 	url := fmt.Sprintf("https://fapi.binance.com/fapi/v1/openInterest?symbol=%s", symbol)
 
 	apiClient := NewAPIClient()
@@ -290,7 +300,35 @@ func getOpenInterestData(symbol string) (*OIData, error) {
 	}, nil
 }
 
-// getFundingRate retrieves funding rate (optimized: uses 1-hour cache)
+const (
+	// hyperliquidContextTimeout bounds a per-symbol Hyperliquid lookup. The board
+	// itself is cached for five minutes, so this only bites on a cold start.
+	hyperliquidContextTimeout = 8 * time.Second
+	// binanceFundingHours is the funding interval of Binance perpetuals, used to
+	// normalise its rate onto the hourly scale that Hyperliquid quotes.
+	binanceFundingHours = 8.0
+)
+
+// hyperliquidContext returns the derivatives context for a Hyperliquid-native
+// instrument. ok is false when the symbol is not on the Hyperliquid board or the
+// lookup fails, which lets the caller fall back to Binance.
+func hyperliquidContext(symbol string) (*hyperliquid.CoinInfo, bool) {
+	ctx, cancel := context.WithTimeout(context.Background(), hyperliquidContextTimeout)
+	defer cancel()
+
+	coin, err := hyperliquid.FindAssetContext(ctx, symbol)
+	if err != nil || coin == nil {
+		return nil, false
+	}
+	return coin, true
+}
+
+// getFundingRate retrieves the funding rate normalised to a per-hour figure.
+//
+// Hyperliquid quotes funding hourly, whereas Binance's premiumIndex returns the
+// current 8-hour rate, so the fallback is divided down to keep one unit across
+// sources. Hyperliquid is tried first because it is the traded venue and covers
+// the xyz equities board, which Binance does not list at all.
 func getFundingRate(symbol string) (float64, error) {
 	// Check cache (1-hour validity)
 	// Funding Rate only updates every 8 hours, 1-hour cache is very reasonable
@@ -300,6 +338,14 @@ func getFundingRate(symbol string) (float64, error) {
 			// Cache hit, return directly
 			return cache.Rate, nil
 		}
+	}
+
+	if coin, ok := hyperliquidContext(symbol); ok {
+		fundingRateMap.Store(symbol, &FundingRateCache{
+			Rate:      coin.FundingRate,
+			UpdatedAt: time.Now(),
+		})
+		return coin.FundingRate, nil
 	}
 
 	// Cache expired or doesn't exist, call API
@@ -332,6 +378,8 @@ func getFundingRate(symbol string) (float64, error) {
 	}
 
 	rate, _ := strconv.ParseFloat(result.LastFundingRate, 64)
+	// Normalise Binance's 8-hour rate onto the hourly scale used everywhere else.
+	rate /= binanceFundingHours
 
 	// Update cache
 	fundingRateMap.Store(symbol, &FundingRateCache{

@@ -57,6 +57,7 @@ NOFX 是一个支持加密货币和美股市场的全栈 AI 交易平台：
 | 模块 | 描述 | 文档 |
 |------|------|------|
 | **策略工作室** | 策略配置、币种选择、数据组装、AI 提示词 | [STRATEGY_MODULE.md](STRATEGY_MODULE.md) |
+| **市场数据源** | 可插拔的市场情报数据源，直接喂给 AI 提示词 | [market-data-providers.zh-CN.md](market-data-providers.zh-CN.md) |
 
 ### 模块概览
 
@@ -69,6 +70,15 @@ NOFX 是一个支持加密货币和美股市场的全栈 AI 交易平台：
 - 风险控制强制执行
 
 **[阅读完整文档 →](STRATEGY_MODULE.md)**
+
+#### 市场数据源
+可插拔的市场情报数据源注册表：
+- `marketdata.Provider` / `Registry` / `Insight` 抽象
+- 基于 Hyperliquid 的免费内置源（资金流、持仓结构）
+- 可选的 CoinAnk 价格分桶强平簇
+- 新增数据源只需改动一个接线点
+
+**[阅读完整文档 →](market-data-providers.zh-CN.md)**
 
 ---
 

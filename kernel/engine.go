@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"nofx/logger"
 	"nofx/market"
+	"nofx/marketdata"
+	"nofx/marketdata/providers"
 	"nofx/provider/hyperliquid"
 	"nofx/provider/nofxos"
 	"nofx/security"
@@ -90,25 +92,26 @@ type RecentOrder struct {
 
 // Context trading context (complete information passed to AI)
 type Context struct {
-	CurrentTime        string                             `json:"current_time"`
-	RuntimeMinutes     int                                `json:"runtime_minutes"`
-	CallCount          int                                `json:"call_count"`
-	Account            AccountInfo                        `json:"account"`
-	Positions          []PositionInfo                     `json:"positions"`
-	CandidateCoins     []CandidateCoin                    `json:"candidate_coins"`
-	PromptVariant      string                             `json:"prompt_variant,omitempty"`
-	TradingStats       *TradingStats                      `json:"trading_stats,omitempty"`
-	RecentOrders       []RecentOrder                      `json:"recent_orders,omitempty"`
-	MarketDataMap      map[string]*market.Data            `json:"-"`
-	MultiTFMarket      map[string]map[string]*market.Data `json:"-"`
-	OITopDataMap       map[string]*OITopData              `json:"-"`
-	QuantDataMap       map[string]*QuantData              `json:"-"`
-	OIRankingData      *nofxos.OIRankingData              `json:"-"` // Market-wide OI ranking data
-	NetFlowRankingData *nofxos.NetFlowRankingData         `json:"-"` // Market-wide fund flow ranking data
-	PriceRankingData   *nofxos.PriceRankingData           `json:"-"` // Market-wide price gainers/losers
-	BTCETHLeverage     int                                `json:"-"`
-	AltcoinLeverage    int                                `json:"-"`
-	Timeframes         []string                           `json:"-"`
+	CurrentTime    string                             `json:"current_time"`
+	RuntimeMinutes int                                `json:"runtime_minutes"`
+	CallCount      int                                `json:"call_count"`
+	Account        AccountInfo                        `json:"account"`
+	Positions      []PositionInfo                     `json:"positions"`
+	CandidateCoins []CandidateCoin                    `json:"candidate_coins"`
+	PromptVariant  string                             `json:"prompt_variant,omitempty"`
+	TradingStats   *TradingStats                      `json:"trading_stats,omitempty"`
+	RecentOrders   []RecentOrder                      `json:"recent_orders,omitempty"`
+	MarketDataMap  map[string]*market.Data            `json:"-"`
+	MultiTFMarket  map[string]map[string]*market.Data `json:"-"`
+	OITopDataMap   map[string]*OITopData              `json:"-"`
+	QuantDataMap   map[string]*QuantData              `json:"-"`
+	// Insights carries the market-wide context collected from the pluggable
+	// marketdata providers. Ordering follows provider registration so the
+	// generated prompt stays stable between cycles.
+	Insights        []*marketdata.Insight `json:"-"`
+	BTCETHLeverage  int                   `json:"-"`
+	AltcoinLeverage int                   `json:"-"`
+	Timeframes      []string              `json:"-"`
 }
 
 // Decision AI trading decision
@@ -184,6 +187,10 @@ type OIDeltaData struct {
 type StrategyEngine struct {
 	config       *store.StrategyConfig
 	nofxosClient *nofxos.Client
+	// insights is the pluggable market-intelligence registry. The engine never
+	// references a concrete data source: it asks the registry to collect
+	// whatever the strategy enabled.
+	insights *marketdata.Registry
 }
 
 // NewStrategyEngine creates strategy execution engine.
@@ -198,7 +205,58 @@ func NewStrategyEngine(config *store.StrategyConfig) *StrategyEngine {
 	return &StrategyEngine{
 		config:       config,
 		nofxosClient: client,
+		insights:     providers.Default(),
 	}
+}
+
+// MarketInsightProviders lists every registered market-intelligence source,
+// regardless of whether the current strategy enables it. The API exposes this so
+// the UI can render the catalogue the user picks from.
+func (e *StrategyEngine) MarketInsightProviders() []marketdata.Provider {
+	if e == nil || e.insights == nil {
+		return nil
+	}
+	return e.insights.All()
+}
+
+// CollectInsights gathers the enabled market-intelligence sources for one
+// trading cycle. Candidate and position symbols are passed through so per-symbol
+// sources can scope their queries.
+//
+// Every provider fails soft: the registry logs and skips a broken source, so a
+// missing insight can never abort a cycle.
+func (e *StrategyEngine) CollectInsights(candidateSymbols, positionSymbols []string, language string) []*marketdata.Insight {
+	if e == nil || e.insights == nil {
+		return nil
+	}
+
+	cfg := e.config.Indicators
+	if !cfg.EnableMarketInsights {
+		return nil
+	}
+
+	req := marketdata.Request{
+		Symbols:   uniqueNonEmpty(candidateSymbols...),
+		Positions: uniqueNonEmpty(positionSymbols...),
+		Language:  language,
+		Limit:     cfg.MarketInsightLimit,
+	}
+
+	started := time.Now()
+	insights := e.insights.Collect(context.Background(), req, cfg)
+	if len(insights) == 0 {
+		logger.Infof("⏭️  No market insights collected (enabled sources: %d)", len(e.insights.Active(cfg)))
+		return nil
+	}
+
+	names := make([]string, 0, len(insights))
+	for _, ins := range insights {
+		names = append(names, ins.Provider)
+	}
+	logger.Infof("📊 Market insights ready in %s: %s",
+		time.Since(started).Round(time.Millisecond), strings.Join(names, ", "))
+
+	return insights
 }
 
 func (e *StrategyEngine) usesHyperliquidNativeUniverse() bool {
@@ -881,111 +939,6 @@ func uniqueValues(values ...string) []string {
 		out = append(out, value)
 	}
 	return out
-}
-
-// FetchOIRankingData fetches market-wide OI ranking data
-func (e *StrategyEngine) FetchOIRankingData() *nofxos.OIRankingData {
-	indicators := e.config.Indicators
-	if !indicators.EnableOIRanking {
-		return nil
-	}
-	if e.usesHyperliquidNativeUniverse() {
-		logger.Infof("⏭️  Skipping NofxOS OI ranking for Hyperliquid strategy; native Hyperliquid universe is the source of truth")
-		return nil
-	}
-
-	duration := indicators.OIRankingDuration
-	if duration == "" {
-		duration = "1h"
-	}
-
-	limit := indicators.OIRankingLimit
-	if limit <= 0 {
-		limit = 10
-	}
-
-	logger.Infof("📊 Fetching OI ranking data (duration: %s, limit: %d)", duration, limit)
-
-	data, err := e.nofxosClient.GetOIRanking(duration, limit)
-	if err != nil {
-		logger.Warnf("⚠️  Failed to fetch OI ranking data: %v", err)
-		return nil
-	}
-
-	logger.Infof("✓ OI ranking data ready: %d top, %d low positions",
-		len(data.TopPositions), len(data.LowPositions))
-
-	return data
-}
-
-// FetchNetFlowRankingData fetches market-wide NetFlow ranking data
-func (e *StrategyEngine) FetchNetFlowRankingData() *nofxos.NetFlowRankingData {
-	indicators := e.config.Indicators
-	if !indicators.EnableNetFlowRanking {
-		return nil
-	}
-	if e.usesHyperliquidNativeUniverse() {
-		logger.Infof("⏭️  Skipping NofxOS netflow ranking for Hyperliquid strategy; native Hyperliquid universe is the source of truth")
-		return nil
-	}
-
-	duration := indicators.NetFlowRankingDuration
-	if duration == "" {
-		duration = "1h"
-	}
-
-	limit := indicators.NetFlowRankingLimit
-	if limit <= 0 {
-		limit = 10
-	}
-
-	logger.Infof("💰 Fetching NetFlow ranking data (duration: %s, limit: %d)", duration, limit)
-
-	data, err := e.nofxosClient.GetNetFlowRanking(duration, limit)
-	if err != nil {
-		logger.Warnf("⚠️  Failed to fetch NetFlow ranking data: %v", err)
-		return nil
-	}
-
-	logger.Infof("✓ NetFlow ranking data ready: inst_in=%d, inst_out=%d, retail_in=%d, retail_out=%d",
-		len(data.InstitutionFutureTop), len(data.InstitutionFutureLow),
-		len(data.PersonalFutureTop), len(data.PersonalFutureLow))
-
-	return data
-}
-
-// FetchPriceRankingData fetches market-wide price ranking data (gainers/losers)
-func (e *StrategyEngine) FetchPriceRankingData() *nofxos.PriceRankingData {
-	indicators := e.config.Indicators
-	if !indicators.EnablePriceRanking {
-		return nil
-	}
-	if e.usesHyperliquidNativeUniverse() {
-		logger.Infof("⏭️  Skipping NofxOS price ranking for Hyperliquid strategy; native Hyperliquid universe is the source of truth")
-		return nil
-	}
-
-	durations := indicators.PriceRankingDuration
-	if durations == "" {
-		durations = "1h"
-	}
-
-	limit := indicators.PriceRankingLimit
-	if limit <= 0 {
-		limit = 10
-	}
-
-	logger.Infof("📈 Fetching Price ranking data (durations: %s, limit: %d)", durations, limit)
-
-	data, err := e.nofxosClient.GetPriceRanking(durations, limit)
-	if err != nil {
-		logger.Warnf("⚠️  Failed to fetch Price ranking data: %v", err)
-		return nil
-	}
-
-	logger.Infof("✓ Price ranking data ready for %d durations", len(data.Durations))
-
-	return data
 }
 
 // ============================================================================
