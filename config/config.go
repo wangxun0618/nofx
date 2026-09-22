@@ -161,7 +161,6 @@ func initConfig() error {
 		telemetry.TrackAIUsage(telemetry.AIUsageEvent{
 			ModelProvider: usage.Provider,
 			ModelName:     usage.Model,
-			Channel:       usage.Channel(),
 			InputTokens:   usage.PromptTokens,
 			OutputTokens:  usage.CompletionTokens,
 		})

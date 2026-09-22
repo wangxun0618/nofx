@@ -21,6 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Reorganized documentation structure into logical categories
 - Updated all README files with proper navigation links
+- AI inference now talks to eight native providers directly (DeepSeek, OpenAI, Claude, Qwen, Gemini, Grok, Kimi, MiniMax) with your own API keys — no gateway sits in between
+- The built-in autopilot strategy now defaults to the native Hyperliquid top-volume universe (`hyper_main`: 24h volume, top 30 instruments) instead of the retired signal board
+- Product copy across the landing page, launch flow, strategy studio and terminal no longer mentions pay-per-call model billing
+
+### Removed
+- The Claw402 / x402 pay-per-call gateway: model routing, direction-board data, the USDC wallet package, per-call billing records, the launch preflight balance gate and the onboarding wallet flow
+- The Vergex signal board, direction-change leaderboard and cost/liquidation heatmap data sources together with their terminal and strategy-studio surfaces
+- Dead frontend routes and components: `/data`, `/strategy-market`, the beginner-onboarding wallet page, the beginner guide cards and the onboarding mode selector
 
 ---
 

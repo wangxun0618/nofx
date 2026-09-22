@@ -100,7 +100,7 @@ func TestLeverageFallback(t *testing.T) {
 	}
 }
 
-func TestClaw402XyzAllowsFullTenXNotional(t *testing.T) {
+func TestXyzAssetAllowsFullTenXNotional(t *testing.T) {
 	decision := Decision{
 		Symbol:          "xyz:SP500",
 		Action:          "open_long",
@@ -111,37 +111,7 @@ func TestClaw402XyzAllowsFullTenXNotional(t *testing.T) {
 	}
 
 	if err := validateDecision(&decision, 30.68, 10, 10, 10.0, 10.0); err != nil {
-		t.Fatalf("xyz TradeFi Claw402 full 10x notional should pass validation: %v", err)
-	}
-}
-
-func TestSignalManagedDecisionAllowsZeroTakeProfitWithProtectiveStop(t *testing.T) {
-	decision := Decision{
-		Symbol:          "BTC",
-		Action:          "open_long",
-		Leverage:        10,
-		PositionSizeUSD: 300,
-		StopLoss:        95000,
-		TakeProfit:      0,
-	}
-
-	if err := validateDecisionForMode(&decision, 30, 10, 10, 10.0, 10.0, true); err != nil {
-		t.Fatalf("signal-managed open with a protective stop should pass validation: %v", err)
-	}
-}
-
-func TestSignalManagedDecisionStillRequiresProtectiveStop(t *testing.T) {
-	decision := Decision{
-		Symbol:          "BTC",
-		Action:          "open_long",
-		Leverage:        10,
-		PositionSizeUSD: 300,
-		StopLoss:        0,
-		TakeProfit:      0,
-	}
-
-	if err := validateDecisionForMode(&decision, 30, 10, 10, 10.0, 10.0, true); err == nil {
-		t.Fatal("signal-managed open without a protective stop should fail validation")
+		t.Fatalf("xyz TradeFi full 10x notional should pass validation: %v", err)
 	}
 }
 

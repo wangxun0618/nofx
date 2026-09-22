@@ -417,7 +417,7 @@ func ensureHyperliquidNativeStrategy(traderName, exchangeType string, cfg *store
 	}
 
 	source := strings.ToLower(strings.TrimSpace(cfg.CoinSource.SourceType))
-	if source == "hyper_rank" || source == "vergex_signal" || source == "static" || source == "hyper_all" || source == "hyper_main" {
+	if source == "hyper_rank" || source == "static" || source == "hyper_all" || source == "hyper_main" {
 		return
 	}
 
@@ -762,8 +762,6 @@ func (tm *TraderManager) addTraderFromStore(traderCfg *store.Trader, aiModelCfg 
 		traderConfig.CustomAPIKey = string(aiModelCfg.APIKey)
 	}
 
-	traderConfig.Claw402WalletKey = resolveTraderDataWalletKey(st, traderCfg.UserID, aiModelCfg)
-
 	// Create trader instance
 	at, err := trader.NewAutoTrader(traderConfig, st, traderCfg.UserID)
 	if err != nil {
@@ -800,28 +798,4 @@ func (tm *TraderManager) addTraderFromStore(traderCfg *store.Trader, aiModelCfg 
 	}
 
 	return nil
-}
-
-func resolveTraderDataWalletKey(st *store.Store, userID string, selectedModel *store.AIModel) string {
-	// Fast path: selected model is itself a claw402 model.
-	if selectedModel != nil && selectedModel.Provider == "claw402" {
-		if walletKey := string(selectedModel.APIKey); walletKey != "" {
-			return walletKey
-		}
-	}
-
-	if st == nil {
-		return ""
-	}
-
-	// Fallback: find any configured claw402 model for this user so that paid
-	// NofxAI data sources work even when a non-claw402 model (e.g. deepseek) is
-	// selected as the AI brain.
-	preferredID := ""
-	walletKey, err := st.AIModel().ResolveClaw402WalletKey(userID, preferredID)
-	if err != nil {
-		logger.Warnf("⚠️ Failed to load claw402 wallet for trader data routing: %v", err)
-		return ""
-	}
-	return walletKey
 }

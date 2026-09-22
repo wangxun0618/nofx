@@ -1,5 +1,3 @@
-<p align="center"><strong>При поддержке <a href="https://vergex.trade">vergex.trade</a></strong></p>
-
 <p align="center">
   <img src="../../assets/nofx-banner.svg" alt="NOFX — AI trading terminal" width="100%"/>
 </p>
@@ -36,7 +34,7 @@ curl -fsSL https://raw.githubusercontent.com/NoFxAiOS/nofx/main/install.sh | bas
 **Первый запуск**
 
 1. Зарегистрируйтесь — первый аккаунт становится владельцем экземпляра.
-2. Пройдите пошаговый запуск: положите **$1+ USDC** (сеть Base) в кошелёк для оплаты AI, который он создаст для вас, затем подключите Hyperliquid и внесите **$12+ USDC** для торговли.
+2. Пройдите пошаговый запуск: подключите AI-модель с помощью собственного API-ключа, затем подключите Hyperliquid и внесите **$12+ USDC** для торговли.
 3. Запустите **Autopilot**. AI сканирует рынок каждые несколько минут и торгует самостоятельно; каждое решение появляется на дашборде в момент принятия. Остановить можно в любой момент одним кликом.
 
 <br/>
@@ -67,7 +65,7 @@ https://github.com/user-attachments/assets/3310f495-14c5-4586-a1cc-3d32e44aa505
 
 ## Модель предполагает. Рантайм располагает.
 
-Решения основаны на стеке данных [Claw402.ai](https://claw402.ai) · Vergex: живом борде направлений по всему рынку, текущем направлении и его истории для каждого инструмента, тепловых картах себестоимости и ликвидаций и чистом потоке средств. NOFX следует направлению борда; остальные данные служат контекстом исполнения.
+Решения основаны на живых рыночных данных Hyperliquid: каждый цикл рантайм читает инструменты с наибольшим объёмом за 24 часа, получает свечи и данные стакана по каждому кандидату и рассуждает с учётом открытых позиций. Платных шлюзов нет — ваш экземпляр общается с рынком и провайдером моделей напрямую.
 
 Каждый ордер проходит через лимиты, зашитые в код и недоступные модели:
 
@@ -121,13 +119,18 @@ https://github.com/user-attachments/assets/3310f495-14c5-4586-a1cc-3d32e44aa505
 
 ## Модели
 
-Восемь провайдеров с вашими собственными ключами — DeepSeek, OpenAI, Claude, Qwen, Gemini, Grok, Kimi, MiniMax — включая пользовательские эндпоинты и имена моделей.
-
-Или вовсе без ключей: [Claw402](https://claw402.ai) тарифицирует использование моделей за каждый вызов в USDC по протоколу x402. Кошелёк в сети Base заменяет все API-ключи.
+Восемь провайдеров, к которым вы обращаетесь напрямую со своим API-ключом — DeepSeek, OpenAI, Claude, Qwen, Gemini, Grok, Kimi, MiniMax — включая пользовательские эндпоинты и имена моделей. Без шлюза, без оплаты за вызов и без кошелька, который нужно пополнять.
 
 | Провайдер | Доступ |
 | :------- | :----- |
-| **Claw402** | [AI-модели с оплатой по мере использования и официальной скидкой](https://claw402.ai) |
+| **DeepSeek** | [platform.deepseek.com](https://platform.deepseek.com/api_keys) |
+| **OpenAI** | [platform.openai.com](https://platform.openai.com/api-keys) |
+| **Claude** | [console.anthropic.com](https://console.anthropic.com/settings/keys) |
+| **Qwen** | [bailian.console.aliyun.com](https://bailian.console.aliyun.com/) |
+| **Gemini** | [aistudio.google.com](https://aistudio.google.com/app/apikey) |
+| **Grok** | [console.x.ai](https://console.x.ai/) |
+| **Kimi** | [platform.moonshot.cn](https://platform.moonshot.cn/console/api-keys) |
+| **MiniMax** | [platform.minimaxi.com](https://platform.minimaxi.com/user-center/basic-information/interface-key) |
 
 ## Рынки
 
@@ -151,7 +154,7 @@ https://github.com/user-attachments/assets/3310f495-14c5-4586-a1cc-3d32e44aa505
     ├──────────────┴──────────────┴───────────────────┤
     │                 AI Model Layer                    │
     │  DeepSeek · OpenAI · Claude · Qwen · Gemini      │
-    │  Grok · Kimi · MiniMax · Claw402 (x402 USDC)     │
+    │  Grok · Kimi · MiniMax   (direct provider APIs)  │
     ├─────────────────────────────────────────────────┤
     │              Exchange Connectivity                │
     │ Binance · Bybit · OKX · Hyperliquid · Bitget     │
@@ -232,7 +235,7 @@ curl -fsSL https://raw.githubusercontent.com/NoFxAiOS/nofx/main/install.sh | bas
 
 ## Сообщество
 
-[Telegram](https://t.me/nofx_dev_community) · [Twitter/X](https://x.com/vergex_ai) · [Issues](https://github.com/NoFxAiOS/nofx/issues) · [vergex.trade](https://vergex.trade) · [Живой дашборд](https://vergex.trade/explore)
+[Telegram](https://t.me/nofx_dev_community) · [Twitter/X](https://x.com/nofx_ai) · [Issues](https://github.com/NoFxAiOS/nofx/issues)
 
 ## Участие в разработке
 

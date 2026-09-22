@@ -4,11 +4,7 @@ import type { AIModel, Exchange } from '../../types'
 import { tg } from '../../i18n/translations'
 
 export function modelHasCredential(model: AIModel) {
-  return Boolean(
-    model.has_api_key ||
-    model.apiKey ||
-    (model.provider === 'claw402' && model.walletAddress)
-  )
+  return Boolean(model.has_api_key || model.apiKey)
 }
 
 export function exchangeHasKey(exchange: Exchange) {
@@ -19,18 +15,9 @@ export function isHyperliquidExchange(exchange: Exchange) {
   return exchange.exchange_type === 'hyperliquid'
 }
 
-/** Prefers the claw402 model, falls back to any enabled model with a credential. */
+/** The first enabled model that has a stored API key. */
 export function pickTradingModel(models: AIModel[]) {
-  return (
-    models.find(
-      (model) =>
-        model.provider === 'claw402' &&
-        model.enabled &&
-        modelHasCredential(model)
-    ) ||
-    models.find((model) => model.enabled && modelHasCredential(model)) ||
-    null
-  )
+  return models.find((model) => model.enabled && modelHasCredential(model)) || null
 }
 
 export function pickTradingExchange(exchanges: Exchange[]) {
@@ -47,48 +34,12 @@ export function pickTradingExchange(exchanges: Exchange[]) {
 }
 
 /**
- * Resolves a launch-capable AI model, auto-provisioning the beginner claw402
- * wallet when none is configured yet. Returns null when nothing could be
- * resolved — the caller routes the user into claw402 setup.
+ * Resolves a launch-capable AI model. Returns null when none is configured —
+ * the caller routes the user into AI-model setup.
  */
 export async function resolveLaunchModel(): Promise<AIModel | null> {
-  let models = await api.getModelConfigs()
-  let model = pickTradingModel(models)
-  if (model) return model
-
-  const onboarding = await api.prepareBeginnerOnboarding()
-  models = await api.getModelConfigs()
-  model =
-    models.find(
-      (item) =>
-        item.id === onboarding.configured_model_id &&
-        item.enabled &&
-        modelHasCredential(item)
-    ) || pickTradingModel(models)
-  if (model) return model
-
-  if (onboarding.configured_model_id && onboarding.private_key) {
-    await api.updateModelConfigs({
-      models: {
-        [onboarding.configured_model_id]: {
-          enabled: true,
-          api_key: onboarding.private_key,
-          custom_api_url: '',
-          custom_model_name: onboarding.default_model,
-        },
-      },
-    })
-    models = await api.getModelConfigs()
-    model =
-      models.find(
-        (item) =>
-          item.id === onboarding.configured_model_id &&
-          item.enabled &&
-          modelHasCredential(item)
-      ) || pickTradingModel(models)
-  }
-
-  return model
+  const models = await api.getModelConfigs()
+  return pickTradingModel(models)
 }
 
 /**

@@ -48,7 +48,7 @@ func MigrateLegacyAutopilotRiskDefaults(config *StrategyConfig) bool {
 	}
 
 	config.NormalizeProductSchema()
-	if config.CoinSource.SourceType != "vergex_signal" {
+	if config.CoinSource.SourceType != "hyper_main" {
 		return false
 	}
 
@@ -86,9 +86,6 @@ func (c *StrategyConfig) ClampLimits() {
 	}
 	if c.CoinSource.OILowLimit > MaxCandidateCoins {
 		c.CoinSource.OILowLimit = MaxCandidateCoins
-	}
-	if c.CoinSource.VergexLimit > MaxCandidateCoins {
-		c.CoinSource.VergexLimit = MaxCandidateCoins
 	}
 
 	// Clamp static coins
@@ -147,7 +144,7 @@ func (c *StrategyConfig) ClampLimits() {
 	if c.RiskControl.AltcoinMaxPositionValueRatio > MaxPositionRatio {
 		c.RiskControl.AltcoinMaxPositionValueRatio = MaxPositionRatio
 	}
-	if c.CoinSource.SourceType == "vergex_signal" {
+	if c.CoinSource.SourceType == "hyper_main" {
 		if c.RiskControl.BTCETHMaxPositionValueRatio > AutopilotMaxPositionValueRatio {
 			c.RiskControl.BTCETHMaxPositionValueRatio = AutopilotMaxPositionValueRatio
 		}
@@ -259,50 +256,15 @@ func (c *StrategyConfig) NormalizeProductSchema() {
 		if c.CoinSource.HyperRankLimit <= 0 {
 			c.CoinSource.HyperRankLimit = 5
 		}
-	case "vergex_signal":
-		c.CoinSource.UseAI500 = false
-		c.CoinSource.UseOITop = false
-		c.CoinSource.UseOILow = false
-		c.CoinSource.UseHyperAll = false
-		c.CoinSource.UseHyperMain = false
-		minLimit := 10
-		if len(c.CoinSource.StaticCoins) > 0 {
-			minLimit = len(c.CoinSource.StaticCoins)
-			if minLimit > MaxCandidateCoins {
-				minLimit = MaxCandidateCoins
-			}
-		}
-		if c.CoinSource.VergexLimit < minLimit {
-			c.CoinSource.VergexLimit = minLimit
-		}
-		if c.CoinSource.VergexMarketType == "" {
-			c.CoinSource.VergexMarketType = "all"
-		}
-		if c.CoinSource.VergexChain == "" {
-			c.CoinSource.VergexChain = "hyperliquid"
-		}
 	default:
-		c.CoinSource.SourceType = "vergex_signal"
+		c.CoinSource.SourceType = "hyper_main"
 		c.CoinSource.UseAI500 = false
 		c.CoinSource.UseOITop = false
 		c.CoinSource.UseOILow = false
 		c.CoinSource.UseHyperAll = false
-		c.CoinSource.UseHyperMain = false
-		minLimit := 10
-		if len(c.CoinSource.StaticCoins) > 0 {
-			minLimit = len(c.CoinSource.StaticCoins)
-			if minLimit > MaxCandidateCoins {
-				minLimit = MaxCandidateCoins
-			}
-		}
-		if c.CoinSource.VergexLimit < minLimit {
-			c.CoinSource.VergexLimit = minLimit
-		}
-		if c.CoinSource.VergexMarketType == "" {
-			c.CoinSource.VergexMarketType = "all"
-		}
-		if c.CoinSource.VergexChain == "" {
-			c.CoinSource.VergexChain = "hyperliquid"
+		c.CoinSource.UseHyperMain = true
+		if c.CoinSource.HyperMainLimit <= 0 {
+			c.CoinSource.HyperMainLimit = 30
 		}
 	}
 
@@ -340,11 +302,14 @@ func normalizeCoinSourceType(value string) string {
 		return "oi_low"
 	case strings.Contains(compact, "hyperrank"):
 		return "hyper_rank"
-	case strings.Contains(compact, "vergex") || strings.Contains(compact, "claw402") || strings.Contains(compact, "dynamicranking") || strings.Contains(value, "dynamic board") || strings.Contains(value, "gainers board") || strings.Contains(value, "signal board"):
-		return "vergex_signal"
 	case strings.Contains(compact, "hyperall"):
 		return "hyper_all"
 	case strings.Contains(compact, "hypermain"):
+		return "hyper_main"
+	case strings.Contains(compact, "vergex") || strings.Contains(compact, "claw402") || strings.Contains(compact, "dynamicranking") || strings.Contains(value, "dynamic board") || strings.Contains(value, "gainers board") || strings.Contains(value, "signal board"):
+		// The Claw402/Vergex direction board was retired. Saved strategies that
+		// still reference it fall back to the Hyperliquid-native top-volume
+		// universe, which needs no API key and always resolves.
 		return "hyper_main"
 	case strings.Contains(value, "static") || strings.Contains(value, "fixed"):
 		return "static"
@@ -367,12 +332,10 @@ func inferCoinSourceType(source CoinSourceConfig) string {
 		return "hyper_all"
 	case source.UseHyperMain:
 		return "hyper_main"
-	case source.VergexLimit > 0 || source.VergexMarketType != "" || source.VergexChain != "" || source.VergexLiqBand != "":
-		return "vergex_signal"
 	case source.HyperRankCategory != "" || source.HyperRankDirection != "" || source.HyperRankLimit > 0:
 		return "hyper_rank"
 	default:
-		return "vergex_signal"
+		return "hyper_main"
 	}
 }
 
@@ -868,14 +831,6 @@ type CoinSourceConfig struct {
 	HyperRankDirection string `json:"hyper_rank_direction,omitempty"`
 	// Hyperliquid dynamic ranking maximum count. Defaults to 5 and is hard capped at 10 for AI context safety.
 	HyperRankLimit int `json:"hyper_rank_limit,omitempty"`
-	// Vergex direction-board maximum count. Defaults to 5 and is hard capped at 10.
-	VergexLimit int `json:"vergex_limit,omitempty"`
-	// Vergex market type for detail endpoints, e.g. hip3_perp for Hyperliquid TradeFi perps.
-	VergexMarketType string `json:"vergex_market_type,omitempty"`
-	// Vergex chain query parameter. Defaults to hyperliquid.
-	VergexChain string `json:"vergex_chain,omitempty"`
-	// Vergex liquidation band query parameter.
-	VergexLiqBand string `json:"vergex_liq_band,omitempty"`
 	// Note: API URLs are now built automatically using NofxOSAPIKey from IndicatorConfig
 }
 
@@ -1009,7 +964,7 @@ func GetDefaultStrategyConfig(lang string) StrategyConfig {
 	config := StrategyConfig{
 		Language: normalizedLang,
 		CoinSource: CoinSourceConfig{
-			SourceType:        "vergex_signal",
+			SourceType:        "hyper_main",
 			UseAI500:          false,
 			AI500Limit:        3,
 			UseOITop:          false,
@@ -1017,12 +972,9 @@ func GetDefaultStrategyConfig(lang string) StrategyConfig {
 			UseOILow:          false,
 			OILowLimit:        3,
 			UseHyperAll:       false,
-			UseHyperMain:      false,
+			UseHyperMain:      true,
 			HyperMainLimit:    30,
 			HyperRankCategory: "all",
-			VergexLimit:       10,
-			VergexMarketType:  "all",
-			VergexChain:       "hyperliquid",
 		},
 		Indicators: IndicatorConfig{
 			Klines: KlineConfig{
@@ -1068,53 +1020,31 @@ func GetDefaultStrategyConfig(lang string) StrategyConfig {
 			AltcoinMaxLeverage:           10,                             // Moderate leverage: a wide (-5%) stop is ~-50% margin, survivable, not an instant liquidation
 			BTCETHMaxPositionValueRatio:  AutopilotMaxPositionValueRatio, // Per-position hard cap = equity × 5
 			AltcoinMaxPositionValueRatio: AutopilotMaxPositionValueRatio, // Per-position hard cap = equity × 5
-			MaxMarginUsage:               1.0,                            // Claw402 Autopilot intentionally uses full margin when opening
+			MaxMarginUsage:               1.0,                            // Autopilot intentionally uses full margin when opening
 			MinPositionSize:              12,                             // Min 12 USDT per position (CODE ENFORCED)
 			MinRiskRewardRatio:           3.0,                            // Min 3:1 profit/loss ratio (AI guided)
 			MinConfidence:                78,                             // Min 78% confidence (AI guided)
 		},
 	}
 
-	if lang == "zh" {
-		config.PromptSections = PromptSectionsConfig{
-			RoleDefinition: `# You are the NOFX Claw402 auto-trader
+	config.PromptSections = PromptSectionsConfig{
+			RoleDefinition: `# You are the NOFX auto-trader
 
-	Trade only the Hyperliquid instruments returned by the current Claw402.ai direction board. The board direction is authoritative; direction history, cost/liquidation heatmap and raw candles are supporting context only.`,
+Trade only the Hyperliquid instruments presented in this cycle's candidate list. Never invent tickers or rotate outside the provided universe. Market data, indicators and candles are your evidence; the risk rules in this prompt are binding.`,
 			TradingFrequency: `# Trading Frequency
 
-	- A bullish symbol may open long; a bearish symbol may open short.
-	- Hold while the signal direction remains unchanged.
-	- Close only after the direction changes, becomes neutral, or leaves the valid board.`,
+- Open long or short based on the evidence in the candidate data.
+- Hold a position while its thesis remains intact.
+- Close when the thesis is invalidated, the position hits its protective stop, or it leaves the valid candidate universe.`,
 			EntryStandards: `# Entry Standards
 
-	Follow the Claw402 direction exactly. Supporting detail and candles may explain a signal but cannot veto, reverse, or prematurely exit it.`,
+Require a clear directional edge backed by the provided market data. Do not open a position on weak, contradictory, or missing evidence.`,
 			DecisionProcess: `# Decision Process
 
-	1. Read the current Claw402 direction board.
-	2. Hold positions whose direction is unchanged; close changed, neutral or absent signals.
-	3. For flat symbols, map bullish to long and bearish to short.
-	4. Use detail data and candles as context, then output strict JSON.`,
-		}
-	} else {
-		config.PromptSections = PromptSectionsConfig{
-			RoleDefinition: `# You are the NOFX Claw402 auto-trader
-
-	Trade Hyperliquid instruments from the current Claw402.ai direction board only. The board direction is authoritative; direction history, cost/liquidation heatmap and raw candles are supporting context only.`,
-			TradingFrequency: `# Trading Frequency
-
-	- A bullish symbol may open long; a bearish symbol may open short.
-	- Hold while the signal direction remains unchanged.
-	- Close only after the direction changes, becomes neutral, or leaves the valid board.`,
-			EntryStandards: `# Entry Standards
-
-	Follow the Claw402 direction exactly. Supporting detail and candles may explain a signal but cannot veto, reverse, or prematurely exit it.`,
-			DecisionProcess: `# Decision Process
-
-	1. Read the current Claw402 direction board.
-	2. Hold positions whose direction is unchanged; close changed, neutral or absent signals.
-	3. For flat symbols, map bullish to long and bearish to short.
-	4. Use detail data and candles as context, then output strict JSON.`,
-		}
+1. Read the candidate list and the market data for each symbol.
+2. Weigh trend, momentum, open interest and funding context.
+3. Open only where the edge is strong enough to justify the risk.
+4. Output strict JSON.`,
 	}
 
 	return config
@@ -1340,31 +1270,8 @@ func GetContextLimit(provider string) int {
 	return contextLimitDeepSeek // safe default
 }
 
-// GetContextLimitForClient returns context limit for a provider+model pair.
-// For claw402, the underlying model is inferred from the model name prefix.
+// GetContextLimitForClient returns the context limit for a provider+model pair.
 func GetContextLimitForClient(provider, model string) int {
-	if provider == "claw402" {
-		switch {
-		case strings.HasPrefix(model, "claude"):
-			return ModelContextLimits["claude"]
-		case strings.HasPrefix(model, "gpt"), strings.HasPrefix(model, "o1"), strings.HasPrefix(model, "o3"):
-			return ModelContextLimits["openai"]
-		case strings.HasPrefix(model, "gemini"):
-			return ModelContextLimits["gemini"]
-		case strings.HasPrefix(model, "grok"):
-			return ModelContextLimits["grok"]
-		case strings.HasPrefix(model, "kimi"):
-			return ModelContextLimits["kimi"]
-		case strings.HasPrefix(model, "qwen"):
-			return ModelContextLimits["qwen"]
-		case strings.HasPrefix(model, "minimax"):
-			return ModelContextLimits["minimax"]
-		case strings.HasPrefix(model, "deepseek"):
-			return ModelContextLimits["deepseek"]
-		default:
-			return ModelContextLimits["deepseek"]
-		}
-	}
 	return GetContextLimit(provider)
 }
 
@@ -1555,14 +1462,12 @@ func (c *StrategyConfig) getEffectiveCoinCount() int {
 		count = c.CoinSource.OILowLimit
 	case "hyper_rank":
 		count = c.CoinSource.HyperRankLimit
-	case "vergex_signal":
-		count = c.CoinSource.VergexLimit
 	case "hyper_main":
 		count = c.CoinSource.HyperMainLimit
 	case "hyper_all":
 		count = c.CoinSource.HyperMainLimit
 	default:
-		count = c.CoinSource.HyperRankLimit
+		count = c.CoinSource.HyperMainLimit
 	}
 	if count <= 0 {
 		count = 3

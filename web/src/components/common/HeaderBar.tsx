@@ -98,23 +98,7 @@ export default function HeaderBar({
                   label: string
                   requiresAuth: boolean
                   badge?: string
-                  hidden?: boolean
                 }[] = [
-                  {
-                    page: 'data',
-                    path: ROUTES.data,
-                    label:
-                      t('nav.data', language),
-                    requiresAuth: false,
-                  },
-                  {
-                    page: 'strategy-market',
-                    path: ROUTES.strategyMarket,
-                    label:
-                      t('nav.market', language),
-                    requiresAuth: true,
-                    hidden: true,
-                  },
                   {
                     page: 'traders',
                     path: ROUTES.traders,
@@ -161,7 +145,6 @@ export default function HeaderBar({
                 }
 
                 return navTabs
-                  .filter((tab) => !tab.hidden)
                   .map((tab) => (
                     <button
                       key={tab.page}
@@ -376,23 +359,7 @@ export default function HeaderBar({
                     label: string
                     requiresAuth: boolean
                     badge?: string
-                    hidden?: boolean
                   }[] = [
-                    {
-                      page: 'data',
-                      path: ROUTES.data,
-                      label:
-                        t('nav.data', language),
-                      requiresAuth: false,
-                    },
-                    {
-                      page: 'strategy-market',
-                      path: ROUTES.strategyMarket,
-                      label:
-                        t('nav.market', language),
-                      requiresAuth: true,
-                      hidden: true,
-                    },
                     {
                       page: 'traders',
                       path: ROUTES.traders,
@@ -439,7 +406,6 @@ export default function HeaderBar({
                   }
 
                   return navTabs
-                    .filter((tab) => !tab.hidden)
                     .map((tab, i) => (
                       <motion.button
                         key={tab.page}

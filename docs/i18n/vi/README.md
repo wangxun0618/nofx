@@ -1,5 +1,3 @@
-<p align="center"><strong>Được hậu thuẫn bởi <a href="https://vergex.trade">vergex.trade</a></strong></p>
-
 <p align="center">
   <img src="../../assets/nofx-banner.svg" alt="NOFX — AI trading terminal" width="100%"/>
 </p>
@@ -36,7 +34,7 @@ Terminal mở tại `http://127.0.0.1:3000`.
 **Lần chạy đầu tiên**
 
 1. Đăng ký — tài khoản đầu tiên trở thành chủ sở hữu của instance.
-2. Làm theo quy trình khởi chạy có hướng dẫn: nạp **$1+ USDC** (mạng Base) vào ví phí AI được tạo sẵn cho bạn, sau đó kết nối Hyperliquid và nạp **$12+ USDC** để giao dịch.
+2. Làm theo quy trình khởi chạy có hướng dẫn: kết nối một mô hình AI bằng API key của riêng bạn, sau đó kết nối Hyperliquid và nạp **$12+ USDC** để giao dịch.
 3. Khởi động **Autopilot**. AI quét thị trường vài phút một lần và tự mình giao dịch; mọi quyết định hiện lên dashboard ngay khi diễn ra. Dừng lại bất cứ lúc nào chỉ với một cú nhấp.
 
 <br/>
@@ -67,7 +65,7 @@ https://github.com/user-attachments/assets/3310f495-14c5-4586-a1cc-3d32e44aa505
 
 ## Mô hình đề xuất. Runtime định đoạt.
 
-Các quyết định dựa trên bộ dữ liệu [Claw402.ai](https://claw402.ai) · Vergex: bảng hướng trực tiếp cho toàn thị trường, hướng hiện tại và lịch sử đổi hướng theo từng mã, bản đồ nhiệt chi phí và thanh lý, cùng dòng tiền ròng theo thời gian thực. NOFX tuân theo hướng của bảng; dữ liệu còn lại chỉ là bối cảnh thực thi.
+Các quyết định dựa trên dữ liệu thị trường Hyperliquid trực tiếp: mỗi chu kỳ, runtime đọc các mã có khối lượng 24 giờ cao nhất, lấy nến và thông tin sổ lệnh cho từng mã ứng viên, rồi suy luận cùng các vị thế đang mở. Không có cổng thanh toán nào — instance của bạn nói chuyện trực tiếp với thị trường và nhà cung cấp mô hình.
 
 Mọi lệnh đều phải đi qua các giới hạn được thực thi bằng code, nằm ngoài tầm với của mô hình:
 
@@ -121,13 +119,18 @@ Mỗi quyết định được lưu kèm toàn bộ lập luận của mô hình
 
 ## Mô hình
 
-Tám nhà cung cấp với key của riêng bạn — DeepSeek, OpenAI, Claude, Qwen, Gemini, Grok, Kimi, MiniMax — bao gồm cả endpoint và tên mô hình tùy chỉnh.
-
-Hoặc không cần key nào cả: [Claw402](https://claw402.ai) tính phí sử dụng mô hình theo từng lần gọi bằng USDC qua giao thức x402. Một chiếc ví trên Base thay thế mọi API key.
+Tám nhà cung cấp, gọi trực tiếp bằng API key của riêng bạn — DeepSeek, OpenAI, Claude, Qwen, Gemini, Grok, Kimi, MiniMax — bao gồm cả endpoint và tên mô hình tùy chỉnh. Không có gateway, không tính phí theo lần gọi, không cần nạp ví.
 
 | Nhà cung cấp | Truy cập |
 | :------- | :----- |
-| **Claw402** | [Mô hình AI trả theo mức dùng với ưu đãi chính thức](https://claw402.ai) |
+| **DeepSeek** | [platform.deepseek.com](https://platform.deepseek.com/api_keys) |
+| **OpenAI** | [platform.openai.com](https://platform.openai.com/api-keys) |
+| **Claude** | [console.anthropic.com](https://console.anthropic.com/settings/keys) |
+| **Qwen** | [bailian.console.aliyun.com](https://bailian.console.aliyun.com/) |
+| **Gemini** | [aistudio.google.com](https://aistudio.google.com/app/apikey) |
+| **Grok** | [console.x.ai](https://console.x.ai/) |
+| **Kimi** | [platform.moonshot.cn](https://platform.moonshot.cn/console/api-keys) |
+| **MiniMax** | [platform.minimaxi.com](https://platform.minimaxi.com/user-center/basic-information/interface-key) |
 
 ## Thị trường
 
@@ -151,7 +154,7 @@ Hợp đồng vĩnh cửu crypto trên cả chín sàn. Trên Hyperliquid, cùng
     ├──────────────┴──────────────┴───────────────────┤
     │                 AI Model Layer                    │
     │  DeepSeek · OpenAI · Claude · Qwen · Gemini      │
-    │  Grok · Kimi · MiniMax · Claw402 (x402 USDC)     │
+    │  Grok · Kimi · MiniMax   (direct provider APIs)  │
     ├─────────────────────────────────────────────────┤
     │              Exchange Connectivity                │
     │ Binance · Bybit · OKX · Hyperliquid · Bitget     │
@@ -232,7 +235,7 @@ curl -fsSL https://raw.githubusercontent.com/NoFxAiOS/nofx/main/install.sh | bas
 
 ## Cộng đồng
 
-[Telegram](https://t.me/nofx_dev_community) · [Twitter/X](https://x.com/vergex_ai) · [Issues](https://github.com/NoFxAiOS/nofx/issues) · [vergex.trade](https://vergex.trade) · [Dashboard trực tiếp](https://vergex.trade/explore)
+[Telegram](https://t.me/nofx_dev_community) · [Twitter/X](https://x.com/nofx_ai) · [Issues](https://github.com/NoFxAiOS/nofx/issues)
 
 ## Đóng góp
 

@@ -250,7 +250,7 @@ func (at *AutoTrader) enforcePositionValueRatio(positionSizeUSD float64, equity 
 			maxPositionValueRatio = 1.0 // Default: 1x for altcoins
 		}
 	}
-	if at.config.StrategyConfig.CoinSource.SourceType == "vergex_signal" &&
+	if at.config.StrategyConfig.CoinSource.SourceType == "hyper_main" &&
 		maxPositionValueRatio > store.AutopilotMaxPositionValueRatio {
 		maxPositionValueRatio = store.AutopilotMaxPositionValueRatio
 	}
@@ -274,7 +274,7 @@ func (at *AutoTrader) applyAutopilotFullSizeOpen(decision *kernel.Decision, equi
 	}
 
 	cfg := at.config.StrategyConfig
-	if cfg.CoinSource.SourceType != "vergex_signal" {
+	if cfg.CoinSource.SourceType != "hyper_main" {
 		return
 	}
 

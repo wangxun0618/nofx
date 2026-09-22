@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -9,7 +8,6 @@ import (
 	"nofx/logger"
 	"nofx/market"
 	"nofx/mcp"
-	_ "nofx/mcp/payment"
 	_ "nofx/mcp/provider"
 	"nofx/store"
 	"time"
@@ -570,17 +568,8 @@ func (s *Server) handleStrategyTestRun(c *gin.Context) {
 		req.PromptVariant = "balanced"
 	}
 
-	claw402WalletKey, err := s.resolveStrategyDataWalletKey(userID, req.AIModelID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":       err.Error(),
-			"ai_response": "",
-		})
-		return
-	}
-
 	// Create strategy engine to build prompt
-	engine := kernel.NewStrategyEngine(&req.Config, claw402WalletKey)
+	engine := kernel.NewStrategyEngine(&req.Config)
 
 	// Get candidate coins
 	candidates, err := engine.GetCandidateCoins()
@@ -637,7 +626,6 @@ func (s *Server) handleStrategyTestRun(c *gin.Context) {
 		symbols = append(symbols, c.Symbol)
 	}
 	quantDataMap := engine.FetchQuantDataBatch(symbols)
-	vergexDataMap := engine.FetchVergexDataBatch(context.Background(), symbols)
 
 	// Fetch OI ranking data (market-wide position changes)
 	oiRankingData := engine.FetchOIRankingData()
@@ -668,7 +656,6 @@ func (s *Server) handleStrategyTestRun(c *gin.Context) {
 		PromptVariant:      req.PromptVariant,
 		MarketDataMap:      marketDataMap,
 		QuantDataMap:       quantDataMap,
-		VergexDataMap:      vergexDataMap,
 		OIRankingData:      oiRankingData,
 		NetFlowRankingData: netFlowRankingData,
 		PriceRankingData:   priceRankingData,
@@ -746,13 +733,7 @@ func (s *Server) runRealAITest(userID, modelID, systemPrompt, userPrompt string)
 		aiClient = mcp.NewClient()
 	}
 
-	// Payment providers ignore custom URL
-	switch provider {
-	case "claw402":
-		aiClient.SetAPIKey(apiKey, "", model.CustomModelName)
-	default:
-		aiClient.SetAPIKey(apiKey, model.CustomAPIURL, model.CustomModelName)
-	}
+	aiClient.SetAPIKey(apiKey, model.CustomAPIURL, model.CustomModelName)
 
 	// Call AI API
 	response, err := aiClient.CallWithMessages(systemPrompt, userPrompt)
@@ -761,8 +742,4 @@ func (s *Server) runRealAITest(userID, modelID, systemPrompt, userPrompt string)
 	}
 
 	return response, nil
-}
-
-func (s *Server) resolveStrategyDataWalletKey(userID, selectedModelID string) (string, error) {
-	return s.store.AIModel().ResolveClaw402WalletKey(userID, selectedModelID)
 }

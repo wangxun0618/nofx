@@ -1,8 +1,8 @@
 import type { PairMap } from '../translation-pair'
 
 // Wallet / Hyperliquid / Autopilot launch copy. Both languages are required on
-// every key. Brand names (Hyperliquid, NOFX, Claw402, MetaMask, Rabby, OKX,
-// Coinbase, Base, Arbitrum, USDC) are intentionally preserved.
+// every key. Brand names (Hyperliquid, NOFX, MetaMask, Rabby, OKX, Coinbase,
+// Base, Arbitrum, USDC) are intentionally preserved.
 export const walletPairs: PairMap = {
   // ---------- HyperliquidWalletConnect ----------
   'hlw.noAccountReturned': {
@@ -182,12 +182,12 @@ export const walletPairs: PairMap = {
     zh: '你的账户将集中托管自动策略配置、钱包授权状态与交易看板，统一于一处。',
   },
   'hlw.guestCreateAccountAction': { en: 'Create account', zh: '创建账户' },
-  'hlw.guestFundFeeTitle': { en: 'Fund the AI fee wallet', zh: '为 AI 费用钱包充值' },
+  'hlw.guestFundFeeTitle': { en: 'Configure the AI model', zh: '配置 AI 模型' },
   'hlw.guestFundFeeDetail': {
-    en: 'NOFX prepares a Base USDC wallet for Claw402.ai data and model calls. This wallet is separate from trading collateral.',
-    zh: 'NOFX 会为你准备一个 Base 链上的 USDC 钱包，用于 Claw402.ai 的数据与模型调用。该钱包与交易保证金相互独立。',
+    en: 'Connect a supported provider with your own API key — NOFX calls it directly, with no gateway wallet and no per-call billing.',
+    zh: '用你自己的 API Key 直连受支持的服务商 —— NOFX 直接调用，无需网关钱包，也没有按次计费。',
   },
-  'hlw.guestOpenDepositQr': { en: 'Open deposit QR', zh: '打开充值二维码' },
+  'hlw.guestOpenDepositQr': { en: 'Open model settings', zh: '打开模型设置' },
   'hlw.guestAuthorizeTitle': { en: 'Authorize Hyperliquid', zh: '授权 Hyperliquid' },
   'hlw.guestAuthorizeDetail': {
     en: 'Connect your trading wallet, approve the NOFX Agent, and approve the builder fee. Funds remain in your Hyperliquid account.',
@@ -204,8 +204,8 @@ export const walletPairs: PairMap = {
     zh: '一套策略，四步设置，然后它开始交易。',
   },
   'hlw.guestIntro': {
-    en: 'NOFX runs a single Claw402-driven strategy: board, per-market details, liquidation structure, candles, execution. No strategy picker, no manual symbol picking required.',
-    zh: 'NOFX 运行由 Claw402 驱动的统一策略：行情板、逐标的详情、清算结构、K 线与执行。无需选择策略，也无需手动挑选币种。',
+    en: 'NOFX runs one built-in strategy: each cycle it reads the top Hyperliquid instruments by 24h volume and trades them with the AI model you connect. No strategy picker, no manual symbol picking required.',
+    zh: 'NOFX 运行一套内置策略：每轮读取 Hyperliquid 24 小时成交量靠前的品种，再用你接入的 AI 模型进行交易。无需挑选策略，也无需手动选币。',
   },
   'hlw.guestStartSetup': { en: 'Start setup', zh: '开始设置' },
   'hlw.guestNoWalletTitle': { en: 'No trading wallet yet?', zh: '还没有交易钱包？' },
@@ -231,8 +231,8 @@ export const walletPairs: PairMap = {
     zh: '每个周期都运行相同的生产流程，界面只要求你充值、授权并启动。',
   },
   'hlw.guestPipeline1': {
-    en: 'Read the live Claw402.ai board, with US stocks prioritized before crypto.',
-    zh: '读取 Claw402.ai 实时行情板，美股优先于加密资产。',
+    en: 'Read the top Hyperliquid instruments by 24h volume, US equities and crypto together.',
+    zh: '读取 Hyperliquid 24 小时成交量靠前的品种，美股与加密资产一并纳入。',
   },
   'hlw.guestPipeline2': {
     en: 'Load current direction, direction history, and cost/liquidation structure for each candidate.',
@@ -250,22 +250,22 @@ export const walletPairs: PairMap = {
     zh: '几分钟启动 NOFX Autopilot',
   },
   'hlw.panelSubtitle': {
-    en: 'Four small steps, about $13 total. No API keys, no config files — the AI trades for you, and you can stop it anytime.',
-    zh: '四个简单步骤，总计约 13 美元。无需 API 密钥、无需配置文件——AI 为你交易，随时可停止。',
+    en: 'Four small steps: connect an AI model with your own API key, link Hyperliquid, add funds, then start. The AI trades for you and you can stop it anytime.',
+    zh: '四个简单步骤：用你的 API Key 接入 AI 模型、连接 Hyperliquid、入金、启动。AI 为你交易，随时可停止。',
   },
   'hlw.deposit': { en: 'Deposit', zh: '充值' },
   'hlw.create': { en: 'Create', zh: '创建' },
   'hlw.panelStep1Title': {
-    en: 'Step 1 · Fund the AI wallet ($1+)',
-    zh: '步骤 1 · 为 AI 钱包充值（$1 起）',
+    en: 'Step 1 · Configure the AI model',
+    zh: '步骤 1 · 配置 AI 模型',
   },
   'hlw.panelStep1Detail': {
-    en: 'The AI pays a tiny fee each time it thinks. Send $1 or more of USDC on the Base network to this address — from Binance, OKX, Coinbase or any wallet. Separate from your trading money.',
-    zh: 'AI 每次思考都会支付极少量费用。请通过 Base 网络向此地址转入 $1 或更多 USDC——可从 Binance、OKX、Coinbase 或任意钱包转入。与你的交易资金相互独立。',
+    en: 'Paste an API key from a supported provider (DeepSeek, OpenAI, Claude, Qwen, Gemini, Grok, Kimi or MiniMax). NOFX calls the provider directly and you pay the provider — there is no gateway wallet to fund.',
+    zh: '粘贴受支持服务商（DeepSeek、OpenAI、Claude、Qwen、Gemini、Grok、Kimi、MiniMax）的 API Key。NOFX 直连服务商，你直接向服务商付费 —— 无需充值任何网关钱包。',
   },
   'hlw.panelStep1TakesMinute': {
-    en: 'Takes 1 minute — we create the wallet for you',
-    zh: '约需 1 分钟——钱包由我们为你创建',
+    en: 'Takes 1 minute — paste one API key',
+    zh: '约需 1 分钟 —— 粘贴一个 API Key 即可',
   },
   'hlw.panelStep2Title': {
     en: 'Step 2 · Connect Hyperliquid',
@@ -310,7 +310,7 @@ export const walletPairs: PairMap = {
     en: 'Unlocks when steps 1–3 are green',
     zh: '当步骤 1–3 全部完成时解锁',
   },
-  'hlw.panelSetupAiWallet': { en: 'Set up the AI wallet', zh: '设置 AI 钱包' },
+  'hlw.panelSetupModel': { en: 'Configure the AI model', zh: '配置 AI 模型' },
   'hlw.panelDepositUsdc': {
     en: 'Deposit USDC on Hyperliquid',
     zh: '在 Hyperliquid 上存入 USDC',

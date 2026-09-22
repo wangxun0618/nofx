@@ -7,77 +7,53 @@ import (
 	"nofx/store"
 )
 
-func TestBuildSystemPromptUsesVergexClaw402Prompt(t *testing.T) {
-	cfg := store.GetDefaultStrategyConfig("zh")
-	cfg.CoinSource.SourceType = "vergex_signal"
-	cfg.CoinSource.VergexLimit = 5
-	cfg.PromptSections.RoleDefinition = "# You are a professional Hyperliquid USDC multi-asset trading AI"
-	cfg.CustomPrompt = "Long only, no shorts."
+// TestBuildSystemPromptUsesHyperliquidAutoTraderPrompt pins the canonical
+// system prompt contract. The strategy engine no longer has a paid-gateway
+// (Claw402/Vergex/x402) prompt flavour: every strategy, whether created with
+// the English or the Chinese UI, must produce the same generic
+// Hyperliquid-native auto-trader prompt.
+func TestBuildSystemPromptUsesHyperliquidAutoTraderPrompt(t *testing.T) {
+	for _, lang := range []string{"en", "zh"} {
+		t.Run(lang, func(t *testing.T) {
+			cfg := store.GetDefaultStrategyConfig(lang)
 
-	engine := NewStrategyEngine(&cfg)
-	prompt := engine.BuildSystemPrompt(30, "balanced")
+			engine := NewStrategyEngine(&cfg)
+			prompt := engine.BuildSystemPrompt(30, "balanced")
 
-	if !strings.Contains(prompt, "NOFX Claw402 auto-trader") {
-		t.Fatalf("prompt did not use the Claw402/Vergex TradeFi role:\n%s", prompt)
-	}
-	if !strings.Contains(prompt, "Claw402.ai Direction Board") || !strings.Contains(prompt, "Current Direction and Direction History") || !strings.Contains(prompt, "Cost/Liquidation Heatmap") {
-		t.Fatalf("prompt is missing Claw402/Vergex detail data guidance:\n%s", prompt)
-	}
-	if !strings.Contains(prompt, "open_short") {
-		t.Fatalf("prompt should explicitly allow short entries:\n%s", prompt)
-	}
-	if !strings.Contains(prompt, "Direction is determined only by the current Claw402 ranking") {
-		t.Fatalf("prompt should make the current Claw402 direction authoritative:\n%s", prompt)
-	}
-	if !strings.Contains(prompt, "Existing long + bullish ranking: always `hold`") ||
-		!strings.Contains(prompt, "Existing short + bearish ranking: always `hold`") ||
-		!strings.Contains(prompt, "Close an existing position only when its ranking direction changes") {
-		t.Fatalf("prompt is missing the strict signal hold/exit state machine:\n%s", prompt)
-	}
-	if !strings.Contains(prompt, "every open position must use exactly 10x") {
-		t.Fatalf("prompt should force 10x leverage for Claw402 opens:\n%s", prompt)
-	}
-	if !strings.Contains(prompt, "use the full max notional per position") {
-		t.Fatalf("prompt should force full-size Claw402 opens:\n%s", prompt)
-	}
-	if !strings.Contains(prompt, "`stop_loss` must be a positive protective price") ||
-		!strings.Contains(prompt, "`take_profit` must be exactly 0") {
-		t.Fatalf("prompt must explain signal-managed exit fields:\n%s", prompt)
-	}
-	if containsCJK(prompt) {
-		t.Fatalf("system prompt must be English-only, got CJK text:\n%s", prompt)
-	}
-	legacyPhrases := []string{
-		"Hyperliquid USDC multi-asset trading AI",
-		"Long only",
-		"Altcoin",
-		"BTC/ETH",
-		"LONG-ONLY",
-		"Do not short",
-		"MUST open a long",
-		"Ranking alone is not an entry reason",
-		"Open only when Signal Lab",
-		"Claw402.ai Signal Lab",
-	}
-	for _, phrase := range legacyPhrases {
-		if strings.Contains(prompt, phrase) {
-			t.Fatalf("prompt still contains legacy phrase %q:\n%s", phrase, prompt)
-		}
+			required := []string{
+				"Data Dictionary & Trading Rules",
+				"NOFX auto-trader",
+				"Trade only the Hyperliquid instruments presented in this cycle's candidate list",
+			}
+			for _, phrase := range required {
+				if !strings.Contains(prompt, phrase) {
+					t.Fatalf("prompt missing %q:\n%s", phrase, prompt)
+				}
+			}
+			if containsCJK(prompt) {
+				t.Fatalf("system prompt must be English-only, got CJK text:\n%s", prompt)
+			}
+			for _, retired := range []string{"Claw402", "claw402", "Vergex", "vergex", "x402", "Direction Board", "Signal Lab"} {
+				if strings.Contains(prompt, retired) {
+					t.Fatalf("prompt still references the retired payment/data gateway (%q):\n%s", retired, prompt)
+				}
+			}
+		})
 	}
 }
 
-func TestBuildSystemPromptFallsBackToEnglishWhenConfiguredLanguageIsChinese(t *testing.T) {
+// TestBuildSystemPromptDropsChineseCustomSections verifies that stored prompt
+// sections written in Chinese are discarded in favour of the built-in English
+// fallbacks, so the model contract never mixes languages.
+func TestBuildSystemPromptDropsChineseCustomSections(t *testing.T) {
 	cfg := store.GetDefaultStrategyConfig("zh")
 	cfg.CoinSource.SourceType = "static"
 	cfg.CoinSource.StaticCoins = []string{"BTCUSDT", "ETHUSDT"}
-	cfg.CoinSource.VergexLimit = 0
-	cfg.CoinSource.VergexMarketType = ""
-	cfg.CoinSource.VergexChain = ""
-	cfg.PromptSections.RoleDefinition = "# You are a Chinese system prompt"
-	cfg.PromptSections.TradingFrequency = "# High-frequency trading\nTrade every minute."
-	cfg.PromptSections.EntryStandards = "# Entry\nOpen positions freely."
-	cfg.PromptSections.DecisionProcess = "# Decision\nOutput directly."
-	cfg.CustomPrompt = "Chinese preference should not enter the system prompt."
+	cfg.PromptSections.RoleDefinition = "# 你是一个中文系统提示"
+	cfg.PromptSections.TradingFrequency = "# 高频交易\n每分钟交易一次。"
+	cfg.PromptSections.EntryStandards = "# 入场\n自由开仓。"
+	cfg.PromptSections.DecisionProcess = "# 决策\n直接输出。"
+	cfg.CustomPrompt = "中文偏好不应进入系统提示。"
 
 	engine := NewStrategyEngine(&cfg)
 	prompt := engine.BuildSystemPrompt(30, "balanced")
@@ -92,6 +68,32 @@ func TestBuildSystemPromptFallsBackToEnglishWhenConfiguredLanguageIsChinese(t *t
 	for _, phrase := range required {
 		if !strings.Contains(prompt, phrase) {
 			t.Fatalf("English fallback prompt missing %q:\n%s", phrase, prompt)
+		}
+	}
+	if containsCJK(prompt) {
+		t.Fatalf("system prompt must be English-only, got CJK text:\n%s", prompt)
+	}
+}
+
+// TestBuildSystemPromptKeepsEnglishCustomSections verifies that an
+// English-language custom override is still honoured after the legacy
+// whole-config wipe was removed.
+func TestBuildSystemPromptKeepsEnglishCustomSections(t *testing.T) {
+	cfg := store.GetDefaultStrategyConfig("zh")
+	cfg.CoinSource.SourceType = "static"
+	cfg.CoinSource.StaticCoins = []string{"BTCUSDT", "ETHUSDT"}
+	cfg.PromptSections.RoleDefinition = "# You are a disciplined systematic trader"
+	cfg.CustomPrompt = "Prefer fewer, higher-quality entries."
+
+	engine := NewStrategyEngine(&cfg)
+	prompt := engine.BuildSystemPrompt(30, "balanced")
+
+	for _, phrase := range []string{
+		"# You are a disciplined systematic trader",
+		"Prefer fewer, higher-quality entries.",
+	} {
+		if !strings.Contains(prompt, phrase) {
+			t.Fatalf("prompt dropped English custom section %q:\n%s", phrase, prompt)
 		}
 	}
 	if containsCJK(prompt) {
@@ -118,6 +120,7 @@ func TestBuildSystemPromptDoesNotForceLongOnlyForSingleXYZ(t *testing.T) {
 		"Do not short",
 		"MUST open a long",
 		"Probing > waiting",
+		"Claw402",
 	}
 	for _, phrase := range forbidden {
 		if strings.Contains(prompt, phrase) {
@@ -133,14 +136,4 @@ func containsCJK(text string) bool {
 		}
 	}
 	return false
-}
-
-func TestLegacyVergexFieldsDoNotSelectSignalManagedPrompt(t *testing.T) {
-	cfg := store.GetDefaultStrategyConfig("en")
-	cfg.CoinSource.SourceType = "claw402"
-	cfg.CoinSource.VergexLimit = 5
-	cfg.CoinSource.VergexMarketType = "all"
-	if NewStrategyEngine(&cfg).usesVergexSignalPrompt() {
-		t.Fatal("legacy Vergex fields must not select the signal-managed prompt")
-	}
 }

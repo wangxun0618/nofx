@@ -404,27 +404,24 @@ export function TraderConfigModal({
                             {aiConfig.coin_source.source_type === 'static'
                               ? t('traderCfg.fixedUsStocks', language)
                               : aiConfig.coin_source.source_type ===
-                                  'vergex_signal'
-                                ? t('traderCfg.vergexSignalBoard', language)
+                                  'hyper_rank'
+                                ? t('traderCfg.hyperRankBoard', language)
                                 : aiConfig.coin_source.source_type ===
-                                    'hyper_rank'
-                                  ? t('traderCfg.claw402Board', language)
+                                    'hyper_all'
+                                  ? t('traderCfg.hlAllMarkets', language)
                                   : aiConfig.coin_source.source_type ===
-                                      'hyper_all'
-                                    ? t('traderCfg.hlAllMarkets', language)
+                                      'hyper_main'
+                                    ? t('traderCfg.hlMainMarkets', language)
                                     : aiConfig.coin_source.source_type ===
-                                        'hyper_main'
-                                      ? t('traderCfg.hlMainMarkets', language)
+                                        'ai500'
+                                      ? 'AI500'
                                       : aiConfig.coin_source.source_type ===
-                                          'ai500'
-                                        ? 'AI500'
+                                          'oi_top'
+                                        ? t('traderCfg.oiTop', language)
                                         : aiConfig.coin_source.source_type ===
-                                            'oi_top'
-                                          ? t('traderCfg.oiTop', language)
-                                          : aiConfig.coin_source.source_type ===
-                                              'oi_low'
-                                            ? t('traderCfg.oiLow', language)
-                                            : '-'}
+                                            'oi_low'
+                                          ? t('traderCfg.oiLow', language)
+                                          : '-'}
                           </div>
                           <div>
                             {t('marginLimit', language)}:{' '}

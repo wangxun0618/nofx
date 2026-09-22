@@ -9,9 +9,8 @@ import {
 describe('router paths helpers', () => {
   it('maps pathname to current navigation page', () => {
     expect(getCurrentPageForPath(ROUTES.home)).toBeUndefined()
-    expect(getCurrentPageForPath(ROUTES.welcome)).toBe('traders')
     expect(getCurrentPageForPath(ROUTES.dashboard)).toBe('trader')
-    expect(getCurrentPageForPath(ROUTES.strategyMarket)).toBe('strategy-market')
+    expect(getCurrentPageForPath(ROUTES.strategy)).toBe('strategy')
   })
 
   it('builds dashboard path with optional trader query', () => {

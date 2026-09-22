@@ -214,57 +214,13 @@ export const uiStringPairs = {
   'hlw.approveFeeStep': { en: 'Approve fee & finish', zh: '确认费用并完成' },
 
   // ── Model / wallet configuration modal ────────────────────────────────
-  'modelCfg.createWallet': { en: '🔑 Create Wallet', zh: '🔑 创建钱包' },
-  'modelCfg.backupNow': {
-    en: 'Important: Backup your private key NOW!',
-    zh: '重要：请立即备份你的私钥！',
-  },
-  'modelCfg.privateKeyWarning': {
-    en: 'This is your wallet private key. If lost, it cannot be recovered and all assets will be permanently lost. Copy and save it securely.',
-    zh: '这是你的钱包私钥。一旦丢失将无法找回，链上资产会永久损失。请复制并妥善保存。',
-  },
-  'modelCfg.doNotScreenshot': {
-    en: 'Do NOT screenshot or share with anyone',
-    zh: '请勿截图，也不要分享给任何人',
-  },
-  'modelCfg.saveToPasswordManager': {
-    en: 'Save to a password manager (1Password / Bitwarden)',
-    zh: '保存到密码管理器（1Password / Bitwarden）',
-  },
-  'modelCfg.writeItDown': {
-    en: 'Or write it down and store it safely',
-    zh: '或手写记录并安全存放',
-  },
-  'modelCfg.confirmWalletAddress': {
-    en: 'Please confirm this is your wallet address (verify in MetaMask)',
-    zh: '请确认这是你的钱包地址（可在 MetaMask 中核对）',
-  },
-  'modelCfg.depositTitle': {
-    en: 'Deposit USDC (Base Chain)',
-    zh: '充值 USDC（Base 链）',
-  },
-  'modelCfg.scanQrOrCopy': {
-    en: 'Scan QR or copy address to transfer',
-    zh: '扫描二维码或复制地址进行转账',
-  },
-  'modelCfg.scanQrApp': {
-    en: 'Scan QR with exchange app to transfer',
-    zh: '用交易所 App 扫码转账',
-  },
-  'modelCfg.chooseBase': {
-    en: 'Choose Base network when withdrawing',
-    zh: '提现时请选择 Base 网络',
-  },
-  'modelCfg.orBridge': { en: 'Or bridge: ', zh: '或跨链：' },
-  'modelCfg.minUsdc': { en: 'Min $1 USDC to start', zh: '最低 1 USDC 即可开始' },
 
   // ── Trader configuration ──────────────────────────────────────────────
   'traderCfg.fixedUsStocks': { en: 'Fixed US stocks', zh: '固定美股列表' },
-  'traderCfg.vergexSignalBoard': {
-    en: 'Vergex signal board',
-    zh: 'Vergex 信号榜',
+  'traderCfg.hyperRankBoard': {
+    en: 'Hyperliquid rank board',
+    zh: 'Hyperliquid 排行榜',
   },
-  'traderCfg.claw402Board': { en: 'Claw402 board', zh: 'Claw402 榜单' },
   'traderCfg.hlAllMarkets': {
     en: 'Hyperliquid all markets',
     zh: 'Hyperliquid 全市场',
@@ -321,7 +277,6 @@ export const uiStringPairs = {
     zh: '最近平仓 · 币种/方向/持仓时长/盈亏',
   },
   'terminal.noClosedTrades': { en: 'No closed trades yet.', zh: '暂无已平仓记录。' },
-  'terminal.marketNetInflow': { en: 'Market net inflow', zh: '市场净流入' },
   'terminal.bySymbol': { en: 'By symbol', zh: '按币种' },
   'terminal.bySymbolHistory': {
     en: 'By-symbol history · trades/win/pnl',
@@ -341,29 +296,6 @@ export const uiStringPairs = {
   'terminal.connectingHyperliquid': {
     en: 'Connecting to Hyperliquid…',
     zh: '正在连接 Hyperliquid…',
-  },
-  'terminal.costLiqMap': { en: 'Cost / Liq map', zh: '成本 / 强平地图' },
-  'terminal.longCost': { en: 'Long cost', zh: '多头成本' },
-  'terminal.shortCost': { en: 'Short cost', zh: '空头成本' },
-  'terminal.longLiq': { en: 'Long liq', zh: '多头强平' },
-  'terminal.shortLiq': { en: 'Short liq', zh: '空头强平' },
-  'terminal.loadingCostLiq': {
-    en: 'Loading cost/liquidation map…',
-    zh: '正在加载成本/强平地图…',
-  },
-  'terminal.costLine': { en: 'Cost line', zh: '成本线' },
-  'terminal.noSignalData': {
-    en: 'No signal data (claw402).',
-    zh: '暂无信号数据（claw402）。',
-  },
-  'terminal.bullish': { en: 'Bullish', zh: '看多' },
-  'terminal.bearish': { en: 'Bearish', zh: '看空' },
-  'terminal.neutral': { en: 'Neutral', zh: '中性' },
-  'terminal.clickToSwitch': { en: 'click to switch ▸', zh: '点击切换 ▸' },
-  'terminal.signalMatrix': { en: 'Signal matrix · vergex', zh: '信号矩阵 · vergex' },
-  'terminal.noNetFlow': {
-    en: 'No net-flow data (claw402 payment required).',
-    zh: '暂无净流入数据（需要 claw402 付费）。',
   },
   'terminal.symbol': { en: 'SYMBOL', zh: '币种' },
   'terminal.buySell': { en: 'BUY/SELL', zh: '买/卖' },
@@ -454,134 +386,13 @@ export const uiStringPairs = {
   'strategyStudio.binStep': { en: 'Bin step', zh: '价格档位' },
 
   // ── Onboarding / beginner flow ────────────────────────────────────────
-  'onboarding.quickstart': { en: 'Quickstart', zh: '快速上手' },
-  'onboarding.followSteps': {
-    en: 'Follow these 4 steps to get started fast',
-    zh: '按这 4 步快速开始',
-  },
-  'onboarding.baseNetwork': { en: 'Base network', zh: 'Base 网络' },
-  'onboarding.continueSetup': { en: 'Continue setup', zh: '继续设置' },
-  'onboarding.step1Title': { en: '1. Fast AI', zh: '1. 快速上手 AI' },
-  'onboarding.step1Desc': {
-    en: 'Start with Claw402 + DeepSeek. No model picking needed for the first run.',
-    zh: '先用 Claw402 + DeepSeek 起步，首次运行无需挑选模型。',
-  },
-  'onboarding.step2Title': { en: '2. Add Exchange', zh: '2. 添加交易所' },
-  'onboarding.step2Desc': {
-    en: 'Connect an exchange so the AI can actually place trades.',
-    zh: '连接交易所，AI 才能真正下单交易。',
-  },
-  'onboarding.step3Title': { en: '3. Pick Strategy', zh: '3. 选择策略' },
-  'onboarding.step3Desc': {
-    en: 'You can start with a default strategy and fine-tune later.',
-    zh: '可以先使用默认策略，后续再逐步调优。',
-  },
-  'onboarding.step4Title': { en: '4. Create Trader', zh: '4. 创建交易员' },
-  'onboarding.step4Desc': {
-    en: 'Last step: bind your model and exchange, then start running.',
-    zh: '最后一步：绑定模型与交易所，然后启动运行。',
-  },
-  'onboarding.walletLabel': { en: 'Wallet', zh: '钱包' },
-  'onboarding.payPerCall': {
-    en: 'Pay per call with Base USDC',
-    zh: '使用 Base 链 USDC 按次付费',
-  },
   'onboarding.oneClickSetup': { en: 'One-click setup', zh: '一键配置' },
-  'onboarding.strategyReady': { en: 'Strategy ready', zh: '策略已就绪' },
-  'onboarding.optionalWorthLook': {
-    en: 'Optional, but worth a quick look',
-    zh: '可选，但建议快速看一下',
-  },
-  'onboarding.openStrategy': { en: 'Open strategy', zh: '打开策略' },
-  'onboarding.traderCreated': {
-    en: 'Trader created, you can add more',
-    zh: '交易员已创建，可继续添加',
-  },
-  'onboarding.readyToCreate': { en: 'Ready to create', zh: '可以创建了' },
-  'onboarding.finishFirstThree': {
-    en: 'Finish the first three steps first',
-    zh: '请先完成前三步',
-  },
-  'onboarding.createAnother': { en: 'Create another', zh: '再创建一个' },
-  'onboarding.createNow': { en: 'Create now', zh: '立即创建' },
-  'onboarding.exchangeOptions': {
-    en: 'Binance / OKX / Bybit / Hyperliquid',
-    zh: '币安 / OKX / Bybit / Hyperliquid',
-  },
-
-  // ── Onboarding mode selector ──────────────────────────────────────────
-  'mode.experience': { en: 'Experience', zh: '体验模式' },
-  'mode.beginnerTitle': { en: 'Beginner Mode', zh: '新手模式' },
-  'mode.beginnerBadge': { en: 'Recommended', zh: '推荐' },
-  'mode.beginnerDesc': {
-    en: 'Generate a Base wallet automatically and start with Claw402 + GLM by default.',
-    zh: '自动生成 Base 钱包，默认使用 Claw402 + GLM 起步。',
-  },
-  'mode.advancedTitle': { en: 'Advanced Mode', zh: '高级模式' },
-  'mode.advancedDesc': {
-    en: 'Keep the full manual flow and configure models, wallets, and exchanges yourself.',
-    zh: '保留完整手动流程，自行配置模型、钱包与交易所。',
-  },
-
-  // ── Beginner wallet onboarding overlay ────────────────────────────────
-  'onboarding.beginnerGuard': { en: 'Beginner Guard', zh: '新手守护' },
-  'onboarding.walletReady': {
-    en: 'Your wallet is ready',
-    zh: '你的钱包已就绪',
-  },
-  'onboarding.payPerCallTitle': { en: 'Pay per call', zh: '按次付费' },
-  'onboarding.preparingWallet': {
-    en: 'Preparing your Base wallet...',
-    zh: '正在准备你的 Base 钱包…',
-  },
-  'onboarding.depositAddress': {
-    en: 'Deposit address (Base USDC)',
-    zh: '充值地址（Base USDC）',
-  },
-  'onboarding.refreshBalance': { en: 'Refresh balance', zh: '刷新余额' },
-  'onboarding.balanceHint': {
-    en: '$5–$10 usually lasts a long time · balance updates by itself after you deposit',
-    zh: '5–10 美元通常可用很久 · 充值后余额会自动更新',
-  },
-  'onboarding.noUsdcYet': { en: "Don't have USDC yet?", zh: '还没有 USDC？' },
-  'onboarding.buyUsdcLead': {
-    en: 'Buy USDC on Binance, OKX or Coinbase, then withdraw it to the address above — and pick the',
-    zh: '可在币安、OKX 或 Coinbase 购买 USDC，然后提现到上方地址 — 提现时请选择',
-  },
-  'onboarding.buyUsdcTail': {
-    en: 'when the exchange asks. It usually arrives in about a minute. Only send USDC on Base.',
-    zh: '网络。通常约 1 分钟到账。仅支持通过 Base 网络转入 USDC。',
-  },
-  'onboarding.walletAddress': { en: 'Wallet address', zh: '钱包地址' },
-  'onboarding.address': { en: 'Address', zh: '地址' },
-  'onboarding.copyAddress': { en: 'Copy address', zh: '复制地址' },
-  'onboarding.privateKeyBackup': {
-    en: 'Private key, back it up now',
-    zh: '私钥，请立即备份',
-  },
-  'onboarding.privateKey': { en: 'Private key', zh: '私钥' },
-  'onboarding.copyPrivateKey': { en: 'Copy private key', zh: '复制私钥' },
-  'onboarding.walletUsageNote': {
-    en: 'This wallet only pays for model calls. It does not fund your exchange automatically. The private key cannot be recovered, and you should only deposit Base USDC.',
-    zh: '该钱包仅用于支付模型调用费用，不会自动为交易所入金。私钥无法找回，且只应存入 Base 链上的 USDC。',
-  },
-  'onboarding.copySuccess': { en: '{label} copied', zh: '{label} 已复制' },
-  'onboarding.copyFailed': { en: 'Copy failed', zh: '复制失败' },
-  'onboarding.skip': { en: 'Skip', zh: '跳过' },
-  'onboarding.envSaved': {
-    en: 'Wallet details were also saved to {path}',
-    zh: '钱包信息也已保存到 {path}',
-  },
-  'onboarding.prepareWalletFailed': {
-    en: 'Failed to prepare beginner wallet',
-    zh: '创建新手钱包失败',
-  },
 
   // ── Auth screens (extras) ─────────────────────────────────────────────
   'auth.abortRegistration': { en: 'ABORT_REGISTRATION', zh: '中止注册' },
   'auth.registerIntro': {
-    en: 'This account owns your NOFX instance. Next step: a guided launch — about $13 and five minutes to your first AI trade.',
-    zh: '该账户是你 NOFX 实例的所有者。下一步是引导式启动：约 13 美元、5 分钟即可完成第一笔 AI 交易。',
+    en: 'This account owns your NOFX instance. Next step: a guided launch — bring an AI API key, then about $12 and five minutes to your first AI trade.',
+    zh: '该账户是你 NOFX 实例的所有者。下一步是引导式启动：准备一个 AI API Key，再约 12 美元、5 分钟即可完成第一笔 AI 交易。',
   },
   'auth.whitelistHeading': { en: 'RESTRICTED', zh: '受限' },
   'auth.accessWord': { en: 'ACCESS', zh: '访问' },
@@ -625,21 +436,9 @@ export const uiStringPairs = {
   },
 
   // Runtime health banners
-  'terminal.aiWalletEmpty': {
-    en: 'AI fee wallet is out of USDC — decisions are failing.',
-    zh: 'AI 费用钱包的 USDC 已耗尽 — 决策正在失败。',
-  },
-  'terminal.aiWalletLow': {
-    en: 'AI fee wallet is low ({amount} USDC) — top up soon.',
-    zh: 'AI 费用钱包余额偏低（{amount} USDC）— 请尽快充值。',
-  },
   'terminal.safeModeBanner': {
     en: 'Safe mode: AI failed repeatedly, no new positions are being opened.',
     zh: '安全模式：AI 连续失败，暂不开新仓。',
-  },
-  'terminal.depositToRecover': {
-    en: 'Deposit Base USDC to the Claw402 wallet, the trader recovers automatically.',
-    zh: '向 Claw402 钱包充值 Base 链 USDC 后，交易程序会自动恢复。',
   },
   'terminal.firstRunHint': {
     en: 'It reads the whole market before acting — the first decision usually lands within a minute or two and will appear in the Execution Log below. You can stop it anytime from the Config page.',
@@ -658,8 +457,6 @@ export const uiStringPairs = {
 
   // Decision funnel stages. The topology renders `title` in English and `zh`
   // for Chinese, so both sides must be real.
-  'terminal.stageFlow': { en: 'FLOW', zh: '资金流' },
-  'terminal.stageSignal': { en: 'SIGNAL', zh: '信号' },
   'terminal.stageDecision': { en: 'DECISION', zh: '决策' },
   'terminal.stageExecute': { en: 'EXECUTE', zh: '执行' },
   'terminal.stageHold': { en: 'HOLD', zh: '持仓' },
@@ -667,7 +464,6 @@ export const uiStringPairs = {
   'terminal.flat': { en: 'flat', zh: '空仓' },
   'terminal.sync': { en: 'sync', zh: '同步中' },
   'terminal.bars': { en: 'bars', zh: '根' },
-  'terminal.liq': { en: 'liq', zh: '强平' },
   'terminal.liveCandles': { en: 'Live candles', zh: '实时 K 线' },
   'chart.kline': { en: 'Kline', zh: 'K 线' },
 } satisfies Record<string, TranslationPair>

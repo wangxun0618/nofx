@@ -3,9 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   AlertCircle,
   ArrowRight,
-  CircleDollarSign,
   CheckCircle2,
-  Copy,
   ExternalLink,
   Loader2,
   RefreshCw,
@@ -14,24 +12,23 @@ import {
   Zap,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { api } from '../../lib/api'
-import { buildDashboardPath, ROUTES } from '../../router/paths'
+import { buildDashboardPath } from '../../router/paths'
 import {
-  ensureClaw402Strategy,
+  AUTOPILOT_TRADER_NAME,
+  ensureAutopilotStrategy,
+  isAutopilotStrategyName,
   launchAutopilot,
 } from '../../lib/launch/launchAutopilot'
 import { runLaunchPreflight } from '../../lib/launch/preflight'
 import type { LaunchPreflightResult } from '../../lib/launch/types'
 import type {
   AIModel,
-  CurrentBeginnerWalletResponse,
   Exchange,
   ExchangeAccountState,
   TraderInfo,
 } from '../../types'
 import { HyperliquidWalletConnect } from '../common/HyperliquidWalletConnect'
 import { t, type Language } from '../../i18n/translations'
-import { tg } from '../../i18n/translations'
 
 type LaunchStepStatus = 'ready' | 'action' | 'blocked'
 
@@ -43,11 +40,10 @@ interface AutopilotLaunchPanelProps {
   isLoggedIn: boolean
   language: Language
   onRefresh: () => Promise<void>
-  onOpenClaw402Config?: () => void
+  onOpenModelConfig?: () => void
   onOpenHyperliquidConfig?: () => void
 }
 
-const MIN_AI_FEE_USDC = 1
 const MIN_TRADING_USDC = 12
 
 function parseNumber(value?: string | number) {
@@ -69,15 +65,6 @@ function formatUSDC(value: number) {
   }).format(value)
 }
 
-async function copyText(value: string, label: string) {
-  try {
-    await navigator.clipboard.writeText(value)
-    toast.success(tg('autopilot.copied', { label }))
-  } catch {
-    toast.error(tg('autopilot.copyFailed'))
-  }
-}
-
 export function AutopilotLaunchPanel({
   models,
   exchanges,
@@ -86,28 +73,24 @@ export function AutopilotLaunchPanel({
   isLoggedIn,
   language,
   onRefresh,
-  onOpenClaw402Config,
+  onOpenModelConfig,
   onOpenHyperliquidConfig,
 }: AutopilotLaunchPanelProps) {
   const navigate = useNavigate()
-  const [wallet, setWallet] = useState<CurrentBeginnerWalletResponse | null>(
-    null
-  )
-  const [walletLoading, setWalletLoading] = useState(false)
   const [launching, setLaunching] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const isZh = language === 'zh'
 
-  const claw402Model = useMemo(
+  // The configured AI model is the only AI prerequisite: any enabled provider
+  // with an API key on file can drive the autopilot.
+  const aiModel = useMemo(
     () =>
       models.find(
-        (model) =>
-          model.provider === 'claw402' &&
-          model.enabled &&
-          (model.has_api_key || model.apiKey || model.walletAddress)
+        (model) => model.enabled && (model.has_api_key || model.apiKey)
       ) || null,
     [models]
   )
+  const modelReady = Boolean(aiModel)
 
   const hyperliquidExchange = useMemo(
     () =>
@@ -136,10 +119,10 @@ export function AutopilotLaunchPanel({
   // snapshot cached in the model object. Poll while the panel is visible so
   // deposits show up without a manual refresh.
   const [preflight, setPreflight] = useState<LaunchPreflightResult | null>(null)
-  const claw402ModelId = claw402Model?.id
+  const aiModelId = aiModel?.id
   const preflightExchangeId = preflightExchange?.id
   useEffect(() => {
-    if (!isLoggedIn || !claw402ModelId || !preflightExchangeId) {
+    if (!isLoggedIn || !aiModelId || !preflightExchangeId) {
       setPreflight(null)
       return
     }
@@ -147,7 +130,7 @@ export function AutopilotLaunchPanel({
     const check = async () => {
       try {
         const result = await runLaunchPreflight({
-          ai_model_id: claw402ModelId,
+          ai_model_id: aiModelId,
           exchange_id: preflightExchangeId,
         })
         if (!cancelled) setPreflight(result)
@@ -161,24 +144,10 @@ export function AutopilotLaunchPanel({
       cancelled = true
       clearInterval(timer)
     }
-  }, [isLoggedIn, claw402ModelId, preflightExchangeId])
+  }, [isLoggedIn, aiModelId, preflightExchangeId])
 
   const preflightCheck = (id: string) =>
     preflight?.checks.find((check) => check.id === id)
-
-  const feeWalletAddress =
-    claw402Model?.walletAddress ||
-    wallet?.address ||
-    preflightCheck('ai_wallet')?.address ||
-    ''
-  const feeFundsCheck = preflightCheck('ai_wallet_funds')
-  const feeWalletBalance =
-    feeFundsCheck?.actual ??
-    parseNumber(claw402Model?.balanceUsdc || wallet?.balance_usdc)
-  const minAIFeeUSDC = preflight?.min_ai_fee_usdc ?? MIN_AI_FEE_USDC
-  const feeReady = feeFundsCheck
-    ? feeFundsCheck.status !== 'failed' && Boolean(feeWalletAddress)
-    : Boolean(feeWalletAddress) && feeWalletBalance >= minAIFeeUSDC
 
   const hyperliquidConnected = Boolean(hyperliquidExchange)
   const exchangeState = hyperliquidExchange
@@ -198,48 +167,31 @@ export function AutopilotLaunchPanel({
 
   const autopilotTrader = useMemo(
     () =>
-      traders.find((trader) => trader.trader_name === 'NOFX Autopilot') ||
-      traders.find((trader) =>
-        (trader.strategy_name || '').toLowerCase().includes('claw402')
-      ) ||
+      traders.find((trader) => trader.trader_name === AUTOPILOT_TRADER_NAME) ||
+      traders.find((trader) => isAutopilotStrategyName(trader.strategy_name)) ||
       null,
     [traders]
   )
 
-  const allReady = feeReady && hyperliquidConnected && tradingBalanceReady
-
-  const loadWallet = async () => {
-    setWalletLoading(true)
-    try {
-      setWallet(await api.getCurrentBeginnerWallet())
-    } catch {
-      setWallet(null)
-    } finally {
-      setWalletLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    void loadWallet()
-  }, [])
+  const allReady = modelReady && hyperliquidConnected && tradingBalanceReady
 
   const refreshEverything = async () => {
     setRefreshing(true)
     try {
-      await Promise.all([onRefresh(), loadWallet()])
+      await onRefresh()
     } finally {
       setRefreshing(false)
     }
   }
 
   const handleLaunch = async () => {
-    if (!claw402Model || !hyperliquidExchange) return
+    if (!aiModel || !hyperliquidExchange) return
     setLaunching(true)
     try {
       // Shared launch path (same as Strategy Studio): server preflight with
       // fresh balances first, then strategy provisioning, then create/start.
       const outcome = await launchAutopilot({
-        ensureStrategy: ensureClaw402Strategy,
+        ensureStrategy: ensureAutopilotStrategy,
         scanIntervalMinutes: 5,
       })
 
@@ -249,8 +201,8 @@ export function AutopilotLaunchPanel({
           setPreflight(outcome.preflight)
         }
         if (outcome.kind !== 'error') {
-          if (outcome.setupTarget === 'claw402') {
-            onOpenClaw402Config?.()
+          if (outcome.setupTarget === 'ai-model') {
+            onOpenModelConfig?.()
           } else if (outcome.setupTarget === 'hyperliquid') {
             onOpenHyperliquidConfig?.()
           }
@@ -280,37 +232,18 @@ export function AutopilotLaunchPanel({
     {
       title: t('hlw.panelStep1Title', language),
       detail: t('hlw.panelStep1Detail', language),
-      status: feeReady ? 'ready' : 'action',
-      meta: feeWalletAddress
-        ? `${shortAddress(feeWalletAddress)} · ${formatUSDC(feeWalletBalance)} USDC${
-            feeReady ? '' : ` · needs ≥ ${minAIFeeUSDC} USDC`
-          }`
-        : t('hlw.panelStep1TakesMinute', language),
-      action: feeWalletAddress ? (
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigate(ROUTES.welcome)}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-nofx-gold hover:text-nofx-accent"
-          >
-            <CircleDollarSign className="h-3.5 w-3.5" />
-            {t('hlw.deposit', language)}
-          </button>
-          <button
-            type="button"
-            onClick={() => void copyText(feeWalletAddress, t('autopilot.aiFeeWallet', language))}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-nofx-gold hover:text-nofx-accent"
-          >
-            <Copy className="h-3.5 w-3.5" />{t('common.copy', language)}</button>
-        </div>
-      ) : (
+      status: modelReady ? 'ready' : 'action',
+      meta: aiModel
+        ? `${aiModel.name} · ${aiModel.provider}`
+        : t('noModelsConfigured', language),
+      action: (
         <button
           type="button"
-          onClick={() => navigate(ROUTES.welcome)}
+          onClick={() => onOpenModelConfig?.()}
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-nofx-gold hover:text-nofx-accent"
         >
           <ArrowRight className="h-3.5 w-3.5" />
-          {t('hlw.create', language)}
+          {t('onboarding.oneClickSetup', language)}
         </button>
       ),
     },
@@ -361,14 +294,14 @@ export function AutopilotLaunchPanel({
   ]
 
   const renderPrimaryAction = () => {
-    if (!feeReady) {
+    if (!modelReady) {
       return (
         <button
           type="button"
-          onClick={() => navigate(ROUTES.welcome)}
+          onClick={() => onOpenModelConfig?.()}
           className="inline-flex items-center justify-center gap-2 rounded-lg bg-nofx-gold px-4 py-3 text-sm font-bold text-white hover:bg-nofx-accent"
         >
-          {t('hlw.panelSetupAiWallet', language)}
+          {t('hlw.panelSetupModel', language)}
           <ArrowRight className="h-4 w-4" />
         </button>
       )
@@ -463,11 +396,11 @@ export function AutopilotLaunchPanel({
               <button
                 type="button"
                 onClick={() => void refreshEverything()}
-                disabled={refreshing || walletLoading}
+                disabled={refreshing}
                 className="inline-flex items-center justify-center gap-2 rounded-lg border border-nofx-gold/20 bg-nofx-bg-deeper px-3 py-2 text-xs font-semibold text-nofx-text-muted hover:text-nofx-text disabled:opacity-60"
               >
                 <RefreshCw
-                  className={`h-3.5 w-3.5 ${refreshing || walletLoading ? 'animate-spin' : ''}`}
+                  className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`}
                 />{t('common.refresh', language)}</button>
               {renderPrimaryAction()}
             </div>

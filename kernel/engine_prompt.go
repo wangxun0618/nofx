@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"nofx/market"
 	"nofx/provider/nofxos"
-	"nofx/provider/vergex"
 	"nofx/store"
 	"strings"
 	"time"
@@ -25,18 +24,6 @@ func (e *StrategyEngine) BuildSystemPrompt(accountEquity float64, variant string
 	lang := LangEnglish
 	zh := false
 	singleSymbol, primarySymbol := e.singleSymbolInfo()
-
-	// Configs created in the Chinese-UI era carry legacy stored prompt sections
-	// and custom prompts written for a different contract; ignore them wholesale
-	// and fall back to the canonical built-in English sections.
-	legacyZhConfig := strings.EqualFold(strings.TrimSpace(e.config.Language), "zh")
-	if legacyZhConfig {
-		promptSections = store.PromptSectionsConfig{}
-	}
-
-	if e.usesVergexSignalPrompt() {
-		return e.buildVergexSystemPrompt(accountEquity, variant, lang, zh, singleSymbol, primarySymbol)
-	}
 
 	// 0. Data Dictionary & Schema (ensure AI understands all fields)
 	sb.WriteString(GetSchemaPrompt(lang))
@@ -155,9 +142,6 @@ func (e *StrategyEngine) BuildSystemPrompt(accountEquity float64, variant string
 	//   2. It guarantees a stock-specific, US-equity-tuned briefing
 	//      regardless of when the strategy was first created.
 	customPrompt := englishOnlyPromptSection(e.config.CustomPrompt)
-	if legacyZhConfig {
-		customPrompt = ""
-	}
 	if singleSymbol && market.IsXyzDexAsset(primarySymbol) {
 		customPrompt = buildXYZStockCustomPrompt(primarySymbol)
 	}
@@ -180,101 +164,6 @@ func (e *StrategyEngine) BuildSystemPrompt(accountEquity float64, variant string
 	return sb.String()
 }
 
-func (e *StrategyEngine) usesVergexSignalPrompt() bool {
-	if e == nil || e.config == nil {
-		return false
-	}
-	sourceType := strings.ToLower(strings.TrimSpace(e.config.CoinSource.SourceType))
-	return sourceType == "vergex_signal"
-}
-
-func (e *StrategyEngine) buildVergexSystemPrompt(accountEquity float64, variant string, lang Language, zh bool, singleSymbol bool, primarySymbol string) string {
-	var sb strings.Builder
-	riskControl := e.config.RiskControl
-
-	writeVergexSchemaPrompt(&sb, zh)
-	sb.WriteString("\n\n---\n\n")
-
-	if zh {
-		sb.WriteString("# You are the NOFX Claw402 auto-trader\n\n")
-		sb.WriteString("Trade only Hyperliquid instruments returned by this cycle's Claw402.ai/Vergex board. You may trade only the current candidate symbols and existing positions; never invent tickers or rotate outside the provided universe.\n\n")
-		sb.WriteString("# Decision Data Priority\n\n")
-		sb.WriteString("1. Claw402.ai Direction Board: authoritative trading direction for every symbol.\n")
-		sb.WriteString("2. Claw402.ai Current Direction and Direction History: supporting state-transition context only.\n")
-		sb.WriteString("3. Claw402.ai Cost/Liquidation Heatmap: supporting market-structure context only.\n")
-		sb.WriteString("4. Raw OHLCV candles: supporting price context only.\n\n")
-		sb.WriteString("# Trading Rules\n\n")
-		sb.WriteString("- Follow the current Claw402 direction exactly; detail data and candles may explain the signal but may not veto, reverse, or prematurely exit it.\n")
-		sb.WriteString(vergexHoldRules())
-	} else {
-		sb.WriteString("# You are the NOFX Claw402 auto-trader\n\n")
-		sb.WriteString("Trade only Hyperliquid instruments returned by this cycle's Claw402.ai/Vergex board. You may trade only the current candidate symbols and existing positions; never invent tickers or rotate outside the provided universe.\n\n")
-		sb.WriteString("# Decision Data Priority\n\n")
-		sb.WriteString("1. Claw402.ai Direction Board: authoritative trading direction for every symbol.\n")
-		sb.WriteString("2. Claw402.ai Current Direction and Direction History: supporting state-transition context only.\n")
-		sb.WriteString("3. Claw402.ai Cost/Liquidation Heatmap: supporting market-structure context only.\n")
-		sb.WriteString("4. Raw OHLCV candles: supporting price context only.\n\n")
-		sb.WriteString("# Trading Rules\n\n")
-		sb.WriteString("- Follow the current Claw402 direction exactly; detail data and candles may explain the signal but may not veto, reverse, or prematurely exit it.\n")
-		sb.WriteString(vergexHoldRules())
-	}
-
-	altcoinPosValueRatio := riskControl.AltcoinMaxPositionValueRatio
-	if altcoinPosValueRatio <= 0 {
-		altcoinPosValueRatio = 1.0
-	}
-	writeVergexHardConstraints(&sb, accountEquity, riskControl, altcoinPosValueRatio, zh)
-	writeVergexOutputFormat(&sb, accountEquity, riskControl, altcoinPosValueRatio, singleSymbol, primarySymbol, zh)
-
-	customPrompt := vergexCustomPromptSection(e.config.CustomPrompt)
-	if customPrompt != "" {
-		sb.WriteString("# User Preference\n\n")
-		sb.WriteString(customPrompt)
-		sb.WriteString("\n\n")
-	}
-
-	return sb.String()
-}
-
-// vergexCustomPromptSection returns the user's custom prompt for the vergex
-// path, dropping legacy directional overrides ("long only" era) that would
-// contradict the data-driven direction rule baked into this prompt.
-// vergexHoldRules mirrors the direction state machine enforced by the trader.
-func vergexHoldRules() string {
-	return "- Flat symbol + bullish ranking: `open_long` is allowed; never `open_short`.\n" +
-		"- Flat symbol + bearish ranking: `open_short` is allowed; never `open_long`.\n" +
-		"- Existing long + bullish ranking: always `hold`, regardless of PnL, candles, direction history or heatmap.\n" +
-		"- Existing short + bearish ranking: always `hold`, regardless of PnL, candles, direction history or heatmap.\n" +
-		"- Close an existing position only when its ranking direction changes, becomes neutral, or the symbol disappears from the current valid board.\n" +
-		"- Keep an exchange-level protective stop for hard-risk containment, but do not use a fixed take-profit exit; ordinary exits are signal-managed.\n" +
-		"- Do not treat ordinary PnL fluctuation as a strategy exit signal.\n" +
-		"- Never flip direction in the same cycle: close first, then consider the new direction on a later cycle.\n" +
-		"- There is no fixed hourly or per-cycle entry cap.\n\n"
-}
-
-func vergexCustomPromptSection(section string) string {
-	trimmed := englishOnlyPromptSection(section)
-	if trimmed == "" {
-		return ""
-	}
-	lower := strings.ToLower(trimmed)
-	legacyDirectives := []string{
-		"long only",
-		"long-only",
-		"do not short",
-		"no shorts",
-		"must open a long",
-		"short only",
-		"short-only",
-	}
-	for _, directive := range legacyDirectives {
-		if strings.Contains(lower, directive) {
-			return ""
-		}
-	}
-	return trimmed
-}
-
 func englishOnlyPromptSection(section string) string {
 	trimmed := strings.TrimSpace(section)
 	if trimmed == "" {
@@ -286,145 +175,6 @@ func englishOnlyPromptSection(section string) string {
 	return trimmed
 }
 
-func writeVergexSchemaPrompt(sb *strings.Builder, zh bool) {
-	if zh {
-		sb.WriteString("# Claw402.ai TradeFi Data Guide\n\n")
-		sb.WriteString("- Equity: total account value including unrealized PnL, in USDT.\n")
-		sb.WriteString("- Balance: available balance for new positions, in USDT.\n")
-		sb.WriteString("- Margin: current margin usage; higher means more risk.\n")
-		sb.WriteString("- Position: current holdings with side, entry, leverage, unrealized PnL and liquidation price.\n")
-		sb.WriteString("- Claw402 Ranking: tradable candidate pool, rank, direction and category for this cycle.\n")
-		sb.WriteString("- Current Direction and Direction History: per-symbol state and recent direction changes.\n")
-		sb.WriteString("- Cost/Liquidation Heatmap: cost and liquidation clusters used for stops, targets and crowding risk.\n")
-		sb.WriteString("- Raw OHLCV Kline: raw candles used for trend structure, entry timing and risk/reward.\n")
-	} else {
-		sb.WriteString("# Claw402.ai TradeFi Data Guide\n\n")
-		sb.WriteString("- Equity: total account value including unrealized PnL, in USDT.\n")
-		sb.WriteString("- Balance: available balance for new positions, in USDT.\n")
-		sb.WriteString("- Margin: current margin usage; higher means more risk.\n")
-		sb.WriteString("- Position: current holdings with side, entry, leverage, unrealized PnL and liquidation price.\n")
-		sb.WriteString("- Claw402 Ranking: tradable candidate pool, rank, direction and category for this cycle.\n")
-		sb.WriteString("- Current Direction and Direction History: per-symbol state and recent direction changes.\n")
-		sb.WriteString("- Cost/Liquidation Heatmap: cost and liquidation clusters used for stops, targets and crowding risk.\n")
-		sb.WriteString("- Raw OHLCV Kline: raw candles used for trend structure, entry timing and risk/reward.\n")
-	}
-}
-
-func writeVergexHardConstraints(sb *strings.Builder, accountEquity float64, riskControl store.RiskControlConfig, tradeFiPositionValueRatio float64, zh bool) {
-	maxPositionValue := accountEquity * tradeFiPositionValueRatio
-	if zh {
-		sb.WriteString("# Hard Risk Constraints\n\n")
-		sb.WriteString("## Backend enforced\n")
-		sb.WriteString(fmt.Sprintf("- Max positions: %d Claw402 candidate instruments at the same time\n", riskControl.MaxPositions))
-		sb.WriteString(fmt.Sprintf("- Max notional per position: %.0f USDT (= equity %.0f × %.1fx)\n", maxPositionValue, accountEquity, tradeFiPositionValueRatio))
-		sb.WriteString(fmt.Sprintf("- Max margin usage: ≤%.0f%%\n", riskControl.MaxMarginUsage*100))
-		sb.WriteString(fmt.Sprintf("- Min order size: ≥%.0f USDT\n\n", riskControl.MinPositionSize))
-		sb.WriteString("## AI guided\n")
-		sb.WriteString(fmt.Sprintf("- Leverage: every open position must use exactly %dx\n", riskControl.AltcoinMaxLeverage))
-		sb.WriteString("- Use a positive protective stop on every open; ordinary exits are managed by the Claw402 direction signal, not a fixed take-profit.\n")
-		sb.WriteString(fmt.Sprintf("- Min confidence to open: ≥%d\n\n", riskControl.MinConfidence))
-		sb.WriteString("# Position Sizing\n\n")
-		sb.WriteString("For every `open_long` or `open_short`, use the full max notional per position.\n")
-		sb.WriteString("- Do not scale position_size_usd down by confidence.\n")
-		sb.WriteString("- Do not open small probe positions.\n")
-		sb.WriteString("- If the setup is not strong enough for full size, output `wait`.\n")
-		sb.WriteString("- Do not use available_balance directly as position_size_usd.\n\n")
-	} else {
-		sb.WriteString("# Hard Risk Constraints\n\n")
-		sb.WriteString("## Backend enforced\n")
-		sb.WriteString(fmt.Sprintf("- Max positions: %d Claw402 candidate instruments at the same time\n", riskControl.MaxPositions))
-		sb.WriteString(fmt.Sprintf("- Max notional per position: %.0f USDT (= equity %.0f × %.1fx)\n", maxPositionValue, accountEquity, tradeFiPositionValueRatio))
-		sb.WriteString(fmt.Sprintf("- Max margin usage: ≤%.0f%%\n", riskControl.MaxMarginUsage*100))
-		sb.WriteString(fmt.Sprintf("- Min order size: ≥%.0f USDT\n\n", riskControl.MinPositionSize))
-		sb.WriteString("## AI guided\n")
-		sb.WriteString(fmt.Sprintf("- Leverage: every open position must use exactly %dx\n", riskControl.AltcoinMaxLeverage))
-		sb.WriteString("- Use a positive protective stop on every open; ordinary exits are managed by the Claw402 direction signal, not a fixed take-profit.\n")
-		sb.WriteString(fmt.Sprintf("- Min confidence to open: ≥%d\n\n", riskControl.MinConfidence))
-		sb.WriteString("# Position Sizing\n\n")
-		sb.WriteString("For every `open_long` or `open_short`, use the full max notional per position.\n")
-		sb.WriteString("- Do not scale position_size_usd down by confidence.\n")
-		sb.WriteString("- Do not open small probe positions.\n")
-		sb.WriteString("- If the setup is not strong enough for full size, output `wait`.\n")
-		sb.WriteString("- Do not use available_balance directly as position_size_usd.\n\n")
-	}
-}
-
-func writeVergexOutputFormat(sb *strings.Builder, accountEquity float64, riskControl store.RiskControlConfig, tradeFiPositionValueRatio float64, singleSymbol bool, primarySymbol string, zh bool) {
-	exampleSymbol := "xyz:NVDA"
-	secondSymbol := "xyz:AAPL"
-	if singleSymbol && strings.TrimSpace(primarySymbol) != "" {
-		exampleSymbol = primarySymbol
-		secondSymbol = primarySymbol
-	}
-	positionSize := accountEquity * tradeFiPositionValueRatio
-	leverage := riskControl.AltcoinMaxLeverage
-	if leverage <= 0 {
-		leverage = 1
-	}
-
-	sb.WriteString("# Output Format (Strictly Follow)\n\n")
-	if zh {
-		sb.WriteString("Use XML tags <reasoning> and <decision> to separate concise analysis from the decision JSON.\n\n")
-		sb.WriteString("Direction is determined only by the current Claw402 ranking: bullish maps to long, bearish maps to short, and an unchanged signal maps to hold.\n\n")
-		if !singleSymbol {
-			sb.WriteString("Never open a position to balance the book and never trade against the ranking direction.\n\n")
-		}
-	} else {
-		sb.WriteString("Use XML tags <reasoning> and <decision> to separate concise analysis from the decision JSON.\n\n")
-		sb.WriteString("Direction is determined only by the current Claw402 ranking: bullish maps to long, bearish maps to short, and an unchanged signal maps to hold.\n\n")
-		if !singleSymbol {
-			sb.WriteString("Never open a position to balance the book and never trade against the ranking direction.\n\n")
-		}
-	}
-	sb.WriteString("<reasoning>\n")
-	if zh {
-		sb.WriteString("Briefly state the current Claw402 ranking direction and the matching state-machine action. Detail data is context, not an override.\n")
-	} else {
-		sb.WriteString("Briefly state the current Claw402 ranking direction and the matching state-machine action. Detail data is context, not an override.\n")
-	}
-	sb.WriteString("</reasoning>\n\n")
-	sb.WriteString("<decision>\n")
-	sb.WriteString("```json\n[\n")
-	if singleSymbol {
-		sb.WriteString(fmt.Sprintf("  {\"symbol\": \"%s\", \"action\": \"open_short\", \"leverage\": %d, \"position_size_usd\": %.0f, \"stop_loss\": 123.45, \"take_profit\": 0, \"confidence\": 85, \"risk_usd\": 12.34}\n", exampleSymbol, leverage, positionSize))
-	} else {
-		sb.WriteString(fmt.Sprintf("  {\"symbol\": \"%s\", \"action\": \"open_long\", \"leverage\": %d, \"position_size_usd\": %.0f, \"stop_loss\": 123.45, \"take_profit\": 0, \"confidence\": 85, \"risk_usd\": 12.34},\n", exampleSymbol, leverage, positionSize))
-		sb.WriteString(fmt.Sprintf("  {\"symbol\": \"%s\", \"action\": \"open_short\", \"leverage\": %d, \"position_size_usd\": %.0f, \"stop_loss\": 234.56, \"take_profit\": 0, \"confidence\": 85, \"risk_usd\": 12.34}\n", secondSymbol, leverage, positionSize))
-	}
-	sb.WriteString("]\n```\n")
-	sb.WriteString("</decision>\n\n")
-
-	if zh {
-		sb.WriteString("## Field Requirements\n\n")
-		sb.WriteString("- `action`: open_long | open_short | close_long | close_short | hold | wait\n")
-		sb.WriteString(fmt.Sprintf("- `confidence`: 0-100; recommended ≥ %d to open\n", riskControl.MinConfidence))
-		sb.WriteString("- Required when opening: leverage, position_size_usd, stop_loss, take_profit, confidence, risk_usd\n")
-		sb.WriteString("- `stop_loss` must be a positive protective price calculated from the supplied market data: below entry for `open_long`, above entry for `open_short`. Never copy the illustrative example value.\n")
-		sb.WriteString("- `take_profit` must be exactly 0 because ordinary exits are managed by the Claw402 direction signal.\n")
-		sb.WriteString("- All numeric values must be calculated numbers, not formulas.\n")
-		if singleSymbol {
-			sb.WriteString(fmt.Sprintf("- This strategy trades only `%s`; JSON symbol must match it exactly.\n", exampleSymbol))
-		} else {
-			sb.WriteString("- JSON symbols must exactly match current candidates or existing positions; keep `xyz:` on XYZ instruments, and do not add `xyz:` or `USDT` to core crypto symbols.\n")
-		}
-		sb.WriteString("\n")
-	} else {
-		sb.WriteString("## Field Requirements\n\n")
-		sb.WriteString("- `action`: open_long | open_short | close_long | close_short | hold | wait\n")
-		sb.WriteString(fmt.Sprintf("- `confidence`: 0-100; recommended ≥ %d to open\n", riskControl.MinConfidence))
-		sb.WriteString("- Required when opening: leverage, position_size_usd, stop_loss, take_profit, confidence, risk_usd\n")
-		sb.WriteString("- `stop_loss` must be a positive protective price calculated from the supplied market data: below entry for `open_long`, above entry for `open_short`. Never copy the illustrative example value.\n")
-		sb.WriteString("- `take_profit` must be exactly 0 because ordinary exits are managed by the Claw402 direction signal.\n")
-		sb.WriteString("- All numeric values must be calculated numbers, not formulas.\n")
-		if singleSymbol {
-			sb.WriteString(fmt.Sprintf("- This strategy trades only `%s`; JSON symbol must match it exactly.\n", exampleSymbol))
-		} else {
-			sb.WriteString("- JSON symbols must exactly match current candidates or existing positions; keep `xyz:` on XYZ instruments, and do not add `xyz:` or `USDT` to core crypto symbols.\n")
-		}
-		sb.WriteString("\n")
-	}
-}
-
 // buildXYZStockCustomPrompt returns the canonical English directional stock
 // briefing the agent uses for single-symbol Hyperliquid USDC perpetuals on
 // the XYZ board. Symbol is inlined for LLM grounding so it never confuses the
@@ -432,7 +182,7 @@ func writeVergexOutputFormat(sb *strings.Builder, accountEquity float64, riskCon
 func buildXYZStockCustomPrompt(symbol string) string {
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("Trade ONLY the Hyperliquid USDC perpetual %s (US equity / xyz board).\n\n", symbol))
-	sb.WriteString("Core stance: DIRECTIONAL, SIGNAL-DRIVEN. You may open long or short; follow the current Claw402 board direction and use liquidation structure and candles only as context.\n\n")
+	sb.WriteString("Core stance: DIRECTIONAL, SIGNAL-DRIVEN. You may open long or short; follow the direction implied by the provided market data and use liquidation structure and candles only as context.\n\n")
 
 	sb.WriteString("## Flat-Account Rule\n")
 	sb.WriteString("If `Current Positions` is None / empty, evaluate both directions from scratch.\n")
@@ -478,7 +228,7 @@ func buildXYZStockCustomPrompt(symbol string) string {
 // to put the actual trading symbol into the JSON example.
 func (e *StrategyEngine) singleSymbolInfo() (bool, string) {
 	coinSource := e.config.CoinSource
-	if (coinSource.SourceType == "static" || coinSource.SourceType == "vergex_signal") && len(coinSource.StaticCoins) == 1 {
+	if coinSource.SourceType == "static" && len(coinSource.StaticCoins) == 1 {
 		return true, strings.ToUpper(strings.TrimSpace(coinSource.StaticCoins[0]))
 	}
 	return false, ""
@@ -895,11 +645,6 @@ func (e *StrategyEngine) BuildUserPrompt(ctx *Context) string {
 				sb.WriteString(e.formatQuantData(quantData))
 			}
 		}
-		if ctx.VergexDataMap != nil {
-			if vergexData, hasVergex := ctx.VergexDataMap[coin.Symbol]; hasVergex {
-				sb.WriteString(e.formatVergexData(vergexData))
-			}
-		}
 		sb.WriteString("\n")
 	}
 	sb.WriteString("\n")
@@ -965,11 +710,6 @@ func (e *StrategyEngine) formatPositionInfo(index int, pos PositionInfo, ctx *Co
 				sb.WriteString(e.formatQuantData(quantData))
 			}
 		}
-		if ctx.VergexDataMap != nil {
-			if vergexData, hasVergex := ctx.VergexDataMap[pos.Symbol]; hasVergex {
-				sb.WriteString(e.formatVergexData(vergexData))
-			}
-		}
 		sb.WriteString("\n")
 	}
 
@@ -1028,24 +768,12 @@ func (e *StrategyEngine) formatCoinSourceTag(sources []string) string {
 			return " (Hyperliquid All)"
 		case "hyper_main":
 			return " (Hyperliquid Top20)"
-		case "vergex_signal":
-			return " (Vergex Signal)"
 		}
 		if strings.HasPrefix(sources[0], "hyper_rank") {
 			return " (Hyperliquid Dynamic Rank)"
 		}
 	}
 	return ""
-}
-
-func (e *StrategyEngine) formatVergexData(data *vergex.MarketAnalysis) string {
-	if data == nil {
-		return ""
-	}
-	var sb strings.Builder
-	sb.WriteString("\nVergex Claw402 Signals:\n")
-	sb.WriteString(vergex.FormatAnalysisForAI(data))
-	return sb.String()
 }
 
 // ============================================================================

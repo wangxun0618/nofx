@@ -28,7 +28,7 @@ const setupSteps = [
     icon: CircleDollarSign,
     actionKey: 'hlw.guestOpenDepositQr',
     to: ROUTES.login,
-    returnUrl: `${ROUTES.traders}?setup=claw402`,
+    returnUrl: `${ROUTES.traders}?setup=ai-model`,
   },
   {
     titleKey: 'hlw.guestAuthorizeTitle',
@@ -76,7 +76,7 @@ export function TraderLaunchGuestPage() {
                 onClick={() =>
                   sessionStorage.setItem(
                     'returnUrl',
-                    `${ROUTES.traders}?setup=claw402`
+                    `${ROUTES.traders}?setup=ai-model`
                   )
                 }
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-nofx-gold px-5 py-3 text-sm font-bold text-white transition hover:bg-nofx-gold/90"

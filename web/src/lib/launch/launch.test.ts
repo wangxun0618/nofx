@@ -19,23 +19,16 @@ function preflightResult(checks: LaunchCheck[]): LaunchPreflightResult {
   return {
     ready: checks.every((check) => check.status !== 'failed'),
     checks,
-    min_ai_fee_usdc: 1,
     min_trading_usdc: 12,
     checked_at: new Date().toISOString(),
   }
 }
 
 describe('setupTargetForCheck', () => {
-  it('routes AI wallet problems to claw402 setup', () => {
+  it('routes AI model problems to the model setup anchor', () => {
     expect(setupTargetForCheck({ id: 'ai_model', status: 'failed' })).toBe(
-      'claw402'
+      'ai-model'
     )
-    expect(setupTargetForCheck({ id: 'ai_wallet', status: 'failed' })).toBe(
-      'claw402'
-    )
-    expect(
-      setupTargetForCheck({ id: 'ai_wallet_funds', status: 'failed' })
-    ).toBe('claw402')
   })
 
   it('routes exchange config/account problems to hyperliquid setup', () => {
@@ -61,11 +54,10 @@ describe('setupTargetForCheck', () => {
 describe('primarySetupTarget', () => {
   it('returns the anchor for the first failing check', () => {
     const result = preflightResult([
-      { id: 'ai_model', status: 'ok' },
-      { id: 'ai_wallet_funds', status: 'failed', message: 'AI wallet empty.' },
+      { id: 'ai_model', status: 'failed', message: 'No model configured.' },
       { id: 'exchange_funds', status: 'failed', message: 'Low margin.' },
     ])
-    expect(primarySetupTarget(result)).toBe('claw402')
+    expect(primarySetupTarget(result)).toBe('ai-model')
   })
 
   it('returns null when everything passes', () => {
@@ -80,32 +72,32 @@ describe('primarySetupTarget', () => {
 describe('describeLaunchFailures / failedLaunchChecks', () => {
   it('collects only failed checks and joins their messages', () => {
     const result = preflightResult([
-      { id: 'ai_wallet_funds', status: 'failed', message: 'AI wallet empty.' },
+      { id: 'ai_model', status: 'failed', message: 'No model configured.' },
       { id: 'exchange_funds', status: 'warning', message: 'Testnet funds.' },
       { id: 'exchange_account', status: 'failed', message: 'Bad key.' },
       { id: 'strategy', status: 'skipped' },
     ])
     expect(failedLaunchChecks(result)).toHaveLength(2)
-    expect(describeLaunchFailures(result)).toBe('AI wallet empty. Bad key.')
+    expect(describeLaunchFailures(result)).toBe('No model configured. Bad key.')
   })
 })
 
 describe('pickTradingModel', () => {
   const base: Partial<AIModel> = { enabled: true }
 
-  it('prefers claw402 over other enabled models', () => {
+  it('picks the first enabled model that has a key', () => {
     const models = [
-      { ...base, id: 'openai', provider: 'openai', has_api_key: true },
-      { ...base, id: 'c402', provider: 'claw402', has_api_key: true },
+      { ...base, id: 'openai', provider: 'openai' },
+      { ...base, id: 'deepseek', provider: 'deepseek', has_api_key: true },
     ] as AIModel[]
-    expect(pickTradingModel(models)?.id).toBe('c402')
+    expect(pickTradingModel(models)?.id).toBe('deepseek')
   })
 
-  it('accepts a claw402 model with only a wallet address', () => {
+  it('requires an API key, not just an enabled flag', () => {
     const models = [
-      { ...base, id: 'c402', provider: 'claw402', walletAddress: '0xabc' },
+      { ...base, id: 'deepseek', provider: 'deepseek' },
     ] as AIModel[]
-    expect(pickTradingModel(models)?.id).toBe('c402')
+    expect(pickTradingModel(models)).toBeNull()
   })
 
   it('returns null when nothing usable exists', () => {

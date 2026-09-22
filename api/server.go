@@ -145,8 +145,7 @@ func (s *Server) setupRoutes() {
 		// System config (no authentication required, for frontend to determine admin mode/registration status)
 		s.route(api, "GET", "/config", "Get system configuration", s.handleGetSystemConfig)
 
-		// Wallet validation (no authentication required — used by frontend config form)
-		api.POST("/wallet/validate", s.handleWalletValidate)
+		// Wallet generation (no authentication required — used by the Hyperliquid connect form)
 		api.POST("/wallet/generate", s.handleWalletGenerate)
 		s.route(api, "GET", "/hyperliquid/connect-config", "Get NOFX Hyperliquid builder authorization config", s.handleHyperliquidConnectConfig)
 		s.route(api, "GET", "/hyperliquid/account", "Get Hyperliquid account balance summary", s.handleHyperliquidAccount)
@@ -200,8 +199,6 @@ func (s *Server) setupRoutes() {
 		{
 			// Logout (add to blacklist)
 			s.route(protected, "POST", "/logout", "Logout (blacklist token)", s.handleLogout)
-			s.route(protected, "POST", "/onboarding/beginner", "Prepare beginner claw402 wallet and default model", s.handleBeginnerOnboarding)
-			s.route(protected, "GET", "/onboarding/beginner/current", "Get current beginner claw402 wallet", s.handleCurrentBeginnerWallet)
 
 			// User account management
 			s.routeWithSchema(protected, "PUT", "/user/password", "Change current user password",
@@ -210,12 +207,6 @@ func (s *Server) setupRoutes() {
 
 			// Server IP query (requires authentication, for whitelist configuration)
 			s.route(protected, "GET", "/server-ip", "Get server public IP (for exchange whitelist)", s.handleGetServerIP)
-
-			s.route(protected, "GET", "/vergex/direction-change/leaderboard", "Vergex OI Top 30 bull/bear direction leaderboard via claw402", s.handleVergexDirectionChangeLeaderboard)
-			s.route(protected, "GET", "/vergex/direction-change/current", "Vergex current bull/bear direction via claw402 (?symbol=BTC)", s.handleVergexDirectionChangeCurrent)
-			s.route(protected, "GET", "/vergex/direction-change/history", "Vergex bull/bear direction history via claw402 (?symbol=BTC&type=all&page=1&page_size=20)", s.handleVergexDirectionChangeHistory)
-			s.route(protected, "GET", "/vergex/cost-liquidation-heatmap", "Vergex cost/liquidation heatmap via claw402 (?marketType=hip3_perp&symbol=AAPL)", s.handleVergexCostLiquidationHeatmap)
-			s.route(protected, "GET", "/vergex/flow-markets", "Vergex net-flow market ranking via claw402 (?chain=mainnet&window=1h&limit=25)", s.handleVergexFlowMarkets)
 
 			// AI trader management
 			s.routeWithSchema(protected, "GET", "/my-traders", "List user's traders with status",
@@ -243,7 +234,7 @@ Runs launch preflight first and returns 400 with {"error_key":"trader.start.pref
 				s.handleStartTrader)
 			s.routeWithSchema(protected, "GET", "/traders/:id/preflight", "Run launch readiness checks for a trader",
 				`:id = trader_id from GET /api/my-traders.
-Returns: {"ready":<bool>,"checks":[{"id":"ai_model|ai_wallet|ai_wallet_funds|strategy|exchange_config|exchange_account|exchange_funds","status":"ok|failed|warning|skipped","code":"<string>","message":"<string>","required":<number>,"actual":<number>,"asset":"<string>","address":"<string>"}],"min_ai_fee_usdc":<number>,"min_trading_usdc":<number>}`,
+Returns: {"ready":<bool>,"checks":[{"id":"ai_model|strategy|exchange_config|exchange_account|exchange_funds","status":"ok|failed|warning|skipped","code":"<string>","message":"<string>","required":<number>,"actual":<number>,"asset":"<string>","address":"<string>"}],"min_trading_usdc":<number>}`,
 				s.handleTraderPreflight)
 			s.routeWithSchema(protected, "POST", "/launch/preflight", "Run launch readiness checks before creating a trader",
 				`Body: {"ai_model_id":"<EXACT id from GET /api/models>","exchange_id":"<EXACT id from GET /api/exchanges>","strategy_id":"<optional, EXACT id from GET /api/strategies>"}
@@ -269,10 +260,6 @@ Body: {"show_in_competition":<bool>}`,
 			s.routeWithSchema(protected, "GET", "/traders/:id/grid-risk", "Get grid trading risk info",
 				`:id = trader_id from GET /api/my-traders.`,
 				s.handleGetGridRiskInfo)
-
-			// AI cost tracking
-			s.route(protected, "GET", "/ai-costs", "Get AI call costs for a trader (?trader_id=xxx&period=today)", s.handleGetAICosts)
-			s.route(protected, "GET", "/ai-costs/summary", "Get AI cost summary (?period=today)", s.handleGetAICostsSummary)
 
 			// AI model configuration
 			s.routeWithSchema(protected, "GET", "/models", "List AI model configs",
@@ -346,10 +333,10 @@ CRITICAL: Always use the "id" field for strategy_id.`,
 IMPORTANT: For most use cases just POST {"name":"<name>"} — the backend fills everything in. Only include "config" when the user explicitly requests custom settings (specific coins, custom leverage, custom timeframes).
 
 StrategyConfig fields:
-  coin_source.source_type: "vergex_signal" (Claw402/Vergex direction board; default and recommended)
-  coin_source.vergex_limit: number of Claw402 candidates enriched with detail data (default 10, max 10)
-  coin_source.vergex_market_type: "all" for the full Claw402 board; detail calls use each ranking item's market_type
-  coin_source.vergex_chain: "hyperliquid"
+  coin_source.source_type: "hyper_main" (Hyperliquid native top-volume universe; default and recommended) | "hyper_rank" | "hyper_all" | "static" | "ai500" | "oi_top" | "oi_low"
+  coin_source.use_hyper_main: true when source_type is "hyper_main"
+  coin_source.hyper_main_limit: number of candidates taken from the Hyperliquid volume board (default 30)
+  coin_source.hyper_rank_category / hyper_rank_direction / hyper_rank_limit: only used when source_type is "hyper_rank"
   indicators.klines.primary_timeframe: "1m"|"3m"|"5m"|"15m"|"1h"|"4h" — scalping→"5m", trend/swing→"1h"/"4h"
   indicators.klines.primary_count: number of candles (20-100)
   indicators.klines.enable_multi_timeframe: true for trend/swing analysis

@@ -123,7 +123,7 @@ func TestStrategyConfigNormalizeProductSchemaForLLMLabels(t *testing.T) {
 	}
 }
 
-func TestStrategyConfigNormalizeProductSchemaForVergexSignal(t *testing.T) {
+func TestStrategyConfigNormalizeProductSchemaForRetiredVergexBoard(t *testing.T) {
 	cfg := GetDefaultStrategyConfig("zh")
 	cfg.CoinSource = CoinSourceConfig{
 		SourceType: "Claw402 Vergex signal board",
@@ -131,50 +131,41 @@ func TestStrategyConfigNormalizeProductSchemaForVergexSignal(t *testing.T) {
 
 	cfg.NormalizeProductSchema()
 
-	if cfg.CoinSource.SourceType != "vergex_signal" {
-		t.Fatalf("source_type = %q, want vergex_signal", cfg.CoinSource.SourceType)
+	if cfg.CoinSource.SourceType != "hyper_main" || !cfg.CoinSource.UseHyperMain {
+		t.Fatalf("retired direction board should fall back to hyper_main, got %+v", cfg.CoinSource)
 	}
-	if cfg.CoinSource.VergexLimit != 10 {
-		t.Fatalf("vergex_limit = %d, want 10", cfg.CoinSource.VergexLimit)
-	}
-	if cfg.CoinSource.VergexMarketType != "all" {
-		t.Fatalf("vergex_market_type = %q, want all", cfg.CoinSource.VergexMarketType)
-	}
-	if cfg.CoinSource.VergexChain != "hyperliquid" {
-		t.Fatalf("vergex_chain = %q, want hyperliquid", cfg.CoinSource.VergexChain)
+	if cfg.CoinSource.HyperMainLimit != 30 {
+		t.Fatalf("hyper_main_limit = %d, want 30", cfg.CoinSource.HyperMainLimit)
 	}
 }
 
-func TestStrategyConfigNormalizeProductSchemaForVergexSignalLimits(t *testing.T) {
-	t.Run("dynamic board keeps the one built-in strategy candidate depth", func(t *testing.T) {
+func TestStrategyConfigNormalizeProductSchemaForHyperMainLimits(t *testing.T) {
+	t.Run("zero limit falls back to the thirty-symbol volume board", func(t *testing.T) {
 		cfg := GetDefaultStrategyConfig("zh")
 		cfg.CoinSource = CoinSourceConfig{
-			SourceType:    "vergex_signal",
-			VergexLimit:   1,
-			StaticCoins:   nil,
-			VergexChain:   "hyperliquid",
-			VergexLiqBand: "",
+			SourceType:     "hyper_main",
+			HyperMainLimit: 0,
+			StaticCoins:    nil,
 		}
 
 		cfg.NormalizeProductSchema()
 
-		if cfg.CoinSource.VergexLimit != 10 {
-			t.Fatalf("vergex_limit = %d, want 10", cfg.CoinSource.VergexLimit)
+		if cfg.CoinSource.HyperMainLimit != 30 {
+			t.Fatalf("hyper_main_limit = %d, want 30", cfg.CoinSource.HyperMainLimit)
 		}
 	})
 
-	t.Run("manual picks keep selected count", func(t *testing.T) {
+	t.Run("static coins are normalized to upper-case symbols", func(t *testing.T) {
 		cfg := GetDefaultStrategyConfig("zh")
 		cfg.CoinSource = CoinSourceConfig{
-			SourceType:  "vergex_signal",
-			VergexLimit: 1,
+			SourceType:  "static",
 			StaticCoins: []string{"xyz:nvda", "XYZ:AAPL"},
 		}
 
 		cfg.NormalizeProductSchema()
 
-		if cfg.CoinSource.VergexLimit != 2 {
-			t.Fatalf("vergex_limit = %d, want 2", cfg.CoinSource.VergexLimit)
+		if cfg.CoinSource.SourceType != "static" {
+			t.Fatalf("source_type = %q, want static", cfg.CoinSource.SourceType)
 		}
 		if got := cfg.CoinSource.StaticCoins; len(got) != 2 || got[0] != "XYZ:NVDA" || got[1] != "XYZ:AAPL" {
 			t.Fatalf("static_coins = %+v, want normalized xyz symbols", got)

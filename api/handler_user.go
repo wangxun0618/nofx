@@ -229,13 +229,10 @@ func (s *Server) createDefaultStrategies(userID string, lang string) error {
 	}
 	locales := map[string]strategyLocale{
 		"zh": {
-			defaultStrategy: strategyI18n{"NOFX Claw402 Auto Strategy", "The only built-in strategy: read the Claw402.ai direction board each cycle, load direction history and cost/liquidation heatmaps, then manage positions by the live board."},
+			defaultStrategy: strategyI18n{"NOFX 自动交易策略", "内置策略：每轮读取 Hyperliquid 成交量靠前的候选品种，结合行情、持仓量与资金费率数据生成决策，并按风险规则管理仓位。"},
 		},
 		"en": {
-			defaultStrategy: strategyI18n{"NOFX Claw402 Auto Strategy", "The only built-in strategy: read the Claw402.ai direction board each cycle, load direction history and cost/liquidation heatmaps, then manage positions by the live board."},
-		},
-		"id": {
-			defaultStrategy: strategyI18n{"Strategi Otomatis NOFX Claw402", "Satu strategi bawaan: membaca papan arah Claw402.ai setiap siklus, memuat riwayat arah dan heatmap biaya/likuidasi, lalu mengelola posisi mengikuti papan langsung."},
+			defaultStrategy: strategyI18n{"NOFX Auto Strategy", "The built-in strategy: each cycle it reads the top Hyperliquid instruments by 24h volume, combines market data, open interest and funding context, then manages positions under the configured risk rules."},
 		},
 	}
 	locale, ok := locales[lang]
@@ -245,23 +242,24 @@ func (s *Server) createDefaultStrategies(userID string, lang string) error {
 
 	type strategyDef struct {
 		name        string
+		// legacyNames lists names this preset used to ship under. Existing rows
+		// matching one of them are adopted and renamed instead of duplicated.
+		legacyNames []string
 		description string
 		isActive    bool
 		applyConfig func(*store.StrategyConfig)
 	}
 
-	setClaw402Strategy := func(c *store.StrategyConfig) {
-		c.CoinSource.SourceType = "vergex_signal"
+	applyDefaultAutopilot := func(c *store.StrategyConfig) {
+		c.CoinSource.SourceType = "hyper_main"
 		c.CoinSource.StaticCoins = nil
 		c.CoinSource.UseAI500 = false
 		c.CoinSource.UseOITop = false
 		c.CoinSource.UseOILow = false
 		c.CoinSource.UseHyperAll = false
-		c.CoinSource.UseHyperMain = false
+		c.CoinSource.UseHyperMain = true
+		c.CoinSource.HyperMainLimit = 30
 		c.CoinSource.HyperRankCategory = "all"
-		c.CoinSource.VergexLimit = 10
-		c.CoinSource.VergexMarketType = "all"
-		c.CoinSource.VergexChain = "hyperliquid"
 		c.RiskControl.MaxPositions = store.AutopilotDefaultMaxPositions
 		c.RiskControl.BTCETHMaxLeverage = 10
 		c.RiskControl.AltcoinMaxLeverage = 10
@@ -284,18 +282,19 @@ func (s *Server) createDefaultStrategies(userID string, lang string) error {
 	definitions := []strategyDef{
 		{
 			name:        locale.defaultStrategy.name,
+			legacyNames: []string{"NOFX Claw402 Auto Strategy"},
 			description: locale.defaultStrategy.description,
 			isActive:    true,
 			applyConfig: func(c *store.StrategyConfig) {
-				setClaw402Strategy(c)
+				applyDefaultAutopilot(c)
 			},
 		},
 	}
 
-	// GetDefaultStrategyConfig only supports zh/en; map id -> en
-	configLang := lang
-	if lang == "id" {
-		configLang = "en"
+	// GetDefaultStrategyConfig only supports zh/en
+	configLang := "en"
+	if lang == "zh" {
+		configLang = "zh"
 	}
 
 	// Pre-build all strategy objects before opening the transaction
@@ -345,10 +344,19 @@ func (s *Server) createDefaultStrategies(userID string, lang string) error {
 			return fmt.Errorf("failed to count active strategies: %w", err)
 		}
 
-		for _, strategy := range strategies {
+		for i, strategy := range strategies {
+			legacyNames := definitions[i].legacyNames
+			lookupNames := append([]string{strategy.Name}, legacyNames...)
+
 			var existing store.Strategy
-			query := tx.Where("user_id = ? AND name = ?", userID, strategy.Name).First(&existing)
+			query := tx.Where("user_id = ? AND name IN ?", userID, lookupNames).First(&existing)
 			if query.Error == nil {
+				updates := map[string]interface{}{}
+				if existing.Name != strategy.Name {
+					updates["name"] = strategy.Name
+					updates["description"] = strategy.Description
+					logger.Infof("  ✓ Renamed retired default strategy %q → %q", existing.Name, strategy.Name)
+				}
 				config, err := existing.ParseConfig()
 				if err != nil {
 					return fmt.Errorf("failed to parse existing strategy %q: %w", strategy.Name, err)
@@ -358,12 +366,16 @@ func (s *Server) createDefaultStrategies(userID string, lang string) error {
 					if err := existing.SetConfig(config); err != nil {
 						return fmt.Errorf("failed to serialize migrated strategy %q: %w", strategy.Name, err)
 					}
+					updates["config"] = existing.Config
+					logger.Infof("  ✓ Migrated default strategy to eight-position Autopilot: %s", strategy.Name)
+				}
+				if len(updates) > 0 {
+					updates["updated_at"] = time.Now().UTC()
 					if err := tx.Model(&store.Strategy{}).
 						Where("id = ? AND user_id = ?", existing.ID, userID).
-						Updates(map[string]interface{}{"config": existing.Config, "updated_at": time.Now().UTC()}).Error; err != nil {
+						Updates(updates).Error; err != nil {
 						return fmt.Errorf("failed to migrate strategy %q: %w", strategy.Name, err)
 					}
-					logger.Infof("  ✓ Migrated default strategy to eight-position Autopilot: %s", strategy.Name)
 				}
 				continue
 			}

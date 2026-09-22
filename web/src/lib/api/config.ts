@@ -5,8 +5,6 @@ import type {
   UpdateModelConfigRequest,
   UpdateExchangeConfigRequest,
   CreateExchangeRequest,
-  BeginnerOnboardingResponse,
-  CurrentBeginnerWalletResponse,
 } from '../../types'
 import { API_BASE, httpClient, CryptoService } from './helpers'
 
@@ -199,23 +197,4 @@ export const configApi = {
     return result.data!
   },
 
-  async prepareBeginnerOnboarding(): Promise<BeginnerOnboardingResponse> {
-    const result = await httpClient.post<BeginnerOnboardingResponse>(
-      `${API_BASE}/onboarding/beginner`
-    )
-    if (!result.success || !result.data) {
-      throw new Error(result.message || tg('lib.prepareBeginnerOnboarding'))
-    }
-    return result.data
-  },
-
-  async getCurrentBeginnerWallet(): Promise<CurrentBeginnerWalletResponse> {
-    const result = await httpClient.get<CurrentBeginnerWalletResponse>(
-      `${API_BASE}/onboarding/beginner/current`
-    )
-    if (!result.success || !result.data) {
-      throw new Error(result.message || tg('lib.fetchBeginnerWallet'))
-    }
-    return result.data
-  },
 }

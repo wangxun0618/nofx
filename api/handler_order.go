@@ -224,7 +224,7 @@ func (s *Server) handlePositionHistory(c *gin.Context) {
 	if strings.EqualFold(strings.TrimSpace(trader.GetName()), "NOFX Autopilot") && strings.TrimSpace(userID) != "" {
 		// Older one-click launches created new Autopilot trader rows. When a row was
 		// deleted, its closed position records remained under the old generated ID.
-		// The generated Autopilot ID embeds userID + "claw402", so this safely
+		// Those legacy generated IDs embed userID + "claw402", so this safely
 		// restores same-user history continuity without joining deleted rows.
 		traderIDPatterns = append(traderIDPatterns, "%_"+userID+"_claw402_%")
 	}

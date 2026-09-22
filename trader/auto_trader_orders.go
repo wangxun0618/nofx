@@ -35,11 +35,6 @@ func (at *AutoTrader) executeDecisionWithRecord(decision *kernel.Decision, actio
 	case "close_short":
 		return at.executeCloseShortWithRecord(decision, actionRecord)
 	case "hold":
-		if at.usesSignalManagedExit() {
-			if err := at.trader.CancelTakeProfitOrders(decision.Symbol); err != nil {
-				logger.Infof("  ⚠ Failed to remove fixed take profit for signal-managed hold: %v", err)
-			}
-		}
 		return nil
 	case "wait":
 		return nil
@@ -75,7 +70,7 @@ func (at *AutoTrader) executeOpenLongWithRecord(decision *kernel.Decision, actio
 	if err != nil {
 		return fmt.Errorf("failed to get market data for %s: %w", decision.Symbol, err)
 	}
-	if err := validateProtectionPrices(decision.Action, marketData.CurrentPrice, decision.StopLoss, decision.TakeProfit, at.usesSignalManagedExit()); err != nil {
+	if err := validateProtectionPrices(decision.Action, marketData.CurrentPrice, decision.StopLoss, decision.TakeProfit); err != nil {
 		return err
 	}
 
@@ -156,16 +151,12 @@ func (at *AutoTrader) executeOpenLongWithRecord(decision *kernel.Decision, actio
 	posKey := decision.Symbol + "_long"
 	at.positionFirstSeenTime[posKey] = time.Now().UnixMilli()
 
-	// Keep a protective stop on the exchange. Vergex positions use the current
-	// direction board for ordinary exits, so a fixed take-profit must not close
-	// an otherwise unchanged signal.
+	// Keep a protective stop and a take profit on the exchange for every new
+	// position — the AI may not leave an open without both levels.
 	if err := at.trader.SetStopLoss(decision.Symbol, "LONG", quantity, decision.StopLoss); err != nil {
 		return at.closeUnprotectedPosition(decision.Symbol, "long", quantity, fmt.Errorf("failed to set mandatory stop loss: %w", err))
 	}
-	if at.usesSignalManagedExit() {
-		actionRecord.TakeProfit = 0
-		logger.Infof("  ✓ Fixed take profit skipped: Claw402 direction signal manages ordinary exits")
-	} else if err := at.trader.SetTakeProfit(decision.Symbol, "LONG", quantity, decision.TakeProfit); err != nil {
+	if err := at.trader.SetTakeProfit(decision.Symbol, "LONG", quantity, decision.TakeProfit); err != nil {
 		return at.closeUnprotectedPosition(decision.Symbol, "long", quantity, fmt.Errorf("failed to set mandatory take profit: %w", err))
 	}
 
@@ -199,7 +190,7 @@ func (at *AutoTrader) executeOpenShortWithRecord(decision *kernel.Decision, acti
 	if err != nil {
 		return fmt.Errorf("failed to get market data for %s: %w", decision.Symbol, err)
 	}
-	if err := validateProtectionPrices(decision.Action, marketData.CurrentPrice, decision.StopLoss, decision.TakeProfit, at.usesSignalManagedExit()); err != nil {
+	if err := validateProtectionPrices(decision.Action, marketData.CurrentPrice, decision.StopLoss, decision.TakeProfit); err != nil {
 		return err
 	}
 
@@ -280,16 +271,12 @@ func (at *AutoTrader) executeOpenShortWithRecord(decision *kernel.Decision, acti
 	posKey := decision.Symbol + "_short"
 	at.positionFirstSeenTime[posKey] = time.Now().UnixMilli()
 
-	// Keep a protective stop on the exchange. Vergex positions use the current
-	// direction board for ordinary exits, so a fixed take-profit must not close
-	// an otherwise unchanged signal.
+	// Keep a protective stop and a take profit on the exchange for every new
+	// position — the AI may not leave an open without both levels.
 	if err := at.trader.SetStopLoss(decision.Symbol, "SHORT", quantity, decision.StopLoss); err != nil {
 		return at.closeUnprotectedPosition(decision.Symbol, "short", quantity, fmt.Errorf("failed to set mandatory stop loss: %w", err))
 	}
-	if at.usesSignalManagedExit() {
-		actionRecord.TakeProfit = 0
-		logger.Infof("  ✓ Fixed take profit skipped: Claw402 direction signal manages ordinary exits")
-	} else if err := at.trader.SetTakeProfit(decision.Symbol, "SHORT", quantity, decision.TakeProfit); err != nil {
+	if err := at.trader.SetTakeProfit(decision.Symbol, "SHORT", quantity, decision.TakeProfit); err != nil {
 		return at.closeUnprotectedPosition(decision.Symbol, "short", quantity, fmt.Errorf("failed to set mandatory take profit: %w", err))
 	}
 

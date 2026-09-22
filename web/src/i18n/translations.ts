@@ -218,7 +218,6 @@ export const translations = {
     // Exchange Configuration
     secretKey: 'Secret Key',
     privateKey: 'Private Key',
-    walletAddress: 'Wallet Address',
     user: 'User',
     signer: 'Signer',
     passphrase: 'Passphrase',
@@ -504,7 +503,7 @@ export const translations = {
     forgotPassword: 'Forgot password?',
     forgotAccount: 'Forgot account?',
     forgotAccountConfirm:
-      '⚠️ This will permanently delete EVERYTHING: users, traders, strategies, AI model API keys, exchange API keys, and your CLAW402 wallet. Export anything you need to keep (especially wallet private keys) BEFORE continuing. Re-registration will NOT restore them. Continue?',
+      '⚠️ This will permanently delete EVERYTHING: users, traders, strategies, AI model API keys and exchange API keys. Export anything you need to keep BEFORE continuing. Re-registration will NOT restore them. Continue?',
     forgotAccountSuccess:
       'Account reset successful! You can now register a new account.',
     rememberMe: 'Remember me',
@@ -679,61 +678,21 @@ export const translations = {
 
     // ===== GETTING STARTED =====
 
-
-
-
-
-
     // ===== INSTALLATION =====
-
-
-
-
-
 
     // ===== CONFIGURATION =====
 
-
-
-
-
-
     // ===== TRADING =====
-
-
-
-
-
-
-
 
     // ===== TECHNICAL ISSUES =====
 
-
-
-
-
-
-
-
     // ===== SECURITY =====
-
-
-
 
     // ===== FEATURES =====
 
-
-
     // ===== AI MODELS =====
 
-
-
-
     // ===== CONTRIBUTING =====
-
-
-
 
     // Web Crypto Environment Check
     environmentCheck: {
@@ -1088,45 +1047,19 @@ export const translations = {
       selectModel: 'Select Model',
       configure: 'Configure',
       configureApi: 'Configure API',
-      configureWallet: 'Configure Wallet',
       chooseProvider: 'Choose Your AI Provider',
-      claw402EntryDesc:
-        'Recommended default path. Use Base USDC pay-per-call instead of managing API keys.',
       otherApiEntry: 'Other API Providers',
       otherApiEntryDesc:
         'Use your own API key for OpenAI, Claude, Gemini, DeepSeek, and more.',
-      payPerCall: 'Pay-as-you-go USDC · All AI Models · No API Key',
       recommended: 'Best',
-      allModelsClaw: 'Pay-as-you-go with USDC — supports all major AI models',
       selectAiModel: 'Choose AI Model',
-      allModelsUnified:
-        'All models unified via Claw402. Switch anytime after setup.',
-      setupWallet: 'Setup Wallet',
-      walletInfo: 'Claw402 uses USDC on Base chain. You need an EVM wallet.',
-      exportKey: 'Export private key from MetaMask, Rabby, etc.',
-      dedicatedWallet:
-        'Recommended: create a dedicated wallet with a small USDC balance',
-      walletPrivateKey: 'Wallet Private Key (Base Chain EVM)',
-      privateKeyNote:
-        'Private key is only used locally for signing. Never uploaded. No ETH or gas needed.',
-      howToFundUsdc: 'How to Fund USDC',
-      fundStep1:
-        'Withdraw USDC from exchange (Binance/OKX/Coinbase) to your wallet',
-      fundStep2: 'Select Base network (very low fees)',
-      fundStep3: '$5-10 USDC lasts a long time (~$0.003/call)',
       back: 'Back',
       startTrading: 'Start Trading',
       modelsConfigured: 'Models with gold badge are already configured',
       getStarted: 'Get Started',
       getApiKey: 'Get API Key',
-      walletPrivateKeyLabel: 'Wallet Private Key *',
       selectModelLabel: 'Select Model',
       validating: 'Validating...',
-      walletAddress: 'Wallet Address',
-      usdcBalance: 'Base USDC Balance',
-      claw402Connected: 'claw402 Connected',
-      claw402Unreachable: 'claw402 Unreachable',
-      depositUsdc: 'Deposit USDC to this address on Base chain',
       invalidKeyPrefix: 'Please add 0x at the beginning',
       invalidKeyLength: 'Should be 66 characters, currently',
       invalidKeyChars: 'Contains invalid characters',
@@ -1449,7 +1382,6 @@ export const translations = {
     // Exchange Configuration
     secretKey: '密钥',
     privateKey: '私钥',
-    walletAddress: '钱包地址',
     user: '用户名',
     signer: '签名者',
     passphrase: '口令',
@@ -1703,7 +1635,7 @@ export const translations = {
     forgotPassword: '忘记密码？',
     forgotAccount: '忘记账户？',
     forgotAccountConfirm:
-      '⚠️ 这将永久删除全部数据：用户、Trader、策略、AI 模型 API Key、交易所 API Key，以及您的 CLAW402 钱包。请务必在继续前导出需要保留的内容（尤其是钱包私钥）。重新注册不会恢复任何数据。确定要继续吗？',
+      '⚠️ 这将永久删除全部数据：用户、Trader、策略、AI 模型 API Key 与交易所 API Key。请务必在继续前导出需要保留的内容。重新注册不会恢复任何数据。确定要继续吗？',
     forgotAccountSuccess: '账户已重置！现在可以注册新账户了。',
     rememberMe: '记住我',
     resetPassword: '重置密码',
@@ -1862,61 +1794,21 @@ export const translations = {
 
     // ===== 入门指南 =====
 
-
-
-
-
-
     // ===== 安装部署 =====
-
-
-
-
-
 
     // ===== 配置设置 =====
 
-
-
-
-
-
     // ===== 交易相关 =====
-
-
-
-
-
-
-
 
     // ===== 技术问题 =====
 
-
-
-
-
-
-
-
     // ===== 安全相关 =====
-
-
-
 
     // ===== 功能介绍 =====
 
-
-
     // ===== AI 模型 =====
 
-
-
-
     // ===== 参与贡献 =====
-
-
-
 
     // Web Crypto Environment Check
     environmentCheck: {
@@ -2255,42 +2147,19 @@ export const translations = {
       selectModel: '选择模型',
       configure: '配置',
       configureApi: '配置 API',
-      configureWallet: '配置钱包',
       chooseProvider: '选择 AI 模型提供商',
-      claw402EntryDesc:
-        '默认推荐走这条路。直接用 Base USDC 按次付费，不需要自己管理 API Key。',
       otherApiEntry: '其他 API 模型',
       otherApiEntryDesc:
         '如果你已经有自己的 OpenAI、Claude、Gemini、DeepSeek 等 API Key，再从这里进入。',
-      payPerCall: 'USDC 按量付费 · 支持全部 AI 模型 · 无需 API Key',
       recommended: '推荐',
-      allModelsClaw: '用 USDC 按量付费，支持所有主流 AI 模型',
       selectAiModel: '① 选择 AI 模型',
-      allModelsUnified: '所有模型通过 Claw402 统一调用，创建后可随时切换',
-      setupWallet: '② 设置钱包',
-      walletInfo: '💡 Claw402 使用 Base 链上的 USDC 付费，你需要一个 EVM 钱包',
-      exportKey: '可以用 MetaMask、Rabby 等钱包导出私钥',
-      dedicatedWallet: '建议新建一个专用钱包，充入少量 USDC 即可',
-      walletPrivateKey: '钱包私钥（Base 链 EVM）',
-      privateKeyNote:
-        '私钥仅在本地签名使用，不会上传或发送交易。无需 ETH，无 Gas 费用。',
-      howToFundUsdc: '如何充值 USDC',
-      fundStep1: '从交易所（Binance / OKX / Coinbase）提 USDC 到你的钱包地址',
-      fundStep2: '选择 Base 网络（手续费极低）',
-      fundStep3: '充入 $5-10 USDC 即可使用很长时间（约 $0.003/次调用）',
       back: '返回',
       startTrading: '开始交易',
       modelsConfigured: '带金色标记的模型已配置',
       getStarted: '开始使用',
       getApiKey: '获取 API Key',
-      walletPrivateKeyLabel: '钱包私钥 *',
       selectModelLabel: '选择模型',
       validating: '验证中...',
-      walletAddress: '钱包地址',
-      usdcBalance: 'Base USDC 余额',
-      claw402Connected: 'claw402 已连接',
-      claw402Unreachable: 'claw402 不可达',
-      depositUsdc: '请往此地址充值 Base 链 USDC',
       invalidKeyPrefix: '请在开头加 0x',
       invalidKeyLength: '应为 66 个字符，当前',
       invalidKeyChars: '包含非法字符',

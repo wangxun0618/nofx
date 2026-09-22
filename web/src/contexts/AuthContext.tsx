@@ -226,7 +226,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }>('/api/register', requestBody)
 
       if (result.success && result.data) {
-        // Clear stale onboarding state so new users always see the welcome flow
+        // Drop onboarding keys left behind by earlier releases
         localStorage.removeItem('nofx_beginner_onboarding_completed')
         localStorage.removeItem('nofx_beginner_wallet_address')
 

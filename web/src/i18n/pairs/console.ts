@@ -109,7 +109,6 @@ export const consolePairs: PairMap = {
   'autopilot.copied': { en: '{label} copied', zh: '{label} 已复制' },
   'autopilot.copyFailed': { en: 'Copy failed', zh: '复制失败' },
   'autopilot.running': { en: 'NOFX Autopilot is running', zh: 'NOFX Autopilot 正在运行' },
-  'autopilot.aiFeeWallet': { en: 'AI fee wallet', zh: 'AI 费用钱包' },
   'autopilot.depositHyperliquid': {
     en: 'Deposit USDC to your Hyperliquid account, the balance check updates automatically.',
     zh: '向你的 Hyperliquid 账户充值 USDC，余额检查会自动更新。',

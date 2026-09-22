@@ -1,5 +1,3 @@
-<p align="center"><strong>Backed by <a href="https://vergex.trade">vergex.trade</a></strong></p>
-
 <p align="center">
   <img src="docs/assets/nofx-banner.svg" alt="NOFX — AI trading terminal" width="100%"/>
 </p>
@@ -36,7 +34,7 @@ The terminal opens at `http://127.0.0.1:3000`.
 **First run**
 
 1. Register — the first account becomes the owner of the instance.
-2. Follow the guided launch: put **$1+ USDC** (Base network) in the AI fee wallet it creates for you, then connect Hyperliquid and deposit **$12+ USDC** to trade with.
+2. Follow the guided launch: connect an AI model with your own API key, then link Hyperliquid and deposit **$12+ USDC** to trade with.
 3. Start **Autopilot**. The AI scans the market every few minutes and trades on its own; every decision appears on the dashboard as it happens. Stop it anytime with one click.
 
 <br/>
@@ -67,7 +65,7 @@ https://github.com/user-attachments/assets/3310f495-14c5-4586-a1cc-3d32e44aa505
 
 ## The model proposes. The runtime disposes.
 
-Decisions come from the [Claw402.ai](https://claw402.ai) · Vergex data stack: a live direction board for the market universe, per-symbol current direction and direction history, cost-basis and liquidation heatmaps, and real-time market net flow. NOFX follows the board direction and uses the remaining data as execution context.
+Decisions come from live Hyperliquid market data: every cycle the runtime reads the top instruments by 24h volume, pulls candles and order-book context for each candidate, and reasons over the positions it already holds. Nothing is fetched through a paid gateway — your instance talks to the market and to your model provider directly.
 
 Every order passes through limits enforced in code, outside the model's reach:
 
@@ -79,7 +77,7 @@ Every order passes through limits enforced in code, outside the model's reach:
 | Drawdown auto-close      | Profitable positions that give back too much from their peak are closed            |
 | Trade throttling         | Minimum hold times, per-symbol re-entry cooldowns, per-cycle and per-hour entry limits |
 | Safe mode                | Repeated model failures block new entries until the model recovers                 |
-| Launch preflight         | Model access, wallet funds, strategy, and exchange balances verified before a trader may start |
+| Launch preflight         | Model access, strategy validity, and exchange balances verified before a trader may start |
 
 Each decision is stored with the model's full reasoning. There is no position without a paper trail.
 
@@ -121,13 +119,18 @@ Each decision is stored with the model's full reasoning. There is no position wi
 
 ## Models
 
-Eight providers with your own keys — DeepSeek, OpenAI, Claude, Qwen, Gemini, Grok, Kimi, MiniMax — including custom endpoints and model names.
+Eight providers, each called directly with your own API key — DeepSeek, OpenAI, Claude, Qwen, Gemini, Grok, Kimi, MiniMax — including custom endpoints and model names. There is no gateway, no per-call metering, and no wallet to fund.
 
-Or no keys at all: [Claw402](https://claw402.ai) meters model usage per call in USDC over the x402 protocol. A wallet on Base replaces every API key.
-
-| Provider | Access |
-| :------- | :----- |
-| **Claw402** | [Pay-as-you-go AI models with official discount](https://claw402.ai) |
+| Provider     | Access                                                                                                          |
+| :----------- | :-------------------------------------------------------------------------------------------------------------- |
+| **DeepSeek** | [platform.deepseek.com](https://platform.deepseek.com/api_keys)                                                 |
+| **OpenAI**   | [platform.openai.com](https://platform.openai.com/api-keys)                                                     |
+| **Claude**   | [console.anthropic.com](https://console.anthropic.com/settings/keys)                                            |
+| **Qwen**     | [bailian.console.aliyun.com](https://bailian.console.aliyun.com/)                                               |
+| **Gemini**   | [aistudio.google.com](https://aistudio.google.com/app/apikey)                                                   |
+| **Grok**     | [console.x.ai](https://console.x.ai/)                                                                           |
+| **Kimi**     | [platform.moonshot.cn](https://platform.moonshot.cn/console/api-keys)                                           |
+| **MiniMax**  | [platform.minimaxi.com](https://platform.minimaxi.com/user-center/basic-information/interface-key)              |
 
 ## Markets
 
@@ -151,7 +154,7 @@ Crypto perpetuals on all nine exchanges. On Hyperliquid, the same runtime also t
     ├──────────────┴──────────────┴───────────────────┤
     │                 AI Model Layer                    │
     │  DeepSeek · OpenAI · Claude · Qwen · Gemini      │
-    │  Grok · Kimi · MiniMax · Claw402 (x402 USDC)     │
+    │  Grok · Kimi · MiniMax   (direct provider APIs)  │
     ├─────────────────────────────────────────────────┤
     │              Exchange Connectivity                │
     │ Binance · Bybit · OKX · Hyperliquid · Bitget     │
@@ -232,7 +235,7 @@ curl -fsSL https://raw.githubusercontent.com/NoFxAiOS/nofx/main/install.sh | bas
 
 ## Community
 
-[Telegram](https://t.me/nofx_dev_community) · [Twitter/X](https://x.com/vergex_ai) · [Issues](https://github.com/NoFxAiOS/nofx/issues) · [vergex.trade](https://vergex.trade) · [Live dashboard](https://vergex.trade/explore)
+[Telegram](https://t.me/nofx_dev_community) · [Twitter/X](https://x.com/nofx_ai) · [Issues](https://github.com/NoFxAiOS/nofx/issues)
 
 ## Contributing
 

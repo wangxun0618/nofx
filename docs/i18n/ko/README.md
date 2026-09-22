@@ -1,5 +1,3 @@
-<p align="center"><strong><a href="https://vergex.trade">vergex.trade</a>가 지원합니다</strong></p>
-
 <p align="center">
   <img src="../../assets/nofx-banner.svg" alt="NOFX — AI trading terminal" width="100%"/>
 </p>
@@ -36,7 +34,7 @@ curl -fsSL https://raw.githubusercontent.com/NoFxAiOS/nofx/main/install.sh | bas
 **첫 실행**
 
 1. 계정을 등록합니다 — 첫 번째 계정이 해당 인스턴스의 소유자가 됩니다.
-2. 가이드 런치를 따라갑니다. 자동으로 생성된 AI 수수료 지갑에 **$1+ USDC**(Base 네트워크)를 넣은 뒤, Hyperliquid를 연결하고 거래 자금으로 **$12+ USDC**를 입금합니다.
+2. 가이드 런치를 따라갑니다. 자신의 API 키로 AI 모델을 연결한 뒤, Hyperliquid를 연결하고 거래 자금으로 **$12+ USDC**를 입금합니다.
 3. **Autopilot**을 시작합니다. AI가 몇 분마다 시장을 스캔하며 스스로 거래하고, 모든 결정은 발생하는 즉시 대시보드에 표시됩니다. 언제든 클릭 한 번으로 중지할 수 있습니다.
 
 <br/>
@@ -67,7 +65,7 @@ https://github.com/user-attachments/assets/3310f495-14c5-4586-a1cc-3d32e44aa505
 
 ## 모델은 제안하고, 런타임이 결정합니다
 
-의사결정은 [Claw402.ai](https://claw402.ai) · Vergex 데이터 스택을 기반으로 합니다. 전체 시장의 실시간 방향 보드, 종목별 현재 방향과 방향 이력, 코스트·청산 히트맵, 실시간 순유입을 사용합니다. NOFX는 보드 방향을 따르며 나머지 데이터는 실행 맥락으로만 사용합니다.
+의사결정은 Hyperliquid 실시간 시장 데이터를 기반으로 합니다. 매 사이클마다 런타임은 24시간 거래량 상위 종목을 읽고, 각 후보의 캔들과 호가 정보를 가져와 보유 포지션과 함께 판단합니다. 유료 게이트웨이는 사용하지 않으며, 인스턴스가 시장 및 모델 제공업체와 직접 통신합니다.
 
 모든 주문은 모델의 손이 닿지 않는 곳에서 코드로 강제되는 한도를 통과해야 합니다.
 
@@ -121,13 +119,18 @@ https://github.com/user-attachments/assets/3310f495-14c5-4586-a1cc-3d32e44aa505
 
 ## 모델
 
-자신의 키로 사용할 수 있는 여덟 개 제공업체 — DeepSeek, OpenAI, Claude, Qwen, Gemini, Grok, Kimi, MiniMax — 커스텀 엔드포인트와 모델 이름도 지원합니다.
-
-키가 전혀 없어도 됩니다. [Claw402](https://claw402.ai)는 x402 프로토콜을 통해 모델 사용량을 호출 단위로 USDC로 정산합니다. Base 네트워크의 지갑 하나가 모든 API 키를 대신합니다.
+자신의 키로 직접 호출하는 여덟 개 제공업체 — DeepSeek, OpenAI, Claude, Qwen, Gemini, Grok, Kimi, MiniMax — 커스텀 엔드포인트와 모델 이름도 지원합니다. 게이트웨이도, 호출당 과금도, 충전할 지갑도 없습니다.
 
 | 제공업체 | 이용 방법 |
 | :------- | :----- |
-| **Claw402** | [공식 할인이 적용된 종량제 AI 모델](https://claw402.ai) |
+| **DeepSeek** | [platform.deepseek.com](https://platform.deepseek.com/api_keys) |
+| **OpenAI** | [platform.openai.com](https://platform.openai.com/api-keys) |
+| **Claude** | [console.anthropic.com](https://console.anthropic.com/settings/keys) |
+| **Qwen** | [bailian.console.aliyun.com](https://bailian.console.aliyun.com/) |
+| **Gemini** | [aistudio.google.com](https://aistudio.google.com/app/apikey) |
+| **Grok** | [console.x.ai](https://console.x.ai/) |
+| **Kimi** | [platform.moonshot.cn](https://platform.moonshot.cn/console/api-keys) |
+| **MiniMax** | [platform.minimaxi.com](https://platform.minimaxi.com/user-center/basic-information/interface-key) |
 
 ## 시장
 
@@ -151,7 +154,7 @@ https://github.com/user-attachments/assets/3310f495-14c5-4586-a1cc-3d32e44aa505
     ├──────────────┴──────────────┴───────────────────┤
     │                 AI Model Layer                    │
     │  DeepSeek · OpenAI · Claude · Qwen · Gemini      │
-    │  Grok · Kimi · MiniMax · Claw402 (x402 USDC)     │
+    │  Grok · Kimi · MiniMax   (direct provider APIs)  │
     ├─────────────────────────────────────────────────┤
     │              Exchange Connectivity                │
     │ Binance · Bybit · OKX · Hyperliquid · Bitget     │
@@ -232,7 +235,7 @@ curl -fsSL https://raw.githubusercontent.com/NoFxAiOS/nofx/main/install.sh | bas
 
 ## 커뮤니티
 
-[Telegram](https://t.me/nofx_dev_community) · [Twitter/X](https://x.com/vergex_ai) · [Issues](https://github.com/NoFxAiOS/nofx/issues) · [vergex.trade](https://vergex.trade) · [라이브 대시보드](https://vergex.trade/explore)
+[Telegram](https://t.me/nofx_dev_community) · [Twitter/X](https://x.com/nofx_ai) · [Issues](https://github.com/NoFxAiOS/nofx/issues)
 
 ## 기여
 

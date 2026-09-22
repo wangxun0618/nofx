@@ -12,6 +12,20 @@ import { tg } from '../../i18n/translations'
 
 export const AUTOPILOT_TRADER_NAME = 'NOFX Autopilot'
 
+/**
+ * Built-in strategy shipped to every account. Registration creates it under
+ * this name (see createDefaultStrategies in api/handler_user.go), so the
+ * launcher reuses the same wording to recognise it across languages.
+ */
+export function isAutopilotStrategyName(name: string | undefined): boolean {
+  const value = (name || '').toLowerCase()
+  return (
+    value.includes('autopilot') ||
+    value.includes('auto strategy') ||
+    name === 'NOFX 自动交易策略'
+  )
+}
+
 export interface LaunchAutopilotOptions {
   /**
    * Provides the strategy id to trade. Called only AFTER preflight passes so
@@ -38,9 +52,8 @@ export async function launchAutopilot(
       return {
         ok: false,
         kind: 'setup',
-        message:
-          tg('lib.noEnabledModel'),
-        setupTarget: 'claw402',
+        message: tg('lib.noEnabledModel'),
+        setupTarget: 'ai-model',
       }
     }
 
@@ -94,7 +107,7 @@ export async function launchAutopilot(
         (trader) => trader.trader_name === AUTOPILOT_TRADER_NAME
       ) ||
       existingTraders.find((trader) =>
-        (trader.strategy_name || '').toLowerCase().includes('claw402')
+        isAutopilotStrategyName(trader.strategy_name)
       ) ||
       null
 
@@ -146,19 +159,17 @@ export async function launchAutopilot(
 
 /**
  * Default strategy provisioning for the guided panel: reuse the active
- * Claw402 strategy, otherwise create and activate it.
+ * Hyperliquid-native Autopilot strategy, otherwise create and activate it.
  */
-export async function ensureClaw402Strategy(): Promise<string> {
+export async function ensureAutopilotStrategy(): Promise<string> {
   const strategies = await api.getStrategies()
   const existing =
     strategies.find(
       (strategy) =>
         strategy.is_active &&
-        strategy.config?.ai_config?.coin_source?.source_type === 'vergex_signal'
+        strategy.config?.ai_config?.coin_source?.source_type === 'hyper_main'
     ) ||
-    strategies.find((strategy) =>
-      strategy.name.toLowerCase().includes('claw402')
-    )
+    strategies.find((strategy) => isAutopilotStrategyName(strategy.name))
 
   if (existing) {
     if (!existing.is_active) {
@@ -169,9 +180,8 @@ export async function ensureClaw402Strategy(): Promise<string> {
 
   const config = await api.getDefaultStrategyConfig()
   const created = await api.createStrategy({
-    name: 'NOFX Claw402 Auto Strategy',
-    description:
-      tg('lib.claw402StrategyDesc'),
+    name: tg('lib.autopilotStrategyName'),
+    description: tg('lib.autopilotStrategyDesc'),
     config,
   })
   if (created?.id) {
@@ -181,9 +191,9 @@ export async function ensureClaw402Strategy(): Promise<string> {
 
   const refreshed = await api.getStrategies()
   const fallback = refreshed.find((strategy) =>
-    strategy.name.toLowerCase().includes('claw402')
+    isAutopilotStrategyName(strategy.name)
   )
-  if (!fallback) throw new Error(tg('lib.createClaw402StrategyFailed'))
+  if (!fallback) throw new Error(tg('lib.createAutopilotStrategyFailed'))
   await api.activateStrategy(fallback.id)
   return fallback.id
 }

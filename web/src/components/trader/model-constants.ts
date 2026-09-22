@@ -2,17 +2,6 @@ import { tg } from '../../i18n/translations'
 
 // Constants for AI model and provider configuration
 
-export interface Claw402Model {
-  id: string
-  name: string
-  provider: string
-  desc: string
-  brand: string // key for getModelIcon / getModelColor
-  priceIn: number // USD per 1M input tokens (upto pay-as-you-go)
-  priceOut: number // USD per 1M output tokens
-  isNew?: boolean
-}
-
 export interface AIProviderConfig {
   defaultModel: string
   apiUrl: string
@@ -39,103 +28,49 @@ export function getShortName(fullName: string): string {
   return parts.length > 1 ? parts[parts.length - 1] : fullName
 }
 
-export const DEFAULT_CLAW402_MODEL = 'gpt-5.6'
-
-// Models available through Claw402 (x402 USDC payment protocol)
-// Must stay in sync with the claw402 catalog (GET /api/v1/catalog)
-// Prices are USD per 1M tokens (input / output), settled pay-as-you-go via
-// the x402 upto scheme — each call is charged on actual token usage.
-export const CLAW402_MODELS: Claw402Model[] = [
-  {
-    id: 'gpt-6',
-    name: 'GPT-6 Astra',
-    provider: 'OpenAI',
-    desc: tg('model.blurbMostCapableContext'),
-    brand: 'openai',
-    priceIn: 12.5,
-    priceOut: 50,
-    isNew: true,
-  },
-  {
-    id: 'gpt-5.6',
-    name: 'GPT-5.6 Sol',
-    provider: 'OpenAI',
-    desc: tg('model.blurbPreviousFlagship'),
-    brand: 'openai',
-    priceIn: 5,
-    priceOut: 30,
-  },
-  {
-    id: 'gpt-5.6-terra',
-    name: 'GPT-5.6 Terra',
-    provider: 'OpenAI',
-    desc: 'Balanced',
-    brand: 'openai',
-    priceIn: 2.5,
-    priceOut: 15,
-  },
-  {
-    id: 'gpt-5.6-luna',
-    name: 'GPT-5.6 Luna',
-    provider: 'OpenAI',
-    desc: 'Cost-efficient',
-    brand: 'openai',
-    priceIn: 1,
-    priceOut: 6,
-  },
-  {
-    id: 'claude-fable',
-    name: 'Claude Fable 5',
-    provider: 'Anthropic',
-    desc: tg('model.blurbMostCapable'),
-    brand: 'claude',
-    priceIn: 10,
-    priceOut: 50,
-  },
-  {
-    id: 'claude-opus',
-    name: 'Claude Opus 4.8',
-    provider: 'Anthropic',
-    desc: tg('model.blurbCodingFlagship'),
-    brand: 'claude',
-    priceIn: 5,
-    priceOut: 25,
-  },
-  {
-    id: 'deepseek-v4-flash',
-    name: 'DeepSeek-V4 Flash',
-    provider: 'DeepSeek',
-    desc: tg('model.blurbFastGeneral'),
-    brand: 'deepseek',
-    priceIn: 0.14,
-    priceOut: 0.28,
-  },
-  {
-    id: 'deepseek-v4-pro',
-    name: 'DeepSeek-V4 Pro',
-    provider: 'DeepSeek',
-    desc: tg('model.blurbAdvancedReasoning'),
-    brand: 'deepseek',
-    priceIn: 1.74,
-    priceOut: 3.48,
-  },
-  {
-    id: 'glm-5',
-    name: 'GLM-5',
-    provider: 'Z.ai',
-    desc: tg('model.blurbDeepReasoning'),
-    brand: 'zhipu',
-    priceIn: 0.6,
-    priceOut: 2,
-  },
-]
-
-// AI Provider configuration - default models and API links
+// Native provider configuration — default model, API key console and display
+// name. Must stay in sync with `supportedProviderDefaults` in
+// api/handler_ai_model.go and the native clients in mcp/provider/.
 export const AI_PROVIDER_CONFIG: Record<string, AIProviderConfig> = {
-  claw402: {
-    defaultModel: DEFAULT_CLAW402_MODEL,
-    apiUrl: 'https://claw402.ai',
-    apiName: 'Claw402',
+  deepseek: {
+    defaultModel: 'deepseek-chat',
+    apiUrl: 'https://platform.deepseek.com/api_keys',
+    apiName: 'DeepSeek',
+  },
+  openai: {
+    defaultModel: 'gpt-4o',
+    apiUrl: 'https://platform.openai.com/api-keys',
+    apiName: 'OpenAI',
+  },
+  claude: {
+    defaultModel: 'claude-sonnet-4-20250514',
+    apiUrl: 'https://console.anthropic.com/settings/keys',
+    apiName: 'Claude',
+  },
+  qwen: {
+    defaultModel: 'qwen3-max',
+    apiUrl: 'https://bailian.console.aliyun.com/',
+    apiName: 'Qwen',
+  },
+  gemini: {
+    defaultModel: 'gemini-2.5-pro',
+    apiUrl: 'https://aistudio.google.com/app/apikey',
+    apiName: 'Gemini',
+  },
+  grok: {
+    defaultModel: 'grok-4',
+    apiUrl: 'https://console.x.ai/',
+    apiName: 'Grok',
+  },
+  kimi: {
+    defaultModel: 'kimi-k2-0905-preview',
+    apiUrl: 'https://platform.moonshot.cn/console/api-keys',
+    apiName: 'Kimi',
+  },
+  minimax: {
+    defaultModel: 'MiniMax-M2.7',
+    apiUrl: 'https://platform.minimaxi.com/user-center/basic-information/interface-key',
+    apiName: 'MiniMax',
   },
 }
 

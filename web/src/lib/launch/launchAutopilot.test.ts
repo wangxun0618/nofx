@@ -29,7 +29,6 @@ function readyPreflight(): LaunchPreflightResult {
   return {
     ready: true,
     checks: [],
-    min_ai_fee_usdc: 1,
     min_trading_usdc: 12,
     checked_at: new Date().toISOString(),
   }
@@ -40,13 +39,12 @@ function failedPreflight(): LaunchPreflightResult {
     ready: false,
     checks: [
       {
-        id: 'ai_wallet_funds',
+        id: 'ai_model',
         status: 'failed',
-        code: 'AI_WALLET_INSUFFICIENT_FUNDS',
-        message: 'AI wallet needs 1 USDC.',
+        code: 'AI_MODEL_NOT_CONFIGURED',
+        message: 'No AI model is configured.',
       },
     ],
-    min_ai_fee_usdc: 1,
     min_trading_usdc: 12,
     checked_at: new Date().toISOString(),
   }
@@ -79,8 +77,8 @@ describe('launchAutopilot', () => {
     if (outcome.ok || outcome.kind !== 'preflight') {
       throw new Error('expected a preflight failure outcome')
     }
-    expect(outcome.setupTarget).toBe('claw402')
-    expect(outcome.message).toContain('AI wallet needs 1 USDC.')
+    expect(outcome.setupTarget).toBe('ai-model')
+    expect(outcome.message).toContain('No AI model is configured.')
   })
 
   it('creates and starts the trader after preflight passes', async () => {
@@ -176,7 +174,7 @@ describe('launchAutopilot', () => {
     if (outcome.ok || outcome.kind !== 'preflight') {
       throw new Error('expected a preflight failure outcome')
     }
-    expect(outcome.setupTarget).toBe('claw402')
+    expect(outcome.setupTarget).toBe('ai-model')
   })
 
   it('routes missing exchange setup to the hyperliquid anchor', async () => {

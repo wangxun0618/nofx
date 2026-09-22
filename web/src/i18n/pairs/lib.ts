@@ -45,16 +45,6 @@ export const libPairs: PairMap = {
 
   // ── api/data.ts ────────────────────────────────────────────────────────
   'lib.fetchSymbolList': { en: 'Failed to fetch symbol list', zh: '获取交易对列表失败' },
-  'lib.fetchDirectionLeaderboardVergex': {
-    en: 'Failed to fetch Claw402/Vergex direction leaderboard',
-    zh: '获取 Claw402/Vergex 方向榜单失败',
-  },
-  'lib.fetchCurrentDirection': { en: 'Failed to fetch current direction', zh: '获取当前方向失败' },
-  'lib.fetchDirectionHistory': { en: 'Failed to fetch direction history', zh: '获取方向历史失败' },
-  'lib.fetchCostLiqHeatmap': {
-    en: 'Failed to fetch cost/liquidation heatmap',
-    zh: '获取持仓成本/强平热力图失败',
-  },
   'lib.fetchSystemStatus': { en: 'Failed to fetch system status', zh: '获取系统状态失败' },
   'lib.fetchAccountInfo': { en: 'Failed to fetch account info', zh: '获取账户信息失败' },
   'lib.fetchPositions': { en: 'Failed to fetch positions', zh: '获取持仓失败' },
@@ -63,11 +53,6 @@ export const libPairs: PairMap = {
   'lib.fetchStatistics': { en: 'Failed to fetch statistics', zh: '获取统计数据失败' },
   'lib.fetchFullStatistics': { en: 'Failed to fetch full statistics', zh: '获取完整统计数据失败' },
   'lib.fetchKlines': { en: 'Failed to fetch klines', zh: '获取 K 线数据失败' },
-  'lib.fetchFlowMarkets': { en: 'Failed to fetch flow markets', zh: '获取资金流市场失败' },
-  'lib.fetchDirectionLeaderboard': {
-    en: 'Failed to fetch direction leaderboard',
-    zh: '获取方向榜单失败',
-  },
   'lib.fetchEquityHistory': { en: 'Failed to fetch equity history', zh: '获取净值历史失败' },
   'lib.fetchBatchEquityHistory': {
     en: 'Failed to fetch batch equity history',
@@ -99,14 +84,6 @@ export const libPairs: PairMap = {
   'lib.createExchangeAccount': { en: 'Failed to create exchange account', zh: '创建交易所账户失败' },
   'lib.deleteExchangeAccount': { en: 'Failed to delete exchange account', zh: '删除交易所账户失败' },
   'lib.fetchServerIp': { en: 'Failed to fetch server IP', zh: '获取服务器 IP 失败' },
-  'lib.prepareBeginnerOnboarding': {
-    en: 'Failed to prepare beginner onboarding',
-    zh: '准备新手引导失败',
-  },
-  'lib.fetchBeginnerWallet': {
-    en: 'Failed to fetch current beginner wallet',
-    zh: '获取当前新手钱包失败',
-  },
 
   // ── api/traders.ts ─────────────────────────────────────────────────────
   'lib.fetchTraderList': { en: 'Failed to fetch trader list', zh: '获取交易员列表失败' },
@@ -149,8 +126,8 @@ export const libPairs: PairMap = {
 
   // ── launch helpers ─────────────────────────────────────────────────────
   'lib.noEnabledModel': {
-    en: 'No enabled AI model is ready. Create or fund the Claw402 wallet first.',
-    zh: '没有已启用的 AI 模型可用。请先创建 Claw402 钱包或为其充值。',
+    en: 'No AI model is ready. Add an API key for a supported provider first.',
+    zh: '没有可用的 AI 模型。请先为受支持的服务商添加 API Key。',
   },
   'lib.launchNotReady': {
     en: 'Launch prerequisites are not ready yet.',
@@ -160,13 +137,17 @@ export const libPairs: PairMap = {
     en: 'Failed to launch NOFX Autopilot',
     zh: '启动 NOFX Autopilot 失败',
   },
-  'lib.createClaw402StrategyFailed': {
-    en: 'Failed to create Claw402 strategy',
-    zh: '创建 Claw402 策略失败',
+  'lib.autopilotStrategyName': {
+    en: 'NOFX Auto Strategy',
+    zh: 'NOFX 自动交易策略',
   },
-  'lib.claw402StrategyDesc': {
-    en: 'Single built-in strategy: Claw402 board, per-symbol details, raw candles, then execution.',
-    zh: '内置的单一策略：Claw402 方向看板、逐币种明细、原始 K 线，然后执行。',
+  'lib.autopilotStrategyDesc': {
+    en: 'Built-in strategy: each cycle it reads the top Hyperliquid instruments by 24h volume, then decides with your AI model.',
+    zh: '内置策略：每轮读取 Hyperliquid 24 小时成交量靠前的品种，再交由你的 AI 模型做决策。',
+  },
+  'lib.createAutopilotStrategyFailed': {
+    en: 'Failed to create the autopilot strategy',
+    zh: '创建自动交易策略失败',
   },
   'lib.runPreflightFailed': {
     en: 'Failed to run launch preflight',
@@ -231,12 +212,12 @@ export const libPairs: PairMap = {
 
   // ── demo walkthrough engine ────────────────────────────────────────────
   'demo.noteBoardUnchanged': {
-    en: 'The live direction board is unchanged; cost/liq structure supports the level.',
-    zh: '实时方向看板未变；持仓成本/强平结构支撑该价位。',
+    en: 'Momentum is unchanged this cycle; support and resistance still line up with the position.',
+    zh: '本周期动能未变；支撑与阻力仍与当前持仓吻合。',
   },
   'demo.noteUsEquityBid': {
-    en: 'US-equity tape is broadly bid: SP500 and semis (NVDA, MU, TSM) remain bullish on the live direction board. Positions stay open until the board changes.',
-    zh: '美股整体买盘积极：SP500 与半导体板块（NVDA、MU、TSM）在实时方向看板上维持看多。在看板发生变化前，持仓保持不变。',
+    en: 'US-equity tape is broadly bid: SP500 and semis (NVDA, MU, TSM) stay bullish. Positions stay open until the trend breaks.',
+    zh: '美股整体买盘积极：SP500 与半导体板块（NVDA、MU、TSM）维持看多。在趋势破坏前，持仓保持不变。',
   },
 
   // ── auth ───────────────────────────────────────────────────────────────

@@ -10,13 +10,10 @@ import (
 	"nofx/market"
 	"nofx/provider/hyperliquid"
 	"nofx/provider/nofxos"
-	"nofx/provider/vergex"
 	"nofx/security"
 	"nofx/store"
-	"os"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -106,7 +103,6 @@ type Context struct {
 	MultiTFMarket      map[string]map[string]*market.Data `json:"-"`
 	OITopDataMap       map[string]*OITopData              `json:"-"`
 	QuantDataMap       map[string]*QuantData              `json:"-"`
-	VergexDataMap      map[string]*vergex.MarketAnalysis  `json:"-"`
 	OIRankingData      *nofxos.OIRankingData              `json:"-"` // Market-wide OI ranking data
 	NetFlowRankingData *nofxos.NetFlowRankingData         `json:"-"` // Market-wide fund flow ranking data
 	PriceRankingData   *nofxos.PriceRankingData           `json:"-"` // Market-wide price gainers/losers
@@ -186,15 +182,12 @@ type OIDeltaData struct {
 
 // StrategyEngine strategy execution engine
 type StrategyEngine struct {
-	config             *store.StrategyConfig
-	nofxosClient       *nofxos.Client
-	vergexClient       *vergex.Client
-	vergexRankingCache map[string]*vergex.DirectionChangeItem
+	config       *store.StrategyConfig
+	nofxosClient *nofxos.Client
 }
 
 // NewStrategyEngine creates strategy execution engine.
-// claw402WalletKey is optional — if provided, nofxos data requests are routed through claw402.
-func NewStrategyEngine(config *store.StrategyConfig, claw402WalletKey ...string) *StrategyEngine {
+func NewStrategyEngine(config *store.StrategyConfig) *StrategyEngine {
 	// Create NofxOS client with API key from config
 	apiKey := config.Indicators.NofxOSAPIKey
 	if apiKey == "" {
@@ -202,45 +195,9 @@ func NewStrategyEngine(config *store.StrategyConfig, claw402WalletKey ...string)
 	}
 	client := nofxos.NewClient(nofxos.DefaultBaseURL, apiKey)
 
-	// If claw402 wallet key is provided (from trader's AI config), route through claw402
-	walletKey := ""
-	if len(claw402WalletKey) > 0 {
-		walletKey = claw402WalletKey[0]
-	}
-	if walletKey == "" {
-		walletKey = os.Getenv("CLAW402_WALLET_KEY")
-	}
-	if walletKey != "" {
-		claw402URL := os.Getenv("CLAW402_URL")
-		if claw402URL == "" {
-			claw402URL = "https://claw402.ai"
-		}
-		claw402Client, err := nofxos.NewClaw402DataClient(claw402URL, walletKey, &logger.MCPLogger{})
-		if err == nil {
-			client.SetClaw402(claw402Client)
-			logger.Infof("🔗 NofxOS data routed through claw402 (%s)", claw402URL)
-		} else {
-			logger.Warnf("⚠️ Failed to init claw402 data client: %v (using direct nofxos.ai)", err)
-		}
-
-		vergexClient, err := vergex.NewClient(claw402URL, walletKey, &logger.MCPLogger{})
-		if err == nil {
-			logger.Infof("🔗 Vergex signals routed through claw402 (%s)", claw402URL)
-		} else {
-			logger.Warnf("⚠️ Failed to init Vergex claw402 client: %v", err)
-		}
-		return &StrategyEngine{
-			config:             config,
-			nofxosClient:       client,
-			vergexClient:       vergexClient,
-			vergexRankingCache: make(map[string]*vergex.DirectionChangeItem),
-		}
-	}
-
 	return &StrategyEngine{
-		config:             config,
-		nofxosClient:       client,
-		vergexRankingCache: make(map[string]*vergex.DirectionChangeItem),
+		config:       config,
+		nofxosClient: client,
 	}
 }
 
@@ -249,7 +206,7 @@ func (e *StrategyEngine) usesHyperliquidNativeUniverse() bool {
 		return false
 	}
 	source := e.config.CoinSource
-	if source.SourceType == "hyper_all" || source.SourceType == "hyper_main" || source.SourceType == "hyper_rank" || source.SourceType == "vergex_signal" || source.UseHyperAll || source.UseHyperMain {
+	if source.SourceType == "hyper_all" || source.SourceType == "hyper_main" || source.SourceType == "hyper_rank" || source.UseHyperAll || source.UseHyperMain {
 		return true
 	}
 	for _, symbol := range source.StaticCoins {
@@ -406,20 +363,6 @@ func (e *StrategyEngine) GetCandidateCoins() ([]CandidateCoin, error) {
 
 	case "hyper_rank":
 		coins, err := e.getHyperRankCoins(coinSource.HyperRankCategory, coinSource.HyperRankDirection, coinSource.HyperRankLimit)
-		if err != nil {
-			return nil, err
-		}
-		return e.filterExcludedCoins(coins), nil
-
-	case "vergex_signal":
-		coins, err := e.getVergexSignalCoins(
-			coinSource.VergexLimit,
-			coinSource.VergexMarketType,
-			coinSource.VergexChain,
-			coinSource.VergexLiqBand,
-			coinSource.HyperRankCategory,
-			coinSource.StaticCoins,
-		)
 		if err != nil {
 			return nil, err
 		}
@@ -727,231 +670,6 @@ func (e *StrategyEngine) getHyperRankCoins(category, direction string, limit int
 	return candidates, nil
 }
 
-func (e *StrategyEngine) getVergexSignalCoins(limit int, marketType, chain, liqBand, category string, selectedSymbols []string) ([]CandidateCoin, error) {
-	if e.vergexClient == nil {
-		return nil, fmt.Errorf("vergex signal source requires a configured claw402 wallet")
-	}
-	if marketType == "" {
-		marketType = vergex.DefaultMarketType
-	}
-	chain = vergex.QueryChain(chain)
-	if limit <= 0 {
-		limit = 5
-	}
-	if limit > store.MaxCandidateCoins {
-		limit = store.MaxCandidateCoins
-	}
-	category = strings.ToLower(strings.TrimSpace(category))
-
-	// Never carry a stale signal snapshot into a new cycle when the board call
-	// fails. Callers can then distinguish "no valid snapshot" from a symbol that
-	// genuinely disappeared from a successfully fetched board.
-	e.vergexRankingCache = make(map[string]*vergex.DirectionChangeItem)
-	leaderboard, err := e.vergexClient.GetDirectionChangeLeaderboard(context.Background())
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch Vergex direction-change leaderboard: %w", err)
-	}
-
-	rankedItems := vergex.FilterDirectionChangeItems(leaderboard.Items, marketType, store.MaxCandidateCoins)
-	e.vergexRankingCache = make(map[string]*vergex.DirectionChangeItem, len(rankedItems))
-	for _, item := range rankedItems {
-		itemCopy := item
-		if symbol := vergex.TradableSymbolForMarket(item.MarketType, item.Symbol); symbol != "" {
-			e.vergexRankingCache[symbol] = &itemCopy
-		}
-	}
-
-	if len(selectedSymbols) > 0 {
-		candidates := make([]CandidateCoin, 0, minInt(len(selectedSymbols), limit))
-		seen := make(map[string]bool)
-		for _, raw := range selectedSymbols {
-			symbol := vergex.TradableSymbolForMarket(marketType, raw)
-			if symbol == "" || seen[symbol] {
-				continue
-			}
-			candidates = append(candidates, CandidateCoin{
-				Symbol:  symbol,
-				Sources: []string{"vergex_signal"},
-			})
-			seen[symbol] = true
-			if len(candidates) >= limit {
-				break
-			}
-		}
-		if len(candidates) == 0 {
-			return nil, fmt.Errorf("selected Claw402 symbols are not tradable %s items", marketType)
-		}
-		logger.Infof("✅ Loaded %d selected Vergex candidates (%s)", len(candidates), marketType)
-		return candidates, nil
-	}
-
-	// Direction-balanced selection: interleave the top bullish and top bearish
-	// signals so the candidate universe carries BOTH long and short ideas every
-	// cycle (instead of filling up with whichever bias ranks highest). This is
-	// what lets the AI actually judge — and trade — both directions.
-	var bullItems, bearItems, otherItems []vergex.DirectionChangeItem
-	for _, item := range rankedItems {
-		if category != "" && category != "all" && item.Category != category {
-			continue
-		}
-		switch strings.ToLower(strings.TrimSpace(item.Bias)) {
-		case "bearish", "short", "sell":
-			bearItems = append(bearItems, item)
-		case "bullish", "long", "buy":
-			bullItems = append(bullItems, item)
-		default:
-			otherItems = append(otherItems, item)
-		}
-	}
-	items := make([]vergex.DirectionChangeItem, 0, limit)
-	bi, ri, oi := 0, 0, 0
-	for len(items) < limit {
-		progressed := false
-		if bi < len(bullItems) {
-			items = append(items, bullItems[bi])
-			bi++
-			progressed = true
-			if len(items) >= limit {
-				break
-			}
-		}
-		if ri < len(bearItems) {
-			items = append(items, bearItems[ri])
-			ri++
-			progressed = true
-			if len(items) >= limit {
-				break
-			}
-		}
-		if !progressed {
-			if oi < len(otherItems) {
-				items = append(items, otherItems[oi])
-				oi++
-			} else {
-				break
-			}
-		}
-	}
-	if len(items) == 0 {
-		if category != "" && category != "all" {
-			return nil, fmt.Errorf("vergex direction board returned no tradable %s items in category %s", marketType, category)
-		}
-		return nil, fmt.Errorf("vergex direction board returned no tradable %s items", marketType)
-	}
-
-	candidates := make([]CandidateCoin, 0, len(items))
-	for _, item := range items {
-		itemCopy := item
-		symbol := vergex.TradableSymbolForMarket(item.MarketType, item.Symbol)
-		if symbol == "" {
-			continue
-		}
-		e.vergexRankingCache[symbol] = &itemCopy
-		candidates = append(candidates, CandidateCoin{
-			Symbol:  symbol,
-			Sources: []string{"vergex_signal"},
-		})
-	}
-	logger.Infof("✅ Loaded %d Vergex signal candidates (%s/%s, capped at %d)", len(candidates), marketType, withDefaultText(category, "all"), limit)
-	return candidates, nil
-}
-
-func minInt(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-// DirectionalCandidate is a Vergex board candidate with its directional
-// signal strength (the board z-score; sign follows the bias direction).
-type DirectionalCandidate struct {
-	Symbol string
-	Score  float64
-}
-
-// DirectionalCandidates returns bullish (long) and bearish (short) candidates
-// from the most recent Vergex direction board, each ordered by upstream rank
-// (strongest first) and carrying the signal score so callers can require a
-// minimum strength. Only populated for vergex_signal coin sources, since that
-// is the only source carrying a per-symbol directional bias.
-func (e *StrategyEngine) DirectionalCandidates() (bullish []DirectionalCandidate, bearish []DirectionalCandidate) {
-	if e == nil || len(e.vergexRankingCache) == 0 {
-		return nil, nil
-	}
-	type ranked struct {
-		cand DirectionalCandidate
-		rank int
-	}
-	rankKey := func(r int) int {
-		if r > 0 {
-			return r
-		}
-		return 1 << 30
-	}
-	var bl, br []ranked
-	for sym, item := range e.vergexRankingCache {
-		if item == nil {
-			continue
-		}
-		entry := ranked{DirectionalCandidate{Symbol: sym, Score: item.Score}, item.Rank}
-		switch strings.ToLower(strings.TrimSpace(item.Bias)) {
-		case "bearish", "short", "sell":
-			br = append(br, entry)
-		case "bullish", "long", "buy":
-			bl = append(bl, entry)
-		}
-	}
-	sort.SliceStable(bl, func(i, j int) bool { return rankKey(bl[i].rank) < rankKey(bl[j].rank) })
-	sort.SliceStable(br, func(i, j int) bool { return rankKey(br[i].rank) < rankKey(br[j].rank) })
-	for _, r := range bl {
-		bullish = append(bullish, r.cand)
-	}
-	for _, r := range br {
-		bearish = append(bearish, r.cand)
-	}
-	return bullish, bearish
-}
-
-// HasVergexSignalSnapshot reports whether the current cycle fetched a usable
-// direction board. An empty cache means the policy must not trade on absence.
-func (e *StrategyEngine) HasVergexSignalSnapshot() bool {
-	return e != nil && len(e.vergexRankingCache) > 0
-}
-
-// VergexSignalBias returns the canonical current board direction for a symbol.
-// QuerySymbol makes BTC/BTCUSDT and xyz:NVDA/NVDA resolve to the same market.
-func (e *StrategyEngine) VergexSignalBias(symbol string) (string, bool) {
-	if e == nil || len(e.vergexRankingCache) == 0 {
-		return "", false
-	}
-	target := vergex.QuerySymbol(symbol)
-	if target == "" {
-		return "", false
-	}
-	for cachedSymbol, item := range e.vergexRankingCache {
-		if item == nil || vergex.QuerySymbol(cachedSymbol) != target {
-			continue
-		}
-		switch strings.ToLower(strings.TrimSpace(item.Bias)) {
-		case "bullish", "long", "buy":
-			return "bullish", true
-		case "bearish", "short", "sell":
-			return "bearish", true
-		default:
-			return "neutral", true
-		}
-	}
-	return "", false
-}
-
-func withDefaultText(value, fallback string) string {
-	if strings.TrimSpace(value) == "" {
-		return fallback
-	}
-	return value
-}
-
 // ============================================================================
 // External & Quant Data
 // ============================================================================
@@ -1135,257 +853,6 @@ func (e *StrategyEngine) FetchQuantDataBatch(symbols []string) map[string]*Quant
 	}
 
 	return result
-}
-
-func (e *StrategyEngine) FetchVergexDataBatch(ctx context.Context, symbols []string) map[string]*vergex.MarketAnalysis {
-	result := make(map[string]*vergex.MarketAnalysis)
-	if e == nil || e.config == nil || e.config.CoinSource.SourceType != "vergex_signal" {
-		return result
-	}
-	if e.vergexClient == nil {
-		logger.Warnf("⚠️ Vergex signal data skipped: claw402 wallet is not configured")
-		return result
-	}
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
-	source := e.config.CoinSource
-	marketType := source.VergexMarketType
-	if marketType == "" {
-		marketType = vergex.DefaultMarketType
-	}
-	chain := source.VergexChain
-	chain = vergex.QueryChain(chain)
-
-	seen := make(map[string]bool)
-	limited := make([]string, 0, store.MaxCandidateCoins)
-	for _, symbol := range symbols {
-		symbol = vergexDetailSymbolForLookup(marketType, symbol)
-		if symbol == "" {
-			continue
-		}
-		if seen[symbol] {
-			continue
-		}
-		seen[symbol] = true
-		limited = append(limited, symbol)
-		if len(limited) >= store.MaxCandidateCoins+store.MaxPositions {
-			break
-		}
-	}
-
-	type vergexAnalysisResult struct {
-		symbol   string
-		analysis *vergex.MarketAnalysis
-	}
-
-	resultCh := make(chan vergexAnalysisResult, len(limited))
-	var wg sync.WaitGroup
-	sem := make(chan struct{}, vergexDetailSymbolConcurrency)
-	for _, symbol := range limited {
-		symbol := symbol
-		querySymbol := vergex.QuerySymbol(symbol)
-		if querySymbol == "" {
-			continue
-		}
-		itemMarketType := marketType
-		itemCategory := ""
-		var ranking *vergex.DirectionChangeItem
-		if cached, ok := e.vergexRankingCache[symbol]; ok && cached != nil {
-			ranking = cached
-			if cached.APISymbol != "" {
-				querySymbol = cached.APISymbol
-			}
-			if cached.MarketType != "" {
-				itemMarketType = cached.MarketType
-			}
-			itemCategory = cached.Category
-		}
-
-		analysis := &vergex.MarketAnalysis{
-			Symbol:      symbol,
-			QuerySymbol: querySymbol,
-			MarketType:  itemMarketType,
-			Ranking:     ranking,
-		}
-		query := vergex.Query{
-			MarketType: itemMarketType,
-			Symbol:     symbol,
-			Chain:      chain,
-			LiqBand:    source.VergexLiqBand,
-			Category:   itemCategory,
-		}
-
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			select {
-			case sem <- struct{}{}:
-				defer func() { <-sem }()
-			case <-ctx.Done():
-				analysis.DirectionCurrentError = ctx.Err().Error()
-				analysis.DirectionHistoryError = ctx.Err().Error()
-				analysis.HeatmapError = ctx.Err().Error()
-				resultCh <- vergexAnalysisResult{symbol: symbol, analysis: analysis}
-				return
-			}
-			e.populateVergexDetailData(ctx, analysis, query)
-			if len(analysis.DirectionCurrent) > 0 || len(analysis.DirectionHistory) > 0 || len(analysis.Heatmap) > 0 ||
-				analysis.DirectionCurrentError != "" || analysis.DirectionHistoryError != "" || analysis.HeatmapError != "" || analysis.Ranking != nil {
-				resultCh <- vergexAnalysisResult{symbol: symbol, analysis: analysis}
-			}
-		}()
-	}
-
-	wg.Wait()
-	close(resultCh)
-	for item := range resultCh {
-		result[item.symbol] = item.analysis
-	}
-
-	logger.Infof("📊 Vergex detail data ready for %d symbols", len(result))
-	return result
-}
-
-func vergexDetailSymbolForLookup(marketType, symbol string) string {
-	return vergex.TradableSymbolForMarket(marketType, symbol)
-}
-
-const (
-	vergexDetailRequestTimeout    = 45 * time.Second
-	vergexDetailSymbolConcurrency = 2
-)
-
-func (e *StrategyEngine) populateVergexDetailData(ctx context.Context, analysis *vergex.MarketAnalysis, query vergex.Query) {
-	type endpointResult struct {
-		name string
-		body json.RawMessage
-		err  error
-	}
-
-	run := func(name string, fetch func(context.Context) (json.RawMessage, error), out chan<- endpointResult) {
-		requestCtx, cancel := context.WithTimeout(ctx, vergexDetailRequestTimeout)
-		defer cancel()
-		body, err := fetch(requestCtx)
-		out <- endpointResult{name: name, body: body, err: err}
-	}
-
-	out := make(chan endpointResult, 3)
-	var wg sync.WaitGroup
-	wg.Add(3)
-	go func() {
-		defer wg.Done()
-		run("direction-current", func(requestCtx context.Context) (json.RawMessage, error) {
-			return e.vergexClient.GetDirectionChangeCurrent(requestCtx, analysis.QuerySymbol)
-		}, out)
-	}()
-	go func() {
-		defer wg.Done()
-		run("direction-history", func(requestCtx context.Context) (json.RawMessage, error) {
-			return e.vergexClient.GetDirectionChangeHistory(requestCtx, analysis.QuerySymbol, "all", 1, 20)
-		}, out)
-	}()
-	go func() {
-		defer wg.Done()
-		run("heatmap", func(requestCtx context.Context) (json.RawMessage, error) {
-			return e.fetchVergexHeatmapWithFallback(requestCtx, query)
-		}, out)
-	}()
-	wg.Wait()
-	close(out)
-
-	for item := range out {
-		switch item.name {
-		case "direction-current":
-			if item.err != nil {
-				logger.Warnf("⚠️ Failed to fetch Vergex current direction for %s: %v", analysis.Symbol, item.err)
-				analysis.DirectionCurrentError = item.err.Error()
-			} else {
-				analysis.DirectionCurrent = item.body
-			}
-		case "direction-history":
-			if item.err != nil {
-				logger.Warnf("⚠️ Failed to fetch Vergex direction history for %s: %v", analysis.Symbol, item.err)
-				analysis.DirectionHistoryError = item.err.Error()
-			} else {
-				analysis.DirectionHistory = item.body
-			}
-		case "heatmap":
-			if item.err != nil {
-				logger.Warnf("⚠️ Failed to fetch Vergex heatmap for %s: %v", analysis.Symbol, item.err)
-				analysis.HeatmapError = item.err.Error()
-			} else {
-				analysis.Heatmap = item.body
-			}
-		}
-	}
-}
-
-func (e *StrategyEngine) fetchVergexHeatmapWithFallback(ctx context.Context, query vergex.Query) (json.RawMessage, error) {
-	var lastErr error
-	for idx, candidate := range vergexDetailQueryCandidates(query) {
-		body, err := e.vergexClient.GetCostLiquidationHeatmap(ctx, candidate)
-		if err == nil {
-			if idx > 0 {
-				logger.Infof("✅ Vergex heatmap succeeded with fallback marketType=%s chain=%s", candidate.MarketType, withDefaultText(candidate.Chain, "default"))
-			}
-			return body, nil
-		}
-		lastErr = err
-		if !isRetryableVergexDetailError(err) {
-			break
-		}
-	}
-	return nil, lastErr
-}
-
-func vergexDetailQueryCandidates(query vergex.Query) []vergex.Query {
-	marketTypes := vergexDetailMarketTypeCandidates(query)
-	chains := uniqueValues(query.Chain, "mainnet", "")
-
-	candidates := make([]vergex.Query, 0, len(marketTypes)*len(chains))
-	for _, marketType := range marketTypes {
-		for _, chain := range chains {
-			candidate := query
-			candidate.MarketType = marketType
-			candidate.Chain = chain
-			candidates = append(candidates, candidate)
-		}
-	}
-	return candidates
-}
-
-func vergexDetailMarketTypeCandidates(query vergex.Query) []string {
-	if isVergexAllMarketType(query.MarketType) {
-		if market.IsXyzDexAsset(query.Symbol) {
-			return uniqueNonEmpty(vergex.DefaultMarketType, "hip3-perp", "hip3Perp", "core_perp")
-		}
-		return uniqueNonEmpty("core_perp", vergex.DefaultMarketType, "hip3-perp", "hip3Perp")
-	}
-	values := []string{query.MarketType, vergex.DefaultMarketType, "hip3-perp", "hip3Perp", "core_perp"}
-	return uniqueNonEmpty(values...)
-}
-
-func isVergexAllMarketType(marketType string) bool {
-	switch strings.ToLower(strings.TrimSpace(marketType)) {
-	case "", "all", "any", "ranking", "claw402", "vergex":
-		return true
-	default:
-		return false
-	}
-}
-
-func isRetryableVergexDetailError(err error) bool {
-	if err == nil {
-		return false
-	}
-	msg := strings.ToLower(err.Error())
-	return strings.Contains(msg, "invalid markettype") ||
-		strings.Contains(msg, "invalid_request") ||
-		strings.Contains(msg, "invalid chain") ||
-		strings.Contains(msg, "market not found") ||
-		strings.Contains(msg, "not_found")
 }
 
 func uniqueNonEmpty(values ...string) []string {

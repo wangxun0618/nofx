@@ -2,8 +2,8 @@ import type { PairMap } from '../translation-pair'
 
 /**
  * Landing-page copy: the marketing hero, the deployment walkthrough and the
- * feature grid. Brand names (NOFX, Hyperliquid, Claw402, exchange and model
- * names) are deliberately left untranslated.
+ * feature grid. Brand names (NOFX, Hyperliquid, exchange and model names) are
+ * deliberately left untranslated.
  */
 export const landingPairs: PairMap = {
   // ── Hero ───────────────────────────────────────────────────────────────
@@ -15,8 +15,8 @@ export const landingPairs: PairMap = {
   'landing2.startTrading': { en: 'Start Trading', zh: '开始交易' },
   'landing2.sourceLink': { en: 'Source', zh: '源码' },
   'landing2.heroPromise': {
-    en: 'Self-hosted & open source · about $13 is enough to start · guided setup, no API keys — first trade in minutes',
-    zh: '自托管、开源 · 约 13 美元即可起步 · 引导式配置，无需 API 密钥 — 几分钟内完成首次交易',
+    en: 'Self-hosted & open source · about $12 is enough to start · bring your own AI API key · first trade in minutes',
+    zh: '自托管、开源 · 约 12 美元即可起步 · 使用你自己的 AI API Key · 几分钟内完成首次交易',
   },
 
   // Terminal-style network log in the hero mock
@@ -56,16 +56,16 @@ export const landingPairs: PairMap = {
   'landing2.deployWord': { en: 'DEPLOY', zh: '即刻' },
   'landing2.instantlyWord': { en: 'INSTANTLY', zh: '部署' },
   'landing2.deployIntro': {
-    en: 'One command on your laptop or any server installs everything. Open the address it prints, create your account, and the guided launch takes you to your first AI trade in about five minutes — around $13 is enough to start.',
-    zh: '在你的笔记本或任意服务器上执行一行命令即可完成安装。打开它输出的地址、创建账户，引导式启动流程会在约五分钟内带你完成首次 AI 交易 — 大约 13 美元就够起步。',
+    en: 'One command on your laptop or any server installs everything. Open the address it prints, create your account, connect an AI model with your own API key, and the guided launch takes you to your first AI trade in about five minutes — around $12 of trading funds is enough to start.',
+    zh: '在你的笔记本或任意服务器上执行一行命令即可完成安装。打开它输出的地址、创建账户，用你自己的 API Key 接入 AI 模型，引导式启动流程会在约五分钟内带你完成首次 AI 交易 — 约 12 美元交易资金即可起步。',
   },
   'landing2.stepRegister': {
     en: 'Register — the first account owns this instance.',
     zh: '注册 — 第一个账户将成为本实例的所有者。',
   },
   'landing2.stepFund': {
-    en: 'Fund two small wallets: $1+ for AI fees, $12+ to trade with (guided, with QR codes).',
-    zh: '为两个小额钱包充值：AI 费用 1 美元以上，交易本金 12 美元以上（有引导，附二维码）。',
+    en: 'Add $12+ of trading funds on Hyperliquid — guided, with a deposit link.',
+    zh: '在 Hyperliquid 存入 12 美元以上的交易资金 — 有引导，附充值入口。',
   },
   'landing2.stepPressStart': {
     en: 'Press Start — the AI trades on its own; stop it anytime.',

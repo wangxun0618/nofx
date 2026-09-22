@@ -11,7 +11,6 @@ import (
 	"nofx/logger"
 	"nofx/security"
 	"nofx/store"
-	"nofx/wallet"
 
 	"github.com/gin-gonic/gin"
 )
@@ -34,8 +33,6 @@ type SafeModelConfig struct {
 	HasAPIKey       bool   `json:"has_api_key"`
 	CustomAPIURL    string `json:"customApiUrl"`    // Custom API URL (usually not sensitive)
 	CustomModelName string `json:"customModelName"` // Custom model name (not sensitive)
-	WalletAddress   string `json:"walletAddress,omitempty"`
-	BalanceUSDC     string `json:"balanceUsdc,omitempty"`
 }
 
 // ModelConfigUpdate is a single model's update payload. It is a named type
@@ -53,6 +50,57 @@ type UpdateModelConfigRequest struct {
 	Models map[string]ModelConfigUpdate `json:"models"`
 }
 
+// supportedProviderDefaults is the single source of truth for the AI providers
+// the system can talk to. Every entry maps to a native client registered in
+// mcp/provider/* (see mcp.ProviderXxx constants).
+var supportedProviderDefaults = []struct {
+	ID           string
+	Name         string
+	Provider     string
+	DefaultModel string
+}{
+	{ID: "deepseek", Name: "DeepSeek", Provider: "deepseek", DefaultModel: "deepseek-chat"},
+	{ID: "openai", Name: "OpenAI", Provider: "openai", DefaultModel: "gpt-4o"},
+	{ID: "claude", Name: "Claude", Provider: "claude", DefaultModel: "claude-sonnet-4-20250514"},
+	{ID: "qwen", Name: "Qwen", Provider: "qwen", DefaultModel: "qwen3-max"},
+	{ID: "gemini", Name: "Gemini", Provider: "gemini", DefaultModel: "gemini-2.5-pro"},
+	{ID: "grok", Name: "Grok", Provider: "grok", DefaultModel: "grok-4"},
+	{ID: "kimi", Name: "Kimi", Provider: "kimi", DefaultModel: "kimi-k2-0905-preview"},
+	{ID: "minimax", Name: "MiniMax", Provider: "minimax", DefaultModel: "MiniMax-M2.7"},
+}
+
+// isSupportedProvider reports whether a provider still has a native client.
+// Rows persisted by older releases (e.g. the retired "claw402" gateway) are
+// kept in the database for audit but must never be offered to users, because
+// no runtime client exists for them any more.
+func isSupportedProvider(provider string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(provider))
+	if normalized == "" {
+		return false
+	}
+	for _, p := range supportedProviderDefaults {
+		if p.Provider == normalized || p.ID == normalized {
+			return true
+		}
+	}
+	return false
+}
+
+// defaultModelConfigs builds the "no configuration saved yet" response so the
+// frontend can render an empty, editable model grid.
+func defaultModelConfigs() []SafeModelConfig {
+	models := make([]SafeModelConfig, 0, len(supportedProviderDefaults))
+	for _, p := range supportedProviderDefaults {
+		models = append(models, SafeModelConfig{
+			ID:       p.ID,
+			Name:     p.Name,
+			Provider: p.Provider,
+			Enabled:  false,
+		})
+	}
+	return models
+}
+
 // handleGetModelConfigs Get AI model configurations
 func (s *Server) handleGetModelConfigs(c *gin.Context) {
 	userID := c.GetString("user_id")
@@ -64,13 +112,11 @@ func (s *Server) handleGetModelConfigs(c *gin.Context) {
 		return
 	}
 
-	// If no models in database, return default models
+	// If no models in database, return the provider defaults so the UI can
+	// still offer every supported provider.
 	if len(models) == 0 {
 		logger.Infof("⚠️ No AI models in database, returning defaults")
-		defaultModels := []SafeModelConfig{
-			{ID: "claw402", Name: "Claw402 (Base USDC)", Provider: "claw402", Enabled: false, HasAPIKey: false},
-		}
-		c.JSON(http.StatusOK, defaultModels)
+		c.JSON(http.StatusOK, defaultModelConfigs())
 		return
 	}
 
@@ -82,7 +128,10 @@ func (s *Server) handleGetModelConfigs(c *gin.Context) {
 		if !store.IsVisibleAIModel(model) {
 			continue
 		}
-		safeModel := SafeModelConfig{
+		if !isSupportedProvider(model.Provider) {
+			continue
+		}
+		safeModels = append(safeModels, SafeModelConfig{
 			ID:              model.ID,
 			Name:            model.Name,
 			Provider:        model.Provider,
@@ -90,28 +139,12 @@ func (s *Server) handleGetModelConfigs(c *gin.Context) {
 			HasAPIKey:       model.APIKey != "",
 			CustomAPIURL:    model.CustomAPIURL,
 			CustomModelName: model.CustomModelName,
-		}
-
-		if model.Provider == "claw402" {
-			if privateKey := strings.TrimSpace(model.APIKey.String()); privateKey != "" {
-				if walletAddress, addrErr := walletAddressFromPrivateKey(privateKey); addrErr == nil {
-					safeModel.WalletAddress = walletAddress
-					safeModel.BalanceUSDC = wallet.QueryUSDCBalanceStr(walletAddress)
-				} else {
-					logger.Warnf("⚠️ Failed to derive claw402 wallet address for model %s: %v", model.ID, addrErr)
-				}
-			}
-		}
-
-		safeModels = append(safeModels, safeModel)
+		})
 	}
 
 	if len(safeModels) == 0 {
 		logger.Infof("⚠️ No visible AI models in database, returning defaults")
-		defaultModels := []SafeModelConfig{
-			{ID: "claw402", Name: "Claw402 (Base USDC)", Provider: "claw402", Enabled: false, HasAPIKey: false},
-		}
-		c.JSON(http.StatusOK, defaultModels)
+		c.JSON(http.StatusOK, defaultModelConfigs())
 		return
 	}
 
@@ -180,7 +213,7 @@ func (s *Server) handleUpdateModelConfigs(c *gin.Context) {
 
 	// Update each model's configuration and track traders that need reload.
 	// The request key may be either the model row id or the provider name
-	// (legacy clients send the provider, e.g. "claw402", while trader rows
+	// (legacy clients send the provider, e.g. "deepseek", while trader rows
 	// reference the full model id) — resolve both, mirroring the matching in
 	// AIModelStore.Update, otherwise running traders keep the old model.
 	modelIDCandidates := func(modelID string) map[string]bool {
@@ -198,6 +231,22 @@ func (s *Server) handleUpdateModelConfigs(c *gin.Context) {
 
 	tradersToReload := make(map[string]bool)
 	for modelID, modelData := range req.Models {
+		candidates := modelIDCandidates(modelID)
+
+		// Reject rows for providers that no longer have a native client, so a
+		// stale cached UI or agent cannot resurrect a retired gateway.
+		supported := false
+		for candidateID := range candidates {
+			if isSupportedProvider(candidateID) {
+				supported = true
+				break
+			}
+		}
+		if !supported {
+			logger.Warnf("Skipping AI model config update for unsupported provider %q", modelID)
+			continue
+		}
+
 		// SSRF protection: validate custom_api_url before storing
 		if modelData.CustomAPIURL != "" {
 			cleanURL := strings.TrimSuffix(modelData.CustomAPIURL, "#")
@@ -209,7 +258,7 @@ func (s *Server) handleUpdateModelConfigs(c *gin.Context) {
 		}
 
 		// Find traders using this AI model BEFORE updating
-		for candidateID := range modelIDCandidates(modelID) {
+		for candidateID := range candidates {
 			traders, _ := s.store.Trader().ListByAIModelID(userID, candidateID)
 			for _, t := range traders {
 				tradersToReload[t.ID] = true
@@ -242,9 +291,14 @@ func (s *Server) handleUpdateModelConfigs(c *gin.Context) {
 
 // handleGetSupportedModels Get list of AI models supported by the system
 func (s *Server) handleGetSupportedModels(c *gin.Context) {
-	// Return static list of supported AI models with default versions
-	supportedModels := []map[string]interface{}{
-		{"id": "claw402", "name": "Claw402 (Base USDC)", "provider": "claw402", "defaultModel": "gpt-5.6"},
+	supportedModels := make([]map[string]interface{}, 0, len(supportedProviderDefaults))
+	for _, p := range supportedProviderDefaults {
+		supportedModels = append(supportedModels, map[string]interface{}{
+			"id":           p.ID,
+			"name":         p.Name,
+			"provider":     p.Provider,
+			"defaultModel": p.DefaultModel,
+		})
 	}
 
 	c.JSON(http.StatusOK, supportedModels)

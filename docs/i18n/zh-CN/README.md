@@ -1,5 +1,3 @@
-<p align="center"><strong>由 <a href="https://vergex.trade">vergex.trade</a> 支持</strong></p>
-
 <p align="center">
   <img src="../../assets/nofx-banner.svg" alt="NOFX — AI trading terminal" width="100%"/>
 </p>
@@ -36,7 +34,7 @@ curl -fsSL https://raw.githubusercontent.com/NoFxAiOS/nofx/main/install.sh | bas
 **首次运行**
 
 1. 注册——第一个账户即成为该实例的所有者。
-2. 按引导式启动流程操作：向系统为你创建的 AI 费用钱包存入 **$1+ USDC**（Base 网络），然后连接 Hyperliquid 并存入 **$12+ USDC** 作为交易资金。
+2. 按引导式启动流程操作：用你自己的 API Key 接入 AI 模型，然后连接 Hyperliquid 并存入 **$12+ USDC** 作为交易资金。
 3. 启动 **Autopilot**。AI 每隔几分钟扫描一次市场并自主交易；每一个决策都会实时出现在仪表板上。随时可以一键停止。
 
 <br/>
@@ -67,7 +65,7 @@ https://github.com/user-attachments/assets/3310f495-14c5-4586-a1cc-3d32e44aa505
 
 ## 模型提议，运行时裁决
 
-决策来自 [Claw402.ai](https://claw402.ai) · Vergex 数据栈：覆盖全市场的实时方向看板、逐标的当前方向与方向历史、成本与清算热力图，以及实时资金净流。NOFX 严格跟随看板方向，其余数据仅作为执行上下文。
+决策来自 Hyperliquid 实时行情数据：每轮运行时会读取 24 小时成交量靠前的品种，拉取每个候选标的的 K 线与盘口信息，并结合已有持仓进行推理。数据不经过任何付费网关——你的实例直接与市场和模型服务商通信。
 
 每一笔订单都要经过代码层面强制执行的限制，模型无从干预：
 
@@ -121,13 +119,18 @@ https://github.com/user-attachments/assets/3310f495-14c5-4586-a1cc-3d32e44aa505
 
 ## 模型
 
-八家提供商，使用你自己的密钥——DeepSeek、OpenAI、Claude、Qwen、Gemini、Grok、Kimi、MiniMax——并支持自定义端点和模型名称。
-
-或者完全不需要密钥：[Claw402](https://claw402.ai) 通过 x402 协议以 USDC 按次计量模型用量。一个 Base 链上的钱包即可替代所有 API 密钥。
+八家提供商，使用你自己的密钥直连——DeepSeek、OpenAI、Claude、Qwen、Gemini、Grok、Kimi、MiniMax——并支持自定义端点和模型名称。没有网关、没有按次计费、无需充值任何钱包。
 
 | 提供商 | 接入方式 |
 | :------- | :----- |
-| **Claw402** | [按量付费的 AI 模型，享官方折扣](https://claw402.ai) |
+| **DeepSeek** | [platform.deepseek.com](https://platform.deepseek.com/api_keys) |
+| **OpenAI** | [platform.openai.com](https://platform.openai.com/api-keys) |
+| **Claude** | [console.anthropic.com](https://console.anthropic.com/settings/keys) |
+| **Qwen** | [bailian.console.aliyun.com](https://bailian.console.aliyun.com/) |
+| **Gemini** | [aistudio.google.com](https://aistudio.google.com/app/apikey) |
+| **Grok** | [console.x.ai](https://console.x.ai/) |
+| **Kimi** | [platform.moonshot.cn](https://platform.moonshot.cn/console/api-keys) |
+| **MiniMax** | [platform.minimaxi.com](https://platform.minimaxi.com/user-center/basic-information/interface-key) |
 
 ## 市场
 
@@ -151,7 +154,7 @@ https://github.com/user-attachments/assets/3310f495-14c5-4586-a1cc-3d32e44aa505
     ├──────────────┴──────────────┴───────────────────┤
     │                 AI Model Layer                    │
     │  DeepSeek · OpenAI · Claude · Qwen · Gemini      │
-    │  Grok · Kimi · MiniMax · Claw402 (x402 USDC)     │
+    │  Grok · Kimi · MiniMax   (direct provider APIs)  │
     ├─────────────────────────────────────────────────┤
     │              Exchange Connectivity                │
     │ Binance · Bybit · OKX · Hyperliquid · Bitget     │
@@ -232,7 +235,7 @@ curl -fsSL https://raw.githubusercontent.com/NoFxAiOS/nofx/main/install.sh | bas
 
 ## 社区
 
-[Telegram](https://t.me/nofx_dev_community) · [Twitter/X](https://x.com/vergex_ai) · [Issues](https://github.com/NoFxAiOS/nofx/issues) · [vergex.trade](https://vergex.trade) · [实时仪表板](https://vergex.trade/explore)
+[Telegram](https://t.me/nofx_dev_community) · [Twitter/X](https://x.com/nofx_ai) · [Issues](https://github.com/NoFxAiOS/nofx/issues)
 
 ## 贡献
 

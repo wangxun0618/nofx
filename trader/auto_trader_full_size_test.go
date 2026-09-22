@@ -8,7 +8,7 @@ import (
 
 func TestApplyAutopilotFullSizeOpenEnforcesFiveTimesEquityHardCap(t *testing.T) {
 	cfg := store.GetDefaultStrategyConfig("en")
-	cfg.CoinSource.SourceType = "vergex_signal"
+	cfg.CoinSource.SourceType = "hyper_main"
 	cfg.RiskControl.MaxPositions = 1
 	cfg.RiskControl.BTCETHMaxLeverage = 10
 	cfg.RiskControl.AltcoinMaxLeverage = 10
@@ -35,7 +35,7 @@ func TestApplyAutopilotFullSizeOpenEnforcesFiveTimesEquityHardCap(t *testing.T) 
 
 func TestDefaultAutopilotFullSizeOpenUsesEightPositionAllocation(t *testing.T) {
 	cfg := store.GetDefaultStrategyConfig("en")
-	cfg.CoinSource.SourceType = "vergex_signal"
+	cfg.CoinSource.SourceType = "hyper_main"
 
 	at := &AutoTrader{config: AutoTraderConfig{StrategyConfig: &cfg}}
 	decision := &kernel.Decision{
@@ -61,7 +61,7 @@ func TestDefaultAutopilotFullSizeOpenUsesEightPositionAllocation(t *testing.T) {
 	}
 }
 
-func TestApplyAutopilotFullSizeOpenSkipsNonClaw402Strategies(t *testing.T) {
+func TestApplyAutopilotFullSizeOpenSkipsNonAutopilotStrategies(t *testing.T) {
 	cfg := store.GetDefaultStrategyConfig("en")
 	cfg.CoinSource.SourceType = "static"
 	cfg.RiskControl.BTCETHMaxLeverage = 10
@@ -78,7 +78,7 @@ func TestApplyAutopilotFullSizeOpenSkipsNonClaw402Strategies(t *testing.T) {
 	at.applyAutopilotFullSizeOpen(decision, 29.8)
 
 	if decision.Leverage != 3 || decision.PositionSizeUSD != 12 {
-		t.Fatalf("non-Claw402 strategies should not be rewritten, got leverage=%d size=%.2f", decision.Leverage, decision.PositionSizeUSD)
+		t.Fatalf("non-Autopilot strategies should not be rewritten, got leverage=%d size=%.2f", decision.Leverage, decision.PositionSizeUSD)
 	}
 }
 
