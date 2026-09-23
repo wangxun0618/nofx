@@ -937,25 +937,6 @@ export const translations = {
       abort: 'ABORT',
     },
 
-    // Advanced Chart
-    advancedChart: {
-      updating: 'Updating...',
-      indicators: 'Indicators',
-      orderMarkers: 'Order Markers',
-      technicalIndicators: 'Technical Indicators',
-      clickToToggle: 'Click to toggle indicators',
-      shares: 'shares',
-      units: 'units',
-    },
-
-    // Chart With Orders
-    chartWithOrders: {
-      failedToLoad: 'Failed to load chart data',
-      loading: 'Loading...',
-      buy: 'BUY',
-      sell: 'SELL',
-    },
-
     // Comparison Chart
     comparisonChart: {
       '1d': '1D',
@@ -963,45 +944,6 @@ export const translations = {
       '7d': '7D',
       '30d': '30D',
       all: 'All',
-    },
-
-    // TraderDashboardPage
-    traderDashboard: {
-      connectionFailed: 'Connection Failed',
-      connectionFailedDesc: 'Please check if the backend service is running.',
-      retry: 'Retry',
-      confirmClosePosition:
-        'Are you sure you want to close {symbol} {side} position?',
-      confirmClose: 'Confirm Close',
-      confirm: 'Confirm',
-      cancel: 'Cancel',
-      positionClosed: 'Position closed successfully',
-      closeFailed: 'Failed to close position',
-      closeAll: 'Close All',
-      confirmCloseAllPositions:
-        'Market-close ALL {count} open positions?',
-      allPositionsClosed: 'All positions closed',
-      closeAllPartial: '{failed} of {count} positions failed to close',
-      hideAddress: 'Hide address',
-      showFullAddress: 'Show full address',
-      copyAddress: 'Copy address',
-      noAddressConfigured: 'No address configured',
-      action: 'Action',
-      entry: 'Entry',
-      mark: 'Mark',
-      qty: 'Qty',
-      value: 'Value',
-      lev: 'Lev.',
-      uPnL: 'uPnL',
-      liq: 'Liq.',
-      closePosition: 'Close Position',
-      close: 'Close',
-      showingPositions: 'Showing {shown} of {total} positions',
-      perPage: 'Per page',
-      accountFetchFailed:
-        'DATA_FETCH::FAILED — Account data unavailable, check connection',
-      positionsFetchFailed: 'Position data unavailable',
-      decisionsFetchFailed: 'Decision data unavailable',
     },
 
     // AITradersPage toast messages
@@ -2043,25 +1985,6 @@ export const translations = {
       abort: '中止操作',
     },
 
-    // Advanced Chart
-    advancedChart: {
-      updating: '更新中...',
-      indicators: '指标',
-      orderMarkers: '订单标记',
-      technicalIndicators: '技术指标',
-      clickToToggle: '点击选择需要显示的指标',
-      shares: '股',
-      units: '个',
-    },
-
-    // Chart With Orders
-    chartWithOrders: {
-      failedToLoad: '加载图表数据失败',
-      loading: '加载中...',
-      buy: 'BUY (买入)',
-      sell: 'SELL (卖出)',
-    },
-
     // Comparison Chart
     comparisonChart: {
       '1d': '1天',
@@ -2069,41 +1992,6 @@ export const translations = {
       '7d': '7天',
       '30d': '30天',
       all: '全部',
-    },
-
-    traderDashboard: {
-      connectionFailed: '无法连接到服务器',
-      connectionFailedDesc: '请确认后端服务已启动。',
-      retry: '重试',
-      confirmClosePosition: '确定要平仓 {symbol} {side} 吗？',
-      confirmClose: '确认平仓',
-      confirm: '确认',
-      cancel: '取消',
-      positionClosed: '平仓成功',
-      closeFailed: '平仓失败',
-      closeAll: '一键全平',
-      confirmCloseAllPositions: '确定要市价平掉全部 {count} 个持仓吗？',
-      allPositionsClosed: '全部持仓已平',
-      closeAllPartial: '{count} 个持仓中有 {failed} 个平仓失败',
-      hideAddress: '隐藏地址',
-      showFullAddress: '显示完整地址',
-      copyAddress: '复制地址',
-      noAddressConfigured: '未配置地址',
-      action: '操作',
-      entry: '入场价',
-      mark: '标记价',
-      qty: '数量',
-      value: '价值',
-      lev: '杠杆',
-      uPnL: '未实现盈亏',
-      liq: '强平价',
-      closePosition: '平仓',
-      close: '平仓',
-      showingPositions: '显示 {shown} / {total} 个持仓',
-      perPage: '每页',
-      accountFetchFailed: 'DATA_FETCH::FAILED — 账户数据请求失败，请检查连接',
-      positionsFetchFailed: '持仓数据请求失败',
-      decisionsFetchFailed: '决策记录请求失败',
     },
 
     aiTradersToast: {

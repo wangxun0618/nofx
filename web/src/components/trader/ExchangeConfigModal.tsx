@@ -279,7 +279,7 @@ export function ExchangeConfigModal({
     if (secureInputTarget === 'aster') setAsterPrivateKey(trimmed)
     if (secureInputTarget === 'lighter') {
       setLighterApiKeyPrivateKey(trimmed)
-      toast.success(t('lighterApiKeyImported', language))
+      toast.success(t('exchangeCfg.lighterApiKeyImported', language))
     }
     setSecureInputTarget(null)
   }

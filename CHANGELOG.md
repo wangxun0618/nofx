@@ -48,6 +48,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The Vergex signal board, direction-change leaderboard and cost/liquidation heatmap data sources together with their terminal and strategy-studio surfaces (the direction board and its change history are now rebuilt as `directional_signal`; the heatmap is covered by `coinank_liquidation`, `hyperliquid_leverage` and `hyperdata_positioning`; the `signal_managed_exit` mode is **not** restored, because it is trade-layer semantics rather than a data-source capability)
 - Three nofxos ranking capabilities: `OIRankingData` with `GetOIRanking`, `netflow.go`, `price.go` and their formatters (the endpoints return 402)
 - Dead frontend routes and components: `/data`, `/strategy-market`, the beginner-onboarding wallet page, the beginner guide cards and the onboarding mode selector
+- The rest of the nofxos ranking surface, now that nothing calls it: `GetAI500List` / `GetTopRatedCoins` / `GetAvailableCoins`, the AI500 TTL cache and its test, the OI top / OI low ranking types and methods, `GetCoinDataBatch`, `FormatQuantDataForAI` and the unused auth-key accessors. Those endpoints all return 402; only `GetCoinData` is still reachable, so the package stays
+- The dead frontend chart stack — roughly 4.5k lines with no importer, reachable only through each other: `AdvancedChart`, `ChartTabs`, `EquityChart`, `ChartWithOrders`, `ChartWithOrdersSimple`, `TradingViewChart`, `TraderDashboardPage`, `PageNotFound`, `BrandHero`, `BrandStats`, the `stores/` directory, `useCounterAnimation`, `ui/input.tsx`, `lib/text.ts`, `utils/indicators.ts`, plus the i18n blocks (`advancedChart`, `chartWithOrders`, `traderDashboard`, `notFound`) that only they read
+- Unwired Go helpers: the `safe` package (zero importers), `kernel/prompt_builder.go` (superseded by `engine_prompt.go`, reachable only from its own test), `trader/position_snapshot.go`, `trader/helpers.go` and the `ExportCalculate*` wrappers in `market/data_indicators.go`
+- Five npm packages nothing imported: `date-fns`, `@radix-ui/react-slot`, `class-variance-authority`, `lightweight-charts` and `zustand`
+
+### Fixed
+- Four UI strings resolved to keys that never existed, so Chinese users saw the raw key or its English fallback: the sign-in button, the chart loading state, the comparison-chart PnL label and the Lighter API-key toast now resolve to `auth.loggingIn`, `chart.loadingChartData`, `chart.leadPnL` and `exchangeCfg.lighterApiKeyImported`
 
 ---
 

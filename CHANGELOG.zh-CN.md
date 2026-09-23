@@ -48,6 +48,13 @@ NOFX 项目的所有重要更改都将记录在此文件中。
 - Vergex 信号榜、方向变化排行榜与持仓成本/强平热力图数据源，及对应的终端与策略工作室界面（其中方向榜与方向变更历史已由 `directional_signal` 重建，强平热力图已由 `coinank_liquidation`、`hyperliquid_leverage` 与 `hyperdata_positioning` 替代；`signal_managed_exit` 出场模式**未**恢复，因为它属于交易层语义而非数据源能力）
 - nofxos 三个排行能力：`OIRankingData` 与 `GetOIRanking`、`netflow.go`、`price.go` 及其格式化函数（对应端点已返回 402）
 - 前端死路由与死组件：`/data`、`/strategy-market`、新手引导钱包页、新手引导卡片与新手/进阶模式选择器
+- nofxos 剩余的排行接口（已无任何调用方）：`GetAI500List` / `GetTopRatedCoins` / `GetAvailableCoins`、AI500 的 TTL 缓存及其测试、OI 增减榜的类型与方法、`GetCoinDataBatch`、`FormatQuantDataForAI` 以及未被使用的 auth key 访问器。这些端点均返回 402，只有 `GetCoinData` 仍可达，因此该包保留
+- 前端整条死图表链——约 4.5k 行、没有任何外部引入，只能互相引用：`AdvancedChart`、`ChartTabs`、`EquityChart`、`ChartWithOrders`、`ChartWithOrdersSimple`、`TradingViewChart`、`TraderDashboardPage`、`PageNotFound`、`BrandHero`、`BrandStats`、`stores/` 目录、`useCounterAnimation`、`ui/input.tsx`、`lib/text.ts`、`utils/indicators.ts`，以及只有它们才会读取的 i18n 段落（`advancedChart`、`chartWithOrders`、`traderDashboard`、`notFound`）
+- 未接线的 Go 辅助代码：`safe` 包（零引入）、`kernel/prompt_builder.go`（已被 `engine_prompt.go` 取代，仅自身测试引用）、`trader/position_snapshot.go`、`trader/helpers.go`，以及 `market/data_indicators.go` 中仅供测试用的 `ExportCalculate*` 包装
+- 五个无人引用的 npm 依赖：`date-fns`、`@radix-ui/react-slot`、`class-variance-authority`、`lightweight-charts`、`zustand`
+
+### 修复
+- 四处界面文案取用了并不存在的 key，中文环境下会直接显示原始 key 或英文兜底：登录按钮、图表加载态、对比图表的 PnL 标签与 Lighter API 密钥导入提示，现已分别对应 `auth.loggingIn`、`chart.loadingChartData`、`chart.leadPnL`、`exchangeCfg.lighterApiKeyImported`
 
 ---
 

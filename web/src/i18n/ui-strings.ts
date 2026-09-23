@@ -14,7 +14,6 @@ import { consolePairs } from './pairs/console'
 import { faqPairs } from './pairs/faq'
 import { landingPairs } from './pairs/landing'
 import { libPairs } from './pairs/lib'
-import { metricsPairs } from './pairs/metrics'
 import { strategyPairs } from './pairs/strategy'
 import { walletPairs } from './pairs/wallet'
 
@@ -51,8 +50,6 @@ export const uiStringPairs = {
   'common.show': { en: 'Show', zh: '展开' },
   'common.copy': { en: 'Copy', zh: '复制' },
   'common.refresh': { en: 'Refresh', zh: '刷新' },
-  'common.copyAddress': { en: '📋 Copy Address', zh: '📋 复制地址' },
-  'common.copied': { en: '✅ Copied', zh: '✅ 已复制' },
   'common.copyToClipboard': {
     en: 'Copy to clipboard',
     zh: '复制到剪贴板',
@@ -62,33 +59,14 @@ export const uiStringPairs = {
   'common.noDescription': { en: 'No description', zh: '暂无描述' },
   'common.symbol': { en: 'Symbol', zh: '币种' },
   'common.grids': { en: 'Grids', zh: '网格数' },
-  'common.searchSymbol': { en: 'Search symbol...', zh: '搜索币种…' },
-  'common.deposit': { en: '💳 Deposit', zh: '💳 充值' },
   'common.network': { en: 'Network', zh: '网络' },
   'common.settings': { en: 'Settings', zh: '设置' },
 
   // Shared buttons and field labels reused across many screens.
   'common.cancel': { en: 'Cancel', zh: '取消' },
-  'common.close': { en: 'Close', zh: '关闭' },
   'common.confirm': { en: 'Confirm', zh: '确认' },
-  'common.save': { en: 'Save', zh: '保存' },
-  'common.delete': { en: 'Delete', zh: '删除' },
-  'common.retry': { en: 'Retry', zh: '重试' },
   'common.unknown': { en: 'Unknown', zh: '未知' },
-  'common.email': { en: 'Email', zh: '邮箱' },
-  'common.password': { en: 'Password', zh: '密码' },
-  'common.role': { en: 'Role', zh: '角色' },
-  'common.back': { en: 'Back', zh: '返回' },
-  'common.next': { en: 'Next', zh: '下一步' },
-  'common.done': { en: 'Done', zh: '完成' },
-  'common.optional': { en: 'Optional', zh: '可选' },
-  'common.required': { en: 'Required', zh: '必填' },
-  'common.loading': { en: 'Loading…', zh: '加载中…' },
-  'common.search': { en: 'Search', zh: '搜索' },
-  'common.requestFailed': { en: 'Request failed', zh: '请求失败' },
-  'common.copyFailed': { en: 'Copy failed', zh: '复制失败' },
   'common.unknownError': { en: 'Unknown error', zh: '未知错误' },
-  'common.enter': { en: 'Enter', zh: '回车' },
   'common.atLeast8Chars': { en: 'At least 8 characters', zh: '至少 8 位字符' },
 
   // ── Status chips ───────────────────────────────────────────────────────
@@ -100,15 +78,8 @@ export const uiStringPairs = {
   'status.unavailable': { en: 'UNAVAILABLE', zh: '不可用' },
   'status.standby': { en: 'STANDBY', zh: '待命' },
   'status.checking': { en: 'CHECKING...', zh: '检查中…' },
-  'status.ready': { en: 'Ready', zh: '已就绪' },
-  'status.pending': { en: 'Pending', zh: '待完成' },
-  'status.configured': { en: 'Configured', zh: '已配置' },
-  'status.manage': { en: 'Manage', zh: '管理' },
-  'status.configure': { en: 'Configure', zh: '去配置' },
 
   // ── Navigation ─────────────────────────────────────────────────────────
-  'nav.data': { en: 'Data', zh: '数据' },
-  'nav.market': { en: 'Market', zh: '策略市场' },
   'nav.loginRequired': { en: 'LOGIN_REQ', zh: '需登录' },
   'nav.openNavigation': { en: 'Open navigation', zh: '打开导航' },
   'nav.closeNavigation': { en: 'Close navigation', zh: '关闭导航' },
@@ -125,7 +96,6 @@ export const uiStringPairs = {
     en: 'Multi-Market Trading Terminal',
     zh: '多市场交易终端',
   },
-  'auth.heroTitleC': { en: 'Trading Terminal', zh: '交易终端' },
   'auth.heroDescription': {
     en: 'Plug into 10+ exchanges including Hyperliquid, OKX, Aster, and 7 LLM models. Deploy 24/7 automated strategies with natural language.',
     zh: '接入 Hyperliquid、OKX、Aster 等 10+ 交易所与 7 种大模型，用自然语言部署 24 小时自动运行的交易策略。',
@@ -137,8 +107,8 @@ export const uiStringPairs = {
     en: 'Continue with your email',
     zh: '使用邮箱继续',
   },
-  'auth.createYourAccount': { en: 'CREATE YOUR ACCOUNT', zh: '创建你的账户' },
   'auth.initializing': { en: 'INITIALIZING...', zh: '初始化中…' },
+  'auth.loggingIn': { en: 'Signing in...', zh: '正在登录…' },
   'auth.createAccountTag': { en: 'CREATE_ACCOUNT', zh: '创建账户' },
   'auth.encryption': { en: 'ENCRYPTION: AES-256', zh: '加密算法：AES-256' },
   'auth.secureRegistry': { en: 'SECURE_REGISTRY', zh: '安全注册表' },
@@ -229,15 +199,6 @@ export const uiStringPairs = {
     en: 'Hyperliquid main markets',
     zh: 'Hyperliquid 主流市场',
   },
-  'traderCfg.noDescription': { en: 'No description', zh: '暂无描述' },
-  'traderCfg.symbol': { en: 'Symbol', zh: '币种' },
-  'traderCfg.grids': { en: 'Grids', zh: '网格数' },
-  'traderCfg.perPage': { en: 'Per page', zh: '每页' },
-  'traderCfg.hide': { en: 'Hide', zh: '收起' },
-  'traderCfg.show': { en: 'Show', zh: '展开' },
-  'traderCfg.copy': { en: 'Copy', zh: '复制' },
-  'traderCfg.hideTrader': { en: 'Hide trader', zh: '隐藏该交易员' },
-  'traderCfg.showTrader': { en: 'Show trader', zh: '显示该交易员' },
 
   // ── Exchange configuration ────────────────────────────────────────────
   'exchangeCfg.walletAuthRequired': {
@@ -251,6 +212,10 @@ export const uiStringPairs = {
   'exchangeCfg.notManualKeys': {
     en: 'Hyperliquid must be connected through wallet authorization, not manual keys.',
     zh: 'Hyperliquid 必须通过钱包授权连接，不能使用手动填写密钥的方式。',
+  },
+  'exchangeCfg.lighterApiKeyImported': {
+    en: 'Lighter API key imported',
+    zh: 'Lighter API 密钥已导入',
   },
 
   // ── Terminal dashboard ────────────────────────────────────────────────
@@ -297,9 +262,6 @@ export const uiStringPairs = {
     en: 'Connecting to Hyperliquid…',
     zh: '正在连接 Hyperliquid…',
   },
-  'terminal.symbol': { en: 'SYMBOL', zh: '币种' },
-  'terminal.buySell': { en: 'BUY/SELL', zh: '买/卖' },
-  'terminal.trades': { en: 'TRADES', zh: '成交笔数' },
   'terminal.executionLog': { en: 'Execution log', zh: '执行日志' },
   'terminal.noExecutionEvents': {
     en: 'No execution events yet.',
@@ -307,15 +269,6 @@ export const uiStringPairs = {
   },
   'terminal.riskRadar': { en: 'Risk radar', zh: '风险雷达' },
   'terminal.noRiskData': { en: 'No live risk data.', zh: '暂无实时风险数据。' },
-  'terminal.systemStatusOnline': {
-    en: 'SYSTEM_STATUS::ONLINE',
-    zh: '系统状态::在线',
-  },
-  'terminal.aiModel': { en: 'AI Model:', zh: 'AI 模型：' },
-  'terminal.exchange': { en: 'Exchange:', zh: '交易所：' },
-  'terminal.strategy': { en: 'Strategy:', zh: '策略：' },
-  'terminal.cycles': { en: 'Cycles:', zh: '轮次：' },
-  'terminal.runtime': { en: 'Runtime:', zh: '运行时长：' },
   'terminal.modelsConfig': { en: 'MODELS_CONFIG', zh: '模型配置' },
   'terminal.exchangeKeys': { en: 'EXCHANGE_KEYS', zh: '交易所密钥' },
   'terminal.telegramBot': { en: 'TELEGRAM_BOT', zh: 'Telegram 机器人' },
@@ -357,53 +310,23 @@ export const uiStringPairs = {
   'landing.lsRatio': { en: 'L/S Ratio', zh: '多空比' },
   'landing.orderBook': { en: 'Order Book', zh: '订单簿' },
   'landing.spread': { en: 'Spread:', zh: '点差：' },
-  'landing.positions': { en: 'Positions', zh: '持仓' },
   'landing.latency': { en: 'Latency: 12ms', zh: '延迟：12ms' },
   'landing.wsConnStable': { en: 'WS_CONN: STABLE', zh: 'WS 连接：稳定' },
   'landing.tps': { en: 'TPS: 48,291', zh: 'TPS：48,291' },
-  'landing.deployInstantly': { en: 'DEPLOY INSTANTLY', zh: '即刻部署' },
-  'landing.evolved': { en: 'EVOLVED', zh: '进化版' },
-  'landing.degenerates': { en: 'DEGENERATES', zh: '堕落者' },
-  'landing.marquee': {
-    en: 'NOFX AI TRADING • AUTOMATED WEALTH • DECENTRALIZED INTELLIGENCE • PUNK ETHOS •',
-    zh: 'NOFX AI 交易 • 自动化财富 • 去中心化智能 • 朋克精神 •',
-  },
   'landing.documentation': { en: 'Documentation', zh: '文档' },
 
   // ── Charts ────────────────────────────────────────────────────────────
-  'chart.binanceKline': { en: 'Binance Kline Data', zh: '币安 K 线数据' },
-  'chart.historicalOrders': { en: 'Historical Order Data', zh: '历史订单数据' },
-  'chart.status': { en: 'Status', zh: '状态' },
   'chart.viewChart': { en: 'Click to view chart', zh: '点击查看图表' },
   'chart.candlestick': { en: 'Candlestick chart', zh: 'K 线图' },
-
-  // ── Strategy studio ───────────────────────────────────────────────────
-  'strategyStudio.flushFuelBelow': { en: 'Flush fuel below', zh: '下方扫除燃料' },
-  'strategyStudio.squeezeFuelAbove': {
-    en: 'Squeeze fuel above',
-    zh: '上方挤压燃料',
-  },
-  'strategyStudio.binStep': { en: 'Bin step', zh: '价格档位' },
+  'chart.loadingChartData': { en: 'Loading chart data...', zh: '正在加载图表数据…' },
+  'chart.leadPnL': { en: 'Lead PnL', zh: '领先盈亏' },
 
   // ── Onboarding / beginner flow ────────────────────────────────────────
   'onboarding.oneClickSetup': { en: 'One-click setup', zh: '一键配置' },
 
   // ── Auth screens (extras) ─────────────────────────────────────────────
-  'auth.abortRegistration': { en: 'ABORT_REGISTRATION', zh: '中止注册' },
-  'auth.registerIntro': {
-    en: 'This account owns your NOFX instance. Next step: a guided launch — bring an AI API key, then about $12 and five minutes to your first AI trade.',
-    zh: '该账户是你 NOFX 实例的所有者。下一步是引导式启动：准备一个 AI API Key，再约 12 美元、5 分钟即可完成第一笔 AI 交易。',
-  },
   'auth.whitelistHeading': { en: 'RESTRICTED', zh: '受限' },
   'auth.accessWord': { en: 'ACCESS', zh: '访问' },
-
-  // ── 404 page ──────────────────────────────────────────────────────────
-  'notFound.signalLost': { en: 'SIGNAL_LOST', zh: '信号丢失' },
-  'notFound.description': {
-    en: 'The requested coordinates do not exist in the current sector. The page may have been moved, deleted, or never existed in this timeline.',
-    zh: '请求的坐标在当前扇区中不存在。该页面可能已被移动、删除，或从未存在。',
-  },
-  'notFound.returnBase': { en: 'RETURN_BASE', zh: '返回首页' },
 
   // ── Terminal extras ───────────────────────────────────────────────────
   'terminal.loadingMarket': { en: 'Loading market…', zh: '正在加载行情…' },
@@ -500,7 +423,6 @@ export const uiStringPairs = {
     en: 'No market data source is active',
     zh: '当前没有启用的市场数据源',
   },
-  'chart.kline': { en: 'Kline', zh: 'K 线' },
 } satisfies Record<string, TranslationPair>
 
 const built = build({
@@ -509,7 +431,6 @@ const built = build({
   ...strategyPairs,
   ...walletPairs,
   ...consolePairs,
-  ...metricsPairs,
   ...landingPairs,
   ...libPairs,
 })

@@ -215,7 +215,7 @@ export function LoginPage() {
                 {loading ? (
                   <>
                     <Loader2 size={16} className="animate-spin" />
-                    {t('loggingIn', language) || 'Signing in...'}
+                    {t('auth.loggingIn', language)}
                   </>
                 ) : (
                   <>

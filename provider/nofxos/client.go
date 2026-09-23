@@ -1,6 +1,9 @@
 // Package nofxos provides data access to the NofxOS API (https://nofxos.ai)
-// for quantitative trading data including AI500 scores, OI rankings,
-// fund flow (NetFlow), price rankings, and coin details.
+// for per-coin quantitative data (open interest, fund flow, price change).
+//
+// The formerly published ranking endpoints (AI500 score list, OI increase /
+// decrease rankings) are no longer served; the equivalent selection is done
+// locally from Hyperliquid data (see kernel/local_coin_source.go).
 package nofxos
 
 import (
@@ -78,13 +81,6 @@ func (c *Client) GetBaseURL() string {
 	return c.BaseURL
 }
 
-// GetAuthKey returns the current auth key
-func (c *Client) GetAuthKey() string {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return c.AuthKey
-}
-
 // doRequest performs an HTTP GET request with authentication.
 func (c *Client) doRequest(endpoint string) ([]byte, error) {
 	c.mu.RLock()
@@ -131,16 +127,4 @@ type APIError struct {
 
 func (e *APIError) Error() string {
 	return e.Message
-}
-
-// ExtractAuthKey extracts auth key from a URL string
-func ExtractAuthKey(url string) string {
-	if idx := strings.Index(url, "auth="); idx != -1 {
-		authKey := url[idx+5:]
-		if ampIdx := strings.Index(authKey, "&"); ampIdx != -1 {
-			authKey = authKey[:ampIdx]
-		}
-		return authKey
-	}
-	return ""
 }
