@@ -16,6 +16,7 @@ import (
 	"nofx/store"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -54,7 +55,11 @@ type AccountInfo struct {
 // CandidateCoin candidate coin (from coin pool)
 type CandidateCoin struct {
 	Symbol  string   `json:"symbol"`
-	Sources []string `json:"sources"` // Sources: "ai500" and/or "oi_top"
+	Sources []string `json:"sources"` // e.g. "screener", "oi_top", "static"
+	// Score is the ranking score behind the selection, when the source computes
+	// one. It travels to the prompt so the model can see *why* an instrument is
+	// in front of it instead of treating the list as arbitrary.
+	Score float64 `json:"score,omitempty"`
 }
 
 // OITopData open interest growth top data (for AI decision reference)
@@ -112,6 +117,11 @@ type Context struct {
 	BTCETHLeverage  int                   `json:"-"`
 	AltcoinLeverage int                   `json:"-"`
 	Timeframes      []string              `json:"-"`
+	// CoinSourceNotes records why the candidate pool fell back or shrank this
+	// cycle ("ai500 unavailable: ..."). They are rendered into the prompt so the
+	// model can see the universe might be incomplete instead of inferring that
+	// the market is.
+	CoinSourceNotes []string `json:"-"`
 }
 
 // Decision AI trading decision
@@ -191,6 +201,43 @@ type StrategyEngine struct {
 	// references a concrete data source: it asks the registry to collect
 	// whatever the strategy enabled.
 	insights *marketdata.Registry
+	// notesMu guards notes below. Candidate-pool construction runs once per
+	// cycle on the trader's own engine instance, but the same engine is also
+	// reachable from the strategy-preview API.
+	notesMu sync.Mutex
+	// notes accumulates candidate-pool degradations for the current cycle until
+	// TakeCoinSourceNotes drains them into the prompt context.
+	notes []string
+}
+
+// NoteCoinSource records a degradation reason for the prompt.
+func (e *StrategyEngine) NoteCoinSource(format string, args ...any) {
+	note := fmt.Sprintf(format, args...)
+	if e == nil {
+		logger.Warnf("⚠️  %s", note)
+		return
+	}
+	e.notesMu.Lock()
+	e.notes = append(e.notes, note)
+	e.notesMu.Unlock()
+	logger.Warnf("⚠️  %s", note)
+}
+
+// TakeCoinSourceNotes drains this cycle's degradation notes. Draining rather
+// than exposing the field keeps each note attached to the cycle that produced
+// it instead of accumulating across cycles.
+func (e *StrategyEngine) TakeCoinSourceNotes() []string {
+	if e == nil {
+		return nil
+	}
+	e.notesMu.Lock()
+	defer e.notesMu.Unlock()
+	if len(e.notes) == 0 {
+		return nil
+	}
+	out := e.notes
+	e.notes = nil
+	return out
 }
 
 // NewStrategyEngine creates strategy execution engine.
@@ -322,81 +369,52 @@ func (e *StrategyEngine) GetCandidateCoins() ([]CandidateCoin, error) {
 		return e.filterExcludedCoins(candidates), nil
 
 	case "ai500":
-		// Check use_ai500 flag; if false, fall back to static coins
+		// The retired NofxOS AI500 endpoint answers 402, so the source is served
+		// by the local screener: same slot in the product, honest name in the
+		// candidate's source list.
 		if !coinSource.UseAI500 {
 			logger.Infof("⚠️  source_type is 'ai500' but use_ai500 is false, falling back to static coins")
-			for _, symbol := range coinSource.StaticCoins {
-				symbol = market.Normalize(symbol)
-				candidates = append(candidates, CandidateCoin{
-					Symbol:  symbol,
-					Sources: []string{"static"},
-				})
-			}
-			return e.filterExcludedCoins(candidates), nil
+			return e.filterExcludedCoins(e.staticCandidates()), nil
 		}
-		coins, err := e.getAI500Coins(coinSource.AI500Limit)
+		coins, err := e.getScreenerCoins(coinSource.AI500Limit)
 		if err != nil {
-			return nil, err
+			return e.filterExcludedCoins(e.degradedCandidates("ai500", err)), nil
 		}
-		// Empty list is a normal condition, return directly
 		return e.filterExcludedCoins(coins), nil
 
 	case "oi_top":
 		// Check use_oi_top flag; if false, fall back to static coins
 		if !coinSource.UseOITop {
 			logger.Infof("⚠️  source_type is 'oi_top' but use_oi_top is false, falling back to static coins")
-			for _, symbol := range coinSource.StaticCoins {
-				symbol = market.Normalize(symbol)
-				candidates = append(candidates, CandidateCoin{
-					Symbol:  symbol,
-					Sources: []string{"static"},
-				})
-			}
-			return e.filterExcludedCoins(candidates), nil
+			return e.filterExcludedCoins(e.staticCandidates()), nil
 		}
 		coins, err := e.getOITopCoins(coinSource.OITopLimit)
 		if err != nil {
-			return nil, err
+			return e.filterExcludedCoins(e.degradedCandidates("oi_top", err)), nil
 		}
-		// Empty list is a normal condition, return directly
 		return e.filterExcludedCoins(coins), nil
 
 	case "oi_low":
 		// OI decrease ranking, suitable for short positions
 		if !coinSource.UseOILow {
 			logger.Infof("⚠️  source_type is 'oi_low' but use_oi_low is false, falling back to static coins")
-			for _, symbol := range coinSource.StaticCoins {
-				symbol = market.Normalize(symbol)
-				candidates = append(candidates, CandidateCoin{
-					Symbol:  symbol,
-					Sources: []string{"static"},
-				})
-			}
-			return e.filterExcludedCoins(candidates), nil
+			return e.filterExcludedCoins(e.staticCandidates()), nil
 		}
 		coins, err := e.getOILowCoins(coinSource.OILowLimit)
 		if err != nil {
-			return nil, err
+			return e.filterExcludedCoins(e.degradedCandidates("oi_low", err)), nil
 		}
-		// Empty list is a normal condition, return directly
 		return e.filterExcludedCoins(coins), nil
 
 	case "hyper_all":
 		// All Hyperliquid perp coins
 		if !coinSource.UseHyperAll {
 			logger.Infof("⚠️  source_type is 'hyper_all' but use_hyper_all is false, falling back to static coins")
-			for _, symbol := range coinSource.StaticCoins {
-				symbol = market.Normalize(symbol)
-				candidates = append(candidates, CandidateCoin{
-					Symbol:  symbol,
-					Sources: []string{"static"},
-				})
-			}
-			return e.filterExcludedCoins(candidates), nil
+			return e.filterExcludedCoins(e.staticCandidates()), nil
 		}
 		coins, err := e.getHyperAllCoins()
 		if err != nil {
-			return nil, err
+			return e.filterExcludedCoins(e.degradedCandidates("hyper_all", err)), nil
 		}
 		return e.filterExcludedCoins(coins), nil
 
@@ -404,36 +422,31 @@ func (e *StrategyEngine) GetCandidateCoins() ([]CandidateCoin, error) {
 		// Top N Hyperliquid coins by 24h volume
 		if !coinSource.UseHyperMain {
 			logger.Infof("⚠️  source_type is 'hyper_main' but use_hyper_main is false, falling back to static coins")
-			for _, symbol := range coinSource.StaticCoins {
-				symbol = market.Normalize(symbol)
-				candidates = append(candidates, CandidateCoin{
-					Symbol:  symbol,
-					Sources: []string{"static"},
-				})
-			}
-			return e.filterExcludedCoins(candidates), nil
+			return e.filterExcludedCoins(e.staticCandidates()), nil
 		}
 		coins, err := e.getHyperMainCoins(coinSource.HyperMainLimit)
 		if err != nil {
-			return nil, err
+			return e.filterExcludedCoins(e.degradedCandidates("hyper_main", err)), nil
 		}
 		return e.filterExcludedCoins(coins), nil
 
 	case "hyper_rank":
 		coins, err := e.getHyperRankCoins(coinSource.HyperRankCategory, coinSource.HyperRankDirection, coinSource.HyperRankLimit)
 		if err != nil {
-			return nil, err
+			return e.filterExcludedCoins(e.degradedCandidates("hyper_rank", err)), nil
 		}
 		return e.filterExcludedCoins(coins), nil
 
 	case "mixed":
+		mixedScores := make(map[string]float64)
 		if coinSource.UseAI500 {
-			poolCoins, err := e.getAI500Coins(coinSource.AI500Limit)
+			poolCoins, err := e.getScreenerCoins(coinSource.AI500Limit)
 			if err != nil {
-				logger.Infof("⚠️  Failed to get AI500 coins: %v", err)
+				e.NoteCoinSource("Screener unavailable in mixed pool (%v)", err)
 			} else {
+				mixedScores = mergeMixedScores(mixedScores, poolCoins)
 				for _, coin := range poolCoins {
-					symbolSources[coin.Symbol] = append(symbolSources[coin.Symbol], "ai500")
+					symbolSources[coin.Symbol] = append(symbolSources[coin.Symbol], "screener")
 				}
 			}
 		}
@@ -441,8 +454,9 @@ func (e *StrategyEngine) GetCandidateCoins() ([]CandidateCoin, error) {
 		if coinSource.UseOITop {
 			oiCoins, err := e.getOITopCoins(coinSource.OITopLimit)
 			if err != nil {
-				logger.Infof("⚠️  Failed to get OI Top: %v", err)
+				e.NoteCoinSource("OI-top ranking unavailable in mixed pool (%v)", err)
 			} else {
+				mixedScores = mergeMixedScores(mixedScores, oiCoins)
 				for _, coin := range oiCoins {
 					symbolSources[coin.Symbol] = append(symbolSources[coin.Symbol], "oi_top")
 				}
@@ -452,8 +466,9 @@ func (e *StrategyEngine) GetCandidateCoins() ([]CandidateCoin, error) {
 		if coinSource.UseOILow {
 			oiLowCoins, err := e.getOILowCoins(coinSource.OILowLimit)
 			if err != nil {
-				logger.Infof("⚠️  Failed to get OI Low: %v", err)
+				e.NoteCoinSource("OI-low ranking unavailable in mixed pool (%v)", err)
 			} else {
+				mixedScores = mergeMixedScores(mixedScores, oiLowCoins)
 				for _, coin := range oiLowCoins {
 					symbolSources[coin.Symbol] = append(symbolSources[coin.Symbol], "oi_low")
 				}
@@ -463,7 +478,7 @@ func (e *StrategyEngine) GetCandidateCoins() ([]CandidateCoin, error) {
 		if coinSource.UseHyperAll {
 			hyperCoins, err := e.getHyperAllCoins()
 			if err != nil {
-				logger.Infof("⚠️  Failed to get Hyperliquid All coins: %v", err)
+				e.NoteCoinSource("Hyperliquid universe unavailable in mixed pool (%v)", err)
 			} else {
 				for _, coin := range hyperCoins {
 					symbolSources[coin.Symbol] = append(symbolSources[coin.Symbol], "hyper_all")
@@ -474,7 +489,7 @@ func (e *StrategyEngine) GetCandidateCoins() ([]CandidateCoin, error) {
 		if coinSource.UseHyperMain {
 			hyperMainCoins, err := e.getHyperMainCoins(coinSource.HyperMainLimit)
 			if err != nil {
-				logger.Infof("⚠️  Failed to get Hyperliquid Main coins: %v", err)
+				e.NoteCoinSource("Hyperliquid main ranking unavailable in mixed pool (%v)", err)
 			} else {
 				for _, coin := range hyperMainCoins {
 					symbolSources[coin.Symbol] = append(symbolSources[coin.Symbol], "hyper_main")
@@ -495,6 +510,7 @@ func (e *StrategyEngine) GetCandidateCoins() ([]CandidateCoin, error) {
 			candidates = append(candidates, CandidateCoin{
 				Symbol:  symbol,
 				Sources: sources,
+				Score:   mixedScores[symbol],
 			})
 		}
 		return e.filterExcludedCoins(candidates), nil
@@ -502,6 +518,39 @@ func (e *StrategyEngine) GetCandidateCoins() ([]CandidateCoin, error) {
 	default:
 		return nil, fmt.Errorf("unknown coin source type: %s", coinSource.SourceType)
 	}
+}
+
+// staticCandidates builds the always-available static list. Every source falls
+// back to it, which is what makes a data-source outage survivable.
+func (e *StrategyEngine) staticCandidates() []CandidateCoin {
+	if e == nil || len(e.config.CoinSource.StaticCoins) == 0 {
+		return nil
+	}
+	candidates := make([]CandidateCoin, 0, len(e.config.CoinSource.StaticCoins))
+	for _, symbol := range e.config.CoinSource.StaticCoins {
+		candidates = append(candidates, CandidateCoin{
+			Symbol:  market.Normalize(symbol),
+			Sources: []string{"static"},
+		})
+	}
+	return candidates
+}
+
+// degradedCandidates keeps the cycle alive after a source failure.
+//
+// An unavailable ranking used to abort the whole cycle; now it shrinks the
+// universe to whatever is still known and says so. Without the note the model
+// would read a two-coin universe as a deliberate market view rather than an
+// outage, which is exactly the silent failure this replaces.
+func (e *StrategyEngine) degradedCandidates(source string, cause error) []CandidateCoin {
+	e.NoteCoinSource("Candidate source %q unavailable this cycle (%v)", source, cause)
+	fallback := e.staticCandidates()
+	if len(fallback) == 0 {
+		e.NoteCoinSource("No static coins configured, so the candidate pool is empty for this cycle")
+		return nil
+	}
+	e.NoteCoinSource("Fell back to %d static candidate coin(s)", len(fallback))
+	return fallback
 }
 
 // filterExcludedCoins removes excluded coins from the candidates list
@@ -530,72 +579,85 @@ func (e *StrategyEngine) filterExcludedCoins(candidates []CandidateCoin) []Candi
 	return filtered
 }
 
-func (e *StrategyEngine) getAI500Coins(limit int) ([]CandidateCoin, error) {
+// getScreenerCoins serves the "ai500" product slot with the local attention
+// ranking. The retired vendor list is not reproducible from public data, so the
+// label carried on each candidate is "screener": what the model sees matches
+// where the number came from.
+func (e *StrategyEngine) getScreenerCoins(limit int) ([]CandidateCoin, error) {
 	if limit <= 0 {
 		limit = 30
 	}
 
-	symbols, err := e.nofxosClient.GetTopRatedCoins(limit)
+	rows, err := Screener(context.Background(), limit)
 	if err != nil {
 		return nil, err
 	}
 
-	var candidates []CandidateCoin
-	for _, symbol := range symbols {
+	candidates := make([]CandidateCoin, 0, len(rows))
+	for _, row := range rows {
 		candidates = append(candidates, CandidateCoin{
-			Symbol:  symbol,
-			Sources: []string{"ai500"},
+			Symbol:  row.Symbol,
+			Sources: []string{"screener"},
+			Score:   row.Score,
 		})
 	}
+	if len(candidates) == 0 {
+		return nil, fmt.Errorf("screener returned no instruments")
+	}
+	logger.Infof("✅ Local screener selected %d/%d candidates (ai500 replacement)", len(candidates), limit)
 	return candidates, nil
 }
 
+// getOITopCoins returns the largest open-interest increases over the last hour.
 func (e *StrategyEngine) getOITopCoins(limit int) ([]CandidateCoin, error) {
 	if limit <= 0 {
 		limit = 10
 	}
-
-	positions, err := e.nofxosClient.GetOITopPositions()
+	rows, err := OIChangeRanking(context.Background(), limit, false)
 	if err != nil {
 		return nil, err
 	}
-
-	var candidates []CandidateCoin
-	for i, pos := range positions {
-		if i >= limit {
-			break
-		}
-		symbol := market.Normalize(pos.Symbol)
-		candidates = append(candidates, CandidateCoin{
-			Symbol:  symbol,
-			Sources: []string{"oi_top"},
-		})
-	}
-	return candidates, nil
+	return oiCandidates(rows, "oi_top"), nil
 }
 
+// getOILowCoins returns the largest open-interest decreases over the last hour.
 func (e *StrategyEngine) getOILowCoins(limit int) ([]CandidateCoin, error) {
 	if limit <= 0 {
 		limit = 10
 	}
-
-	positions, err := e.nofxosClient.GetOILowPositions()
+	rows, err := OIChangeRanking(context.Background(), limit, true)
 	if err != nil {
 		return nil, err
 	}
+	return oiCandidates(rows, "oi_low"), nil
+}
 
-	var candidates []CandidateCoin
-	for i, pos := range positions {
-		if i >= limit {
-			break
-		}
-		symbol := market.Normalize(pos.Symbol)
+// oiCandidates converts the local ranking into candidates.
+func oiCandidates(rows []OIRow, source string) []CandidateCoin {
+	candidates := make([]CandidateCoin, 0, len(rows))
+	for _, row := range rows {
 		candidates = append(candidates, CandidateCoin{
-			Symbol:  symbol,
-			Sources: []string{"oi_low"},
+			Symbol:  row.Symbol,
+			Sources: []string{source},
 		})
 	}
-	return candidates, nil
+	if len(candidates) > 0 {
+		logger.Infof("✅ Local open-interest ranking selected %d %s candidates over %dm",
+			len(candidates), source, rows[0].WindowMinutes)
+	}
+	return candidates
+}
+
+// mergeMixedScores carries each source's own score into the merged pool. When a
+// symbol arrives from several sources the largest score wins, so the number next
+// to it is the strongest claim rather than whichever source happened to run last.
+func mergeMixedScores(dst map[string]float64, coins []CandidateCoin) map[string]float64 {
+	for _, coin := range coins {
+		if existing, ok := dst[coin.Symbol]; !ok || coin.Score > existing {
+			dst[coin.Symbol] = coin.Score
+		}
+	}
+	return dst
 }
 
 // getHyperAllCoins returns all available Hyperliquid perpetual coins

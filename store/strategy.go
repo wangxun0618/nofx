@@ -954,6 +954,56 @@ type RiskControlConfig struct {
 	MinRiskRewardRatio float64 `json:"min_risk_reward_ratio"`
 	// Min AI confidence to open position (AI guided)
 	MinConfidence int `json:"min_confidence"`
+
+	// Exit ownership: "fixed" (default) leaves exits to the protective prices
+	// the AI sets, "signal" additionally closes when the direction signal that
+	// justified the position flips or decays and drops the take-profit
+	// requirement, "both" closes on signal while still requiring both prices.
+	ExitMode string `json:"exit_mode,omitempty"`
+	// SignalScoreFloor is the absolute direction score below which a
+	// signal-managed position counts as decayed and is closed (default 0.5).
+	SignalScoreFloor float64 `json:"signal_score_floor,omitempty"`
+}
+
+// Exit mode constants. SignalManagedExit is the third ownership model that sat
+// behind the retired Vergex integration: the direction was allowed to end a
+// trade, and candles alone were not expected to veto it.
+const (
+	ExitModeFixed  = "fixed"
+	ExitModeSignal = "signal"
+	ExitModeBoth   = "both"
+)
+
+// DefaultSignalScoreFloor is what counts as "the signal has faded".
+//
+// Scores are clipped to ±3 and 0 means the three components split evenly, so
+// anything under half a point is noise rather than a direction.
+const DefaultSignalScoreFloor = 0.5
+
+// SignalManagedExit reports whether the direction signal may close positions.
+// Anything unknown resolves to false: relaxing an exit rule because someone left
+// the field blank would be a silent risk-policy change.
+func (c RiskControlConfig) SignalManagedExit() bool {
+	switch strings.TrimSpace(c.ExitMode) {
+	case ExitModeSignal, ExitModeBoth:
+		return true
+	default:
+		return false
+	}
+}
+
+// RequiresTakeProfit reports whether an open must carry a numeric target.
+// Only pure signal mode drops it — and even then the stop-loss stays mandatory.
+func (c RiskControlConfig) RequiresTakeProfit() bool {
+	return strings.TrimSpace(c.ExitMode) != ExitModeSignal
+}
+
+// EffectiveSignalScoreFloor fills in the default when unset or nonsensical.
+func (c RiskControlConfig) EffectiveSignalScoreFloor() float64 {
+	if c.SignalScoreFloor > 0 {
+		return c.SignalScoreFloor
+	}
+	return DefaultSignalScoreFloor
 }
 
 // NewStrategyStore creates a new StrategyStore
@@ -1043,6 +1093,8 @@ func GetDefaultStrategyConfig(lang string) StrategyConfig {
 			MinPositionSize:              12,                             // Min 12 USDT per position (CODE ENFORCED)
 			MinRiskRewardRatio:           3.0,                            // Min 3:1 profit/loss ratio (AI guided)
 			MinConfidence:                78,                             // Min 78% confidence (AI guided)
+			ExitMode:                     ExitModeFixed,                  // Protective-price exits; signal-managed exits are opt-in
+			SignalScoreFloor:             DefaultSignalScoreFloor,
 		},
 	}
 

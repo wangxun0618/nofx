@@ -272,13 +272,32 @@ func formatCurrentPositionsZH(ctx *Context) string {
 	return sb.String()
 }
 
+// formatCoinSourceNotesZH explains a candidate pool that degraded this cycle.
+// Without it a ring-fenced static list looks like a deliberate market view.
+func formatCoinSourceNotesZH(notes []string) string {
+	if len(notes) == 0 {
+		return ""
+	}
+	var sb strings.Builder
+	sb.WriteString("⚠️ 本轮候选池说明（数据源降级，非市场判断）：\n")
+	for _, note := range notes {
+		sb.WriteString(fmt.Sprintf("- %s\n", note))
+	}
+	sb.WriteString("\n")
+	return sb.String()
+}
+
 // formatCandidateCoinsZH formats candidate coins (Chinese)
 func formatCandidateCoinsZH(ctx *Context) string {
 	var sb strings.Builder
 	sb.WriteString("## Candidate Coins\n\n")
+	sb.WriteString(formatCoinSourceNotesZH(ctx.CoinSourceNotes))
 
 	for i, coin := range ctx.CandidateCoins {
 		sb.WriteString(fmt.Sprintf("### %d. %s\n\n", i+1, coin.Symbol))
+		if coin.Score != 0 {
+			sb.WriteString(fmt.Sprintf("Selection score: %+.2f\n\n", coin.Score))
+		}
 
 		// Current price
 		if ctx.MarketDataMap != nil {
@@ -537,13 +556,31 @@ func formatCurrentPositionsEN(ctx *Context) string {
 	return sb.String()
 }
 
+// formatCoinSourceNotesEN explains a candidate pool that degraded this cycle.
+func formatCoinSourceNotesEN(notes []string) string {
+	if len(notes) == 0 {
+		return ""
+	}
+	var sb strings.Builder
+	sb.WriteString("⚠️ Candidate pool notes for this cycle (data-source degradation, not a market view):\n")
+	for _, note := range notes {
+		sb.WriteString(fmt.Sprintf("- %s\n", note))
+	}
+	sb.WriteString("\n")
+	return sb.String()
+}
+
 // formatCandidateCoinsEN formats candidate coins (English)
 func formatCandidateCoinsEN(ctx *Context) string {
 	var sb strings.Builder
 	sb.WriteString("## Candidate Coins\n\n")
+	sb.WriteString(formatCoinSourceNotesEN(ctx.CoinSourceNotes))
 
 	for i, coin := range ctx.CandidateCoins {
 		sb.WriteString(fmt.Sprintf("### %d. %s\n\n", i+1, coin.Symbol))
+		if coin.Score != 0 {
+			sb.WriteString(fmt.Sprintf("Selection score: %+.2f\n\n", coin.Score))
+		}
 
 		if ctx.MarketDataMap != nil {
 			if mdata, ok := ctx.MarketDataMap[coin.Symbol]; ok {

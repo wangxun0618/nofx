@@ -97,6 +97,18 @@ func defaultDirectionTracker() *marketdata.DirectionTracker {
 	return directionShared
 }
 
+// DirectionalStateFor resolves a trading symbol against the shared timeline and
+// returns its latest directional read.
+//
+// The trade layer needs this for signal-managed exits: it compares the bias a
+// position was opened on against the bias now. Position symbols arrive in
+// product form ("BTCUSDT") while the board records Hyperliquid asset names
+// ("BTC"), so the lookup matches on base ticker. A miss means no read has been
+// recorded for that instrument yet, never "neutral".
+func DirectionalStateFor(symbol string) (marketdata.DirectionState, bool) {
+	return defaultDirectionTracker().StateFor(symbol, hyperliquid.NormalizeCoinBase)
+}
+
 // flowClientFor returns a HyperData client when the order-flow component is
 // available, or nil when it is not. A nil client is not an error: the block
 // simply reports fewer components.

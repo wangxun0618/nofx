@@ -326,6 +326,8 @@ func writeHardConstraints(sb *strings.Builder, accountEquity float64, riskContro
 		sb.WriteString(fmt.Sprintf("- Min Confidence: ≥%d to open position\n\n", riskControl.MinConfidence))
 	}
 
+	writeExitOwnership(sb, riskControl, zh)
+
 	// Position sizing guidance
 	exampleRatio := btcEthPosValueRatio
 	if singleSymbol {
@@ -351,6 +353,47 @@ func writeHardConstraints(sb *strings.Builder, accountEquity float64, riskContro
 		sb.WriteString(fmt.Sprintf("- Example: equity %.0f × %.1fx = max %.0f USDT\n", accountEquity, exampleRatio, accountEquity*exampleRatio))
 		sb.WriteString("- **DO NOT** just use available_balance as position_size_usd. Use the Position Value Limit!\n\n")
 	}
+}
+
+// writeExitOwnership states who is allowed to end a trade.
+//
+// Under the default this section says nothing, because nothing changed: the AI
+// owns entries and exits. When exit management is signal-driven the model has to
+// know that a missing target is legitimate and that closing on candle noise
+// alone defeats the policy — otherwise it keeps inventing take-profits and exits
+// early, which is precisely the behaviour the mode exists to prevent.
+func writeExitOwnership(sb *strings.Builder, riskControl store.RiskControlConfig, zh bool) {
+	if !riskControl.SignalManagedExit() {
+		return
+	}
+
+	floor := riskControl.EffectiveSignalScoreFloor()
+	// In "both" the model still sets both prices, so there is nothing to relax —
+	// only the automatic signal exit is added.
+	targetOptional := !riskControl.RequiresTakeProfit()
+
+	if zh {
+		sb.WriteString("## Exit Ownership (signal-managed)\n")
+		sb.WriteString("- 本节讲的是 `directional_signal` 数据块里的方向读数：它由本地公开数据算出，与其他数据块地位相同，不是必须服从的上级。\n")
+		sb.WriteString("- 开仓时的方向读数会被记录；当它翻向相反方向，或强度（score 绝对值）衰减到低于 " + fmt.Sprintf("%.2f", floor) + " 时，系统会自动平仓。\n")
+		if targetOptional {
+			sb.WriteString("- 因此 `take_profit` 可以省略；`stop_loss` 仍然**必须**设置。\n")
+		} else {
+			sb.WriteString("- `stop_loss` 与 `take_profit` 仍然都要设置；信号平仓是在此之外的额外离场方式。\n")
+		}
+		sb.WriteString("- 不要仅因为一两根 K 线抖动就提前平仓；若你仍要主动平仓，必须在 Reasoning 中说明理由。\n\n")
+		return
+	}
+
+	sb.WriteString("## Exit Ownership (signal-managed)\n")
+	sb.WriteString("- This section is about the `directional_signal` block: a direction read computed locally from public data. It has equal standing with the other blocks, not authority over them.\n")
+	sb.WriteString(fmt.Sprintf("- The bias a position was opened on is recorded. When it flips the other way, or its strength (absolute score) decays below %.2f, the platform closes the position automatically.\n", floor))
+	if targetOptional {
+		sb.WriteString("- `take_profit` may therefore be omitted; `stop_loss` remains mandatory.\n")
+	} else {
+		sb.WriteString("- both `stop_loss` and `take_profit` are still required; the signal exit is an additional way out, not a replacement.\n")
+	}
+	sb.WriteString("- Do not exit early on one or two noisy candles alone; if you still choose to close, say why in your Reasoning.\n\n")
 }
 
 func writeOutputFormat(sb *strings.Builder, accountEquity, btcEthPosValueRatio float64, riskControl store.RiskControlConfig, singleSymbol bool, primarySymbol string, zh bool) {

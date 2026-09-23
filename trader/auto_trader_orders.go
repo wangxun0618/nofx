@@ -70,7 +70,7 @@ func (at *AutoTrader) executeOpenLongWithRecord(decision *kernel.Decision, actio
 	if err != nil {
 		return fmt.Errorf("failed to get market data for %s: %w", decision.Symbol, err)
 	}
-	if err := validateProtectionPrices(decision.Action, marketData.CurrentPrice, decision.StopLoss, decision.TakeProfit); err != nil {
+	if err := validateProtectionPricesWithPolicy(decision.Action, marketData.CurrentPrice, decision.StopLoss, decision.TakeProfit, at.targetOptional()); err != nil {
 		return err
 	}
 
@@ -156,8 +156,12 @@ func (at *AutoTrader) executeOpenLongWithRecord(decision *kernel.Decision, actio
 	if err := at.trader.SetStopLoss(decision.Symbol, "LONG", quantity, decision.StopLoss); err != nil {
 		return at.closeUnprotectedPosition(decision.Symbol, "long", quantity, fmt.Errorf("failed to set mandatory stop loss: %w", err))
 	}
-	if err := at.trader.SetTakeProfit(decision.Symbol, "LONG", quantity, decision.TakeProfit); err != nil {
-		return at.closeUnprotectedPosition(decision.Symbol, "long", quantity, fmt.Errorf("failed to set mandatory take profit: %w", err))
+	// Under signal-managed exits the target may legitimately be absent: the exit
+	// belongs to the direction signal, and there is nothing to place.
+	if decision.TakeProfit > 0 {
+		if err := at.trader.SetTakeProfit(decision.Symbol, "LONG", quantity, decision.TakeProfit); err != nil {
+			return at.closeUnprotectedPosition(decision.Symbol, "long", quantity, fmt.Errorf("failed to set mandatory take profit: %w", err))
+		}
 	}
 
 	return nil
@@ -190,7 +194,7 @@ func (at *AutoTrader) executeOpenShortWithRecord(decision *kernel.Decision, acti
 	if err != nil {
 		return fmt.Errorf("failed to get market data for %s: %w", decision.Symbol, err)
 	}
-	if err := validateProtectionPrices(decision.Action, marketData.CurrentPrice, decision.StopLoss, decision.TakeProfit); err != nil {
+	if err := validateProtectionPricesWithPolicy(decision.Action, marketData.CurrentPrice, decision.StopLoss, decision.TakeProfit, at.targetOptional()); err != nil {
 		return err
 	}
 
@@ -276,8 +280,10 @@ func (at *AutoTrader) executeOpenShortWithRecord(decision *kernel.Decision, acti
 	if err := at.trader.SetStopLoss(decision.Symbol, "SHORT", quantity, decision.StopLoss); err != nil {
 		return at.closeUnprotectedPosition(decision.Symbol, "short", quantity, fmt.Errorf("failed to set mandatory stop loss: %w", err))
 	}
-	if err := at.trader.SetTakeProfit(decision.Symbol, "SHORT", quantity, decision.TakeProfit); err != nil {
-		return at.closeUnprotectedPosition(decision.Symbol, "short", quantity, fmt.Errorf("failed to set mandatory take profit: %w", err))
+	if decision.TakeProfit > 0 {
+		if err := at.trader.SetTakeProfit(decision.Symbol, "SHORT", quantity, decision.TakeProfit); err != nil {
+			return at.closeUnprotectedPosition(decision.Symbol, "short", quantity, fmt.Errorf("failed to set mandatory take profit: %w", err))
+		}
 	}
 
 	return nil

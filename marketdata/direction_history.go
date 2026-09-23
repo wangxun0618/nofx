@@ -196,6 +196,44 @@ func (t *DirectionTracker) Recent(limit int, within time.Duration) []DirectionCh
 	return out
 }
 
+// StateFor returns the most recent read for an instrument, matching on base
+// ticker so a caller holding "BTCUSDT" finds the state recorded as "BTC".
+//
+// The second result is false when nothing has been observed yet. That is not
+// the same as a neutral reading, and callers must keep the difference: "no
+// evidence" cannot be treated as "hold the line".
+func (t *DirectionTracker) StateFor(symbol string, baseOf func(string) string) (DirectionState, bool) {
+	if t == nil || strings.TrimSpace(symbol) == "" {
+		return DirectionState{}, false
+	}
+	want := strings.ToUpper(strings.TrimSpace(symbol))
+	if baseOf != nil {
+		want = strings.ToUpper(strings.TrimSpace(baseOf(symbol)))
+	}
+	if want == "" {
+		return DirectionState{}, false
+	}
+
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	// Exact match first: the common case, and unambiguous when the universe has
+	// both a "BTC" perps entry and a "xyz:BTC" wrapper.
+	if state, ok := t.states[symbol]; ok {
+		return state, true
+	}
+	for key, state := range t.states {
+		candidate := key
+		if baseOf != nil {
+			candidate = strings.ToUpper(strings.TrimSpace(baseOf(key)))
+		}
+		if candidate == want {
+			return state, true
+		}
+	}
+	return DirectionState{}, false
+}
+
 // States returns a copy of the current state per instrument, symbol-ordered.
 func (t *DirectionTracker) States() []DirectionState {
 	if t == nil {

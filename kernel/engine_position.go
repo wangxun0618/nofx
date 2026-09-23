@@ -10,16 +10,38 @@ import (
 // Decision Validation
 // ============================================================================
 
-func validateDecisions(decisions []Decision, accountEquity float64, btcEthLeverage, altcoinLeverage int, btcEthPosRatio, altcoinPosRatio float64) error {
+// decisionRules carries the code-enforced limits applied to a fresh AI decision.
+type decisionRules struct {
+	btcEthLeverage  int
+	altcoinLeverage int
+	btcEthPosRatio  float64
+	altcoinPosRatio float64
+	// signalManagedExit drops the take-profit requirement under exit_mode
+	// "signal": when the direction signal owns the exit, forcing the model to
+	// invent a target would contradict the policy. The stop-loss is untouched.
+	signalManagedExit bool
+}
+
+func validateDecisions(decisions []Decision, accountEquity float64, rules decisionRules) error {
 	for i := range decisions {
-		if err := validateDecision(&decisions[i], accountEquity, btcEthLeverage, altcoinLeverage, btcEthPosRatio, altcoinPosRatio); err != nil {
+		if err := validateDecisionWithRules(&decisions[i], accountEquity, rules); err != nil {
 			return fmt.Errorf("decision #%d validation failed: %w", i+1, err)
 		}
 	}
 	return nil
 }
 
+// validateDecision applies the default rules: every open carries both prices.
 func validateDecision(d *Decision, accountEquity float64, btcEthLeverage, altcoinLeverage int, btcEthPosRatio, altcoinPosRatio float64) error {
+	return validateDecisionWithRules(d, accountEquity, decisionRules{
+		btcEthLeverage:  btcEthLeverage,
+		altcoinLeverage: altcoinLeverage,
+		btcEthPosRatio:  btcEthPosRatio,
+		altcoinPosRatio: altcoinPosRatio,
+	})
+}
+
+func validateDecisionWithRules(d *Decision, accountEquity float64, rules decisionRules) error {
 	validActions := map[string]bool{
 		"open_long":   true,
 		"open_short":  true,
@@ -41,13 +63,13 @@ func validateDecision(d *Decision, accountEquity float64, btcEthLeverage, altcoi
 		//     and the user's quick-trade flow shows them at the higher cap,
 		//     so the validator must match.
 		//   - Everything else is altcoin (1x equity by default).
-		maxLeverage := altcoinLeverage
-		posRatio := altcoinPosRatio
+		maxLeverage := rules.altcoinLeverage
+		posRatio := rules.altcoinPosRatio
 		maxPositionValue := accountEquity * posRatio
 		isMajor := d.Symbol == "BTCUSDT" || d.Symbol == "ETHUSDT" || market.IsXyzDexAsset(d.Symbol)
 		if isMajor {
-			maxLeverage = btcEthLeverage
-			posRatio = btcEthPosRatio
+			maxLeverage = rules.btcEthLeverage
+			posRatio = rules.btcEthPosRatio
 			maxPositionValue = accountEquity * posRatio
 		}
 
@@ -91,7 +113,16 @@ func validateDecision(d *Decision, accountEquity float64, btcEthLeverage, altcoi
 			return fmt.Errorf("stop loss must be greater than 0")
 		}
 		if d.TakeProfit <= 0 {
-			return fmt.Errorf("stop loss and take profit must be greater than 0")
+			if !rules.signalManagedExit {
+				return fmt.Errorf("stop loss and take profit must be greater than 0")
+			}
+			// Signal-managed exits own the way out, so a numeric target is
+			// optional. Everything below needs one to compare prices, so stop
+			// here rather than inventing a synthetic take-profit. The stop-loss
+			// above is still mandatory — the relaxed part is the upside, never
+			// the protection.
+			logger.Infof("ℹ️  %s opened under signal-managed exit without a take-profit target", d.Symbol)
+			return nil
 		}
 
 		if d.Action == "open_long" {

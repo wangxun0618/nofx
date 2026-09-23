@@ -1,6 +1,7 @@
 package kernel
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"nofx/logger"
@@ -86,17 +87,22 @@ func GetFullDecisionWithStrategy(ctx *Context, mcpClient mcp.AIClient, engine *S
 	}
 	pruneCandidateCoinsWithoutMarketData(ctx)
 
-	// Ensure OITopDataMap is initialized
+	// Repopulate the per-candidate open-interest context from the local ranking.
+	// This used to read the retired NofxOS /api/oi/top-ranking endpoint, which
+	// now answers 402; the local ranking measures the same thing from free data.
+	// It is best-effort: without enough history there is simply no OI block this
+	// cycle, and the model falls back to price action like it used to.
 	if ctx.OITopDataMap == nil {
 		ctx.OITopDataMap = make(map[string]*OITopData)
-		oiPositions, err := engine.nofxosClient.GetOITopPositions()
-		if err == nil {
-			for _, pos := range oiPositions {
-				ctx.OITopDataMap[pos.Symbol] = &OITopData{
-					Rank:              pos.Rank,
-					OIDeltaPercent:    pos.OIDeltaPercent,
-					OIDeltaValue:      pos.OIDeltaValue,
-					PriceDeltaPercent: pos.PriceDeltaPercent,
+		if rows, err := OIChangeRanking(context.Background(), 0, false); err != nil {
+			logger.Infof("⚠️  Open-interest context unavailable this cycle: %v", err)
+		} else {
+			for _, row := range rows {
+				ctx.OITopDataMap[row.Symbol] = &OITopData{
+					Rank:              row.Rank,
+					OIDeltaPercent:    row.OIDeltaPercent,
+					OIDeltaValue:      row.OIDeltaValue,
+					PriceDeltaPercent: row.PriceDeltaPercent,
 				}
 			}
 		}
@@ -117,14 +123,19 @@ func GetFullDecisionWithStrategy(ctx *Context, mcpClient mcp.AIClient, engine *S
 		return nil, fmt.Errorf("AI API call failed: %w", err)
 	}
 
-	// 5. Parse AI response
+	// 5. Parse AI response. Exit ownership decides whether a take-profit is
+	// mandatory: under exit_mode "signal" the direction signal owns the exit, and
+	// forcing the model to invent a target would fight its own policy.
 	decision, err := parseFullDecisionResponse(
 		aiResponse,
 		ctx.Account.TotalEquity,
-		riskConfig.BTCETHMaxLeverage,
-		riskConfig.AltcoinMaxLeverage,
-		riskConfig.BTCETHMaxPositionValueRatio,
-		riskConfig.AltcoinMaxPositionValueRatio,
+		decisionRules{
+			btcEthLeverage:    riskConfig.BTCETHMaxLeverage,
+			altcoinLeverage:   riskConfig.AltcoinMaxLeverage,
+			btcEthPosRatio:    riskConfig.BTCETHMaxPositionValueRatio,
+			altcoinPosRatio:   riskConfig.AltcoinMaxPositionValueRatio,
+			signalManagedExit: riskConfig.SignalManagedExit(),
+		},
 	)
 
 	if decision != nil {
@@ -243,7 +254,7 @@ func pruneCandidateCoinsWithoutMarketData(ctx *Context) {
 // AI Response Parsing
 // ============================================================================
 
-func parseFullDecisionResponse(aiResponse string, accountEquity float64, btcEthLeverage, altcoinLeverage int, btcEthPosRatio, altcoinPosRatio float64) (*FullDecision, error) {
+func parseFullDecisionResponse(aiResponse string, accountEquity float64, rules decisionRules) (*FullDecision, error) {
 	cotTrace := extractCoTTrace(aiResponse)
 
 	decisions, err := extractDecisions(aiResponse)
@@ -254,7 +265,7 @@ func parseFullDecisionResponse(aiResponse string, accountEquity float64, btcEthL
 		}, fmt.Errorf("failed to extract decisions: %w", err)
 	}
 
-	if err := validateDecisions(decisions, accountEquity, btcEthLeverage, altcoinLeverage, btcEthPosRatio, altcoinPosRatio); err != nil {
+	if err := validateDecisions(decisions, accountEquity, rules); err != nil {
 		return &FullDecision{
 			CoTTrace:  cotTrace,
 			Decisions: decisions,

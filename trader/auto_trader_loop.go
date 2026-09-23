@@ -204,8 +204,17 @@ func (at *AutoTrader) runCycle() error {
 	// 8. Sort decisions: ensure close positions first, then open positions (prevent position stacking overflow)
 	logger.Info(strings.Repeat("-", 70))
 
-	// 8. Sort decisions: ensure close positions first, then open positions (prevent position stacking overflow)
-	sortedDecisions := sortDecisionsByPriority(aiDecision.Decisions)
+	// Signal-managed exits are added here rather than inside the prompt, because
+	// the point of the mode is that the exit is not the model's call. They are
+	// prepended so they execute before anything else this cycle.
+	sortedDecisions := aiDecision.Decisions
+	if signalExits := at.signalExitDecisions(ctx, sortedDecisions); len(signalExits) > 0 {
+		for _, exit := range signalExits {
+			record.ExecutionLog = append(record.ExecutionLog,
+				fmt.Sprintf("📡 %s %s queued: %s", exit.Symbol, exit.Action, exit.Reasoning))
+		}
+		sortedDecisions = append(signalExits, sortedDecisions...)
+	}
 	sortedDecisions = at.filterDecisionsToStrategyUniverse(sortedDecisions, ctx)
 	sortedDecisions = sortDecisionsByPriority(sortedDecisions)
 
@@ -285,6 +294,12 @@ func (at *AutoTrader) runCycle() error {
 		}
 
 		record.Decisions = append(record.Decisions, actionRecord)
+
+		// Record the direction read behind a freshly opened position while the
+		// same cycle's insight block is still the freshest input available.
+		if actionRecord.Success && isOpenDecision(d.Action) {
+			at.recordSignalEntries([]kernel.Decision{d})
+		}
 	}
 
 	// 9. Save decision record
@@ -533,6 +548,7 @@ func (at *AutoTrader) buildTradingContext() (*kernel.Context, error) {
 
 	// 3. Use strategy engine to get candidate coins (must have strategy engine)
 	var candidateCoins []kernel.CandidateCoin
+	var candidateSourceNotes []string
 	if at.strategyEngine == nil {
 		at.logWarnf("⚠️ No strategy engine configured, skipping candidate coins")
 	} else {
@@ -543,6 +559,9 @@ func (at *AutoTrader) buildTradingContext() (*kernel.Context, error) {
 			candidateCoins = coins
 			logger.Infof("📋 [%s] Strategy engine fetched candidate coins: %d", at.name, len(candidateCoins))
 		}
+		// Drain whatever the sources said about this cycle's universe so the
+		// prompt can distinguish "thin market" from "data source down".
+		candidateSourceNotes = at.strategyEngine.TakeCoinSourceNotes()
 	}
 
 	// 4. Calculate total P&L
@@ -580,8 +599,9 @@ func (at *AutoTrader) buildTradingContext() (*kernel.Context, error) {
 			MarginUsedPct:    marginUsedPct,
 			PositionCount:    len(positionInfos),
 		},
-		Positions:      positionInfos,
-		CandidateCoins: candidateCoins,
+		Positions:       positionInfos,
+		CandidateCoins:  candidateCoins,
+		CoinSourceNotes: candidateSourceNotes,
 	}
 
 	// 7. Add recent closed trades (if store is available)

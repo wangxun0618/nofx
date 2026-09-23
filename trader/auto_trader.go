@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"nofx/kernel"
 	"nofx/logger"
+	"nofx/marketdata"
 	"nofx/mcp"
 	_ "nofx/mcp/provider"
 	"nofx/store"
@@ -191,10 +192,18 @@ type AutoTrader struct {
 	lastBalanceSyncTime   time.Time          // Last balance sync time
 	userID                string             // User ID
 	gridState             *GridState         // Grid trading state (only used when StrategyType == "grid_trading")
-	consecutiveAIFailures int                // Consecutive AI call failures
-	runtimeHealthMu       sync.RWMutex       // Guards safe mode (loop writes, API reads)
-	safeMode              bool               // Safe mode: no new positions, protect existing ones
-	safeModeReason        string             // Why safe mode was activated
+	// signalBook remembers each open position's entry direction read. It drives
+	// signal-managed exits, which is why the loop records into it right after a
+	// successful open rather than inferring the thesis later.
+	signalBook *signalBook
+	// directionalState is the production direction lookup; tests swap it out.
+	// Keeping it as a field rather than calling the package directly is what
+	// makes the exit rule testable without a live insight pipeline.
+	directionalState      func(string) (marketdata.DirectionState, bool)
+	consecutiveAIFailures int          // Consecutive AI call failures
+	runtimeHealthMu       sync.RWMutex // Guards safe mode (loop writes, API reads)
+	safeMode              bool         // Safe mode: no new positions, protect existing ones
+	safeModeReason        string       // Why safe mode was activated
 }
 
 // NewAutoTrader creates an automatic trader
@@ -393,6 +402,7 @@ func NewAutoTrader(config AutoTraderConfig, st *store.Store, userID string) (*Au
 		peakPnLCacheMutex:     sync.RWMutex{},
 		lastBalanceSyncTime:   time.Now(),
 		userID:                userID,
+		signalBook:            newSignalBook(),
 	}, nil
 }
 

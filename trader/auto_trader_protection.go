@@ -16,6 +16,15 @@ type positionCacheInvalidator interface {
 // meaningless (a stop on the wrong side of the market, or a take-profit that
 // cannot ever trigger). Every position must carry both levels.
 func validateProtectionPrices(action string, marketPrice, stopLoss, takeProfit float64) error {
+	return validateProtectionPricesWithPolicy(action, marketPrice, stopLoss, takeProfit, false)
+}
+
+// validateProtectionPricesWithPolicy is the same check honouring exit
+// ownership: under exit_mode "signal" the direction signal owns the way out, so
+// opening without a target is legitimate. The stop-loss is never negotiable —
+// the relaxed part is the upside, and a protection-less position is rejected no
+// matter which rule closes it.
+func validateProtectionPricesWithPolicy(action string, marketPrice, stopLoss, takeProfit float64, targetOptional bool) error {
 	if marketPrice <= 0 || stopLoss <= 0 {
 		return fmt.Errorf("market price and stop loss must be positive")
 	}
@@ -24,6 +33,12 @@ func validateProtectionPrices(action string, marketPrice, stopLoss, takeProfit f
 		if stopLoss >= marketPrice {
 			return fmt.Errorf("long stop loss %.8f must be below market price %.8f", stopLoss, marketPrice)
 		}
+		if takeProfit <= 0 {
+			if targetOptional {
+				return nil
+			}
+			return fmt.Errorf("long take profit must be positive")
+		}
 		if takeProfit <= marketPrice {
 			return fmt.Errorf("long take profit %.8f must be above market price %.8f", takeProfit, marketPrice)
 		}
@@ -31,13 +46,32 @@ func validateProtectionPrices(action string, marketPrice, stopLoss, takeProfit f
 		if stopLoss <= marketPrice {
 			return fmt.Errorf("short stop loss %.8f must be above market price %.8f", stopLoss, marketPrice)
 		}
-		if takeProfit <= 0 || takeProfit >= marketPrice {
+		if takeProfit <= 0 {
+			if targetOptional {
+				return nil
+			}
+			return fmt.Errorf("short take profit must be positive")
+		}
+		if takeProfit >= marketPrice {
 			return fmt.Errorf("short take profit %.8f must be positive and below market price %.8f", takeProfit, marketPrice)
 		}
 	default:
 		return fmt.Errorf("unsupported open action %q", action)
 	}
 	return nil
+}
+
+// targetOptional reports whether this strategy lets the AI open without a
+// take-profit price. Anything unknown resolves to false.
+func (at *AutoTrader) targetOptional() bool {
+	if at == nil || at.strategyEngine == nil {
+		return false
+	}
+	config := at.strategyEngine.GetConfig()
+	if config == nil {
+		return false
+	}
+	return !config.RiskControl.RequiresTakeProfit()
 }
 
 func (at *AutoTrader) closeUnprotectedPosition(symbol, side string, quantity float64, protectionErr error) error {
