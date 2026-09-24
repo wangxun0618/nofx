@@ -96,66 +96,48 @@ if config.CoinSource.SourceType == "static" {
 - **Usage:** Manually specify trading coins
 - **Tag:** `["static"]`
 
-### 1.2 AI500 Coin Pool
+### 1.2 AI500 Coin Pool (served by the local screener)
 
 ```go
-// decision/engine.go:405-406, 456-474
-func (e *StrategyEngine) getCoinPoolCoins(limit int) []CandidateCoin {
-    coins, err := e.provider.GetTopRatedCoins(limit)
-    // ...
-    for _, coin := range coins {
-        result = append(result, CandidateCoin{
-            Symbol:  coin.Symbol,
-            Sources: []string{"ai500"},
-        })
-    }
+// kernel/engine.go:586 getScreenerCoins → kernel/local_coin_source.go Screener
+coins, err := e.getScreenerCoins(coinSource.AI500Limit)
+if err != nil {
+    // Explicit degradation: the reason reaches the prompt, not just the log.
+    return e.degradedCandidates("ai500", err), nil
 }
 ```
 
-- **API:** `config.CoinSource.CoinPoolAPIURL`
-- **Usage:** Get top N coins by AI rating
-- **Tag:** `["ai500"]`
+- **Config:** `config.CoinSource.AI500Limit`
+- **Usage:** Rank the whole Hyperliquid universe by an attention score built from
+  inputs every operator can see (24h change, turnover, OI/turnover, funding,
+  mark-vs-oracle premium); replaces the retired vendor AI score with a ranking
+  that never claims to be the same thing
+- **Tag:** `["screener"]` — the label states what actually produced the coin
+- **Failure mode:** the retired `nofxos` endpoint answers 402, so there is no
+  remote fallback; an uncomputable ranking degrades to the static list and says so
 
-### 1.3 OI Top Coins (Position Growth Ranking)
-
-```go
-// decision/engine.go:408-409, 476-498
-func (e *StrategyEngine) getOITopCoins() []CandidateCoin {
-    positions, err := e.provider.GetOITopPositions()
-    // ...
-    for _, pos := range positions {
-        result = append(result, CandidateCoin{
-            Symbol:  pos.Symbol,
-            Sources: []string{"oi_top"},
-        })
-    }
-}
-```
-
-- **API:** `config.CoinSource.OITopAPIURL`
-- **Usage:** Get coins with fastest OI growth
-- **Tag:** `["oi_top"]`
-
-### 1.4 Mixed Mode
+### 1.3 OI Top / OI Low Coins (position growth / decline ranking)
 
 ```go
-// decision/engine.go:411-449
-if config.CoinSource.SourceType == "mixed" {
-    if config.CoinSource.UseCoinPool {
-        // Add AI500 coins
-    }
-    if config.CoinSource.UseOITop {
-        // Add OI Top coins
-    }
-    if len(config.CoinSource.StaticCoins) > 0 {
-        // Add static coins
-    }
-    // Deduplicate and merge, keep multi-source tags
-}
+// kernel/engine.go:613 getOITopCoins / :624 getOILowCoins
+rows, err := OIChangeRanking(ctx, limit, false) // true = OI decrease
 ```
 
-- **Feature:** Use multiple data sources simultaneously
-- **Tag Example:** `["ai500", "oi_top"]` (dual signal coin)
+- **Config:** `config.CoinSource.OITopLimit`, `config.CoinSource.OILowLimit`
+- **Usage:** Measure open-interest change over the last hour from free
+  Hyperliquid `metaAndAssetCtxs` data, against a snapshot log persisted to
+  `data/oi_snapshot.json` (one snapshot per 10 minutes, ~1.5 days of history)
+- **Warm-up:** the ranking reports nothing until a baseline at least 15 minutes
+  old exists, because a 4-minute delta presented as an hourly one would read like
+  a real signal. During warm-up the pool degrades to the static list
+- **Tags:** `["oi_top"]`, `["oi_low"]`
+
+### 1.4 Source fields that no longer exist
+
+`CoinPoolAPIURL`, `OITopAPIURL` and `provider/data_provider.go` are gone with the
+paid gateway they pointed at. URLs are no longer configured per source: the local
+sources compute their rankings from Hyperliquid data, and the optional NofxOS
+quant block uses the single `Indicators.NofxOSAPIKey`.
 
 ---
 
@@ -661,7 +643,7 @@ at.store.Decision().LogDecision(record)
 | **Decision Valid** | `decision/engine.go:1480-1602` | `validateDecisions()` |
 | **Risk Enforce** | `trader/auto_trader.go:1769-1851` | `enforceMaxPositions()`, `enforcePositionValueRatio()` |
 | **Strategy Config** | `store/strategy.go` | `StrategyConfig`, `RiskControlConfig` |
-| **Data Provider** | `provider/data_provider.go` | `GetAI500Data()`, `GetOITopPositions()` |
+| **Data Provider** | `kernel/local_coin_source.go` | `Screener()`, `OIChangeRanking()` |
 
 ---
 

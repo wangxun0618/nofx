@@ -366,7 +366,7 @@ StrategyConfig fields:
   indicators.atr_periods: [14] default
   indicators.boll_periods: [20] default
   indicators.nofxos_api_key: leave empty. The previously bundled key is dead — every NofxOS quant endpoint it authenticated now returns 402.
-  indicators.enable_quant_data: false. Do NOT set true without a valid indicators.nofxos_api_key; without a working key these calls fail every cycle.
+  indicators.enable_quant_data: false. Do NOT set true without a valid indicators.nofxos_api_key; without a working key these calls fail every cycle. If the endpoint refuses the key (401/402/403) the trader stops asking for the rest of the process and says so once in the cycle notes.
   indicators.enable_quant_oi: only meaningful when enable_quant_data is true
   indicators.enable_quant_netflow: only meaningful when enable_quant_data is true
   indicators.enable_market_insights: ALWAYS true (market-wide context fed to the AI)
@@ -385,6 +385,11 @@ StrategyConfig fields:
   risk_control.min_position_size: minimum USDT per trade (default 12)
   risk_control.min_risk_reward_ratio: minimum profit/loss ratio required (default 3 = 3:1)
   risk_control.min_confidence: minimum AI confidence to open position (default 75, range 60-90)
+  risk_control.max_daily_loss_pct: account-level circuit breaker — pause trading when equity falls this far below the day's opening equity (CODE ENFORCED, 0 = off)
+  risk_control.max_drawdown_pct: pause trading when equity draws down this far from its running peak (CODE ENFORCED, 0 = off)
+  risk_control.stop_trading_minutes: how long a breach pauses trading (default 240)
+  risk_control.exit_mode: who ends a trade — "fixed" (protective prices only, default), "signal" (the direction read also closes, take-profit optional), "both"
+  risk_control.signal_score_floor: |direction score| below which a signal-managed position counts as decayed (default 0.5)
   prompt_sections.role_definition: describe the AI's trading persona and goal
   prompt_sections.trading_frequency: guidelines on how often to trade
   prompt_sections.entry_standards: conditions that must align before entering a position

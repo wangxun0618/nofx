@@ -590,7 +590,7 @@ HyperDataAPIKey  string `json:"hyperdata_api_key,omitempty"`
 | Vergex 持仓成本 / 强平热力图 | `hyperliquid_leverage`（免费代理指标）+ `coinank_liquidation`（可选，真价位分桶）+ `hyperdata_positioning`（可选，逐仓距离） |
 | Vergex 逐币明细（当前方向 / 历史 / 热力图 JSON） | `hyperdata_orderflow`（CVD 逐所归因）+ `hyperdata_positioning`（逐仓明细） |
 | nofxos OI / NetFlow / Price 三个排行接口 | 已删除（端点返回 402，内置 key 已废弃） |
-| `signal_managed_exit` 出场模式 | **未恢复**。它与数据源无关，属交易层语义；当前 `validateProtectionPrices` 强制每仓同时带止损与止盈 |
+| `signal_managed_exit` 出场模式 | **已实现**（交易层语义，与数据源无关）。`risk_control.exit_mode` 取 `fixed`（默认）/ `signal` / `both`；选 `signal` 时开仓记录的方向读数翻向或衰减到 `signal_score_floor` 以下即自动平仓，且 `validateProtectionPrices` 只强制止损、不再强制止盈。开仓依据落盘在 `data/signal_book_<trader>.json`，重启后仍然有效 |
 
 ### 与原 Vergex 的两处关键差异
 

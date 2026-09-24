@@ -23,7 +23,7 @@
 
 NOFX is an open-source trading terminal where the strategy is a language model. Each trader runs a continuous loop — read market structure, decide, execute, record the reasoning — while a Go runtime clamps every order to hard risk limits the model cannot override.
 
-Traders compose freely: any model, any of nine exchanges, any strategy. Run several side by side and compare them on a public leaderboard by realized return. Everything runs on your own machine; exchange credentials are encrypted at rest and never leave it.
+Traders compose freely: any model, any of the nine perpetual exchanges — plus Indodax spot — any strategy. Run several side by side and compare them on a public leaderboard by realized return. Everything runs on your own machine; exchange credentials are encrypted at rest and never leave it.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/NoFxAiOS/nofx/main/install.sh | bash
@@ -54,6 +54,7 @@ NOFX is free and open source. Opening an account through the partner links below
 | <img src="web/public/exchange-icons/gate.svg" width="20" height="20" style="vertical-align: middle;"/> **Gate**             |   ✅   | [Register](https://www.gatenode.xyz/share/VQBGUAxY)                                 |
 | <img src="web/public/exchange-icons/aster.svg" width="20" height="20" style="vertical-align: middle;"/> **Aster**           |   ✅   | [Register](https://www.asterdex.com/en/referral/fdfc0e)                             |
 | <img src="web/public/exchange-icons/lighter.png" width="20" height="20" style="vertical-align: middle;"/> **Lighter**       |   ✅   | [Register](https://app.lighter.xyz/?referral=68151432)                              |
+| <img src="web/public/exchange-icons/indodax.png" width="20" height="20" style="vertical-align: middle;"/> **Indodax** (spot) |   ✅   | —                                                                                   |
 
 <br/>
 
@@ -134,7 +135,7 @@ Eight providers, each called directly with your own API key — DeepSeek, OpenAI
 
 ## Markets
 
-Crypto perpetuals on all nine exchanges. On Hyperliquid, the same runtime also trades tokenized US equities, commodities, indices, FX, and pre-IPO perps — TSLA, NVDA, GOLD, SPX, EUR, OPENAI — alongside crypto.
+Crypto perpetuals on all nine exchanges (plus Indodax spot). On Hyperliquid, the same runtime also trades tokenized US equities, commodities, indices, FX, and pre-IPO perps — TSLA, NVDA, GOLD, SPX, EUR, OPENAI — alongside crypto.
 
 <br/>
 

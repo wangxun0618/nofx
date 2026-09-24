@@ -185,7 +185,6 @@ function defaultIndicators(
       primary_timeframe: klines.primary_timeframe || '15m',
       primary_count: klines.primary_count || 30,
       longer_timeframe: '',
-      longer_count: 0,
       enable_multi_timeframe: false,
       selected_timeframes: [klines.primary_timeframe || '15m'],
     },
@@ -229,6 +228,13 @@ function defaultRisk(risk?: Partial<RiskControlConfig>): RiskControlConfig {
     min_position_size: risk?.min_position_size || 12,
     min_risk_reward_ratio: risk?.min_risk_reward_ratio || 3,
     min_confidence: risk?.min_confidence || 78,
+    // Account-level circuit breaker. `??` rather than `||` so a deliberate 0
+    // (rule switched off) is preserved instead of being replaced by a default.
+    max_daily_loss_pct: risk?.max_daily_loss_pct ?? 10,
+    max_drawdown_pct: risk?.max_drawdown_pct ?? 20,
+    stop_trading_minutes: risk?.stop_trading_minutes ?? 240,
+    exit_mode: risk?.exit_mode || 'fixed',
+    signal_score_floor: risk?.signal_score_floor ?? 0.5,
   }
 }
 
@@ -1482,6 +1488,146 @@ export function StrategyStudioPage() {
                             </option>
                           ))}
                         </select>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 rounded-lg border border-[rgba(26,24,19,0.14)] bg-nofx-bg-lighter p-4">
+                    <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-nofx-text">
+                      <Activity className="h-4 w-4 text-nofx-warning" />
+                      {text(language, '账户级熔断（代码强制）', 'Account circuit breaker (code enforced)')}
+                    </div>
+                    <p className="mb-4 text-xs text-nofx-text-muted">
+                      {text(
+                        language,
+                        '按账户整体权益测量：相对当日开盘权益的亏损，以及相对运行期间峰值的回撤。触发后暂停交易，暂停期间不开新仓、也不自动平仓。填 0 表示关闭该规则。',
+                        'Measured on whole-account equity: loss from the day\'s opening equity, and drawdown from the running peak. A breach pauses trading — no new positions and no forced closes. 0 turns the rule off.'
+                      )}
+                    </p>
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      <label className="space-y-2">
+                        <span className="text-xs text-nofx-text-muted">
+                          {text(language, '日亏上限 %', 'Max daily loss %')}
+                        </span>
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={risk.max_daily_loss_pct ?? 0}
+                          onChange={(event) =>
+                            patchRisk({
+                              max_daily_loss_pct: Number(event.target.value),
+                            })
+                          }
+                          className="w-full rounded-lg border border-[rgba(26,24,19,0.14)] bg-nofx-bg px-3 py-2 text-sm text-nofx-text"
+                        />
+                      </label>
+                      <label className="space-y-2">
+                        <span className="text-xs text-nofx-text-muted">
+                          {text(language, '回撤上限 %', 'Max drawdown %')}
+                        </span>
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={risk.max_drawdown_pct ?? 0}
+                          onChange={(event) =>
+                            patchRisk({
+                              max_drawdown_pct: Number(event.target.value),
+                            })
+                          }
+                          className="w-full rounded-lg border border-[rgba(26,24,19,0.14)] bg-nofx-bg px-3 py-2 text-sm text-nofx-text"
+                        />
+                      </label>
+                      <label className="space-y-2">
+                        <span className="text-xs text-nofx-text-muted">
+                          {text(language, '暂停时长', 'Pause duration')}
+                        </span>
+                        <select
+                          value={risk.stop_trading_minutes ?? 240}
+                          onChange={(event) =>
+                            patchRisk({
+                              stop_trading_minutes: Number(event.target.value),
+                            })
+                          }
+                          className="w-full rounded-lg border border-[rgba(26,24,19,0.14)] bg-nofx-bg px-3 py-2 text-sm text-nofx-text"
+                        >
+                          {[
+                            [60, text(language, '1 小时', '1 hour')],
+                            [240, text(language, '4 小时', '4 hours')],
+                            [720, text(language, '12 小时', '12 hours')],
+                            [1440, text(language, '1 天', '1 day')],
+                            [10080, text(language, '1 周', '1 week')],
+                          ].map(([value, label]) => (
+                            <option key={String(value)} value={value}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 rounded-lg border border-[rgba(26,24,19,0.14)] bg-nofx-bg-lighter p-4">
+                    <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-nofx-text">
+                      <Shield className="h-4 w-4 text-nofx-success" />
+                      {text(language, '出场归属', 'Exit ownership')}
+                    </div>
+                    <p className="mb-4 text-xs text-nofx-text-muted">
+                      {text(
+                        language,
+                        '决定谁有权结束一笔交易：保护价（止损/止盈），还是方向信号。选「方向信号」后，开仓时记录的方向读数一旦反向或衰减到阈值以下，系统会自动平仓，且允许不设止盈（止损仍然必填）。',
+                        'Who may end a trade: the protective prices (stop/target), or the direction read. Under "signal", the read recorded at entry closes the position when it flips or decays below the floor, and the take-profit becomes optional (the stop stays mandatory).'
+                      )}
+                    </p>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <label className="space-y-2">
+                        <span className="text-xs text-nofx-text-muted">
+                          {text(language, '出场方式', 'Exit mode')}
+                        </span>
+                        <select
+                          value={risk.exit_mode || 'fixed'}
+                          onChange={(event) =>
+                            patchRisk({
+                              exit_mode: event.target.value as
+                                | 'fixed'
+                                | 'signal'
+                                | 'both',
+                            })
+                          }
+                          className="w-full rounded-lg border border-[rgba(26,24,19,0.14)] bg-nofx-bg px-3 py-2 text-sm text-nofx-text"
+                        >
+                          <option value="fixed">
+                            {text(language, '保护价（默认）', 'Protective prices (default)')}
+                          </option>
+                          <option value="signal">
+                            {text(language, '方向信号（可省略止盈）', 'Direction signal (target optional)')}
+                          </option>
+                          <option value="both">
+                            {text(language, '两者都要', 'Both')}
+                          </option>
+                        </select>
+                      </label>
+                      <label className="space-y-2">
+                        <span className="text-xs text-nofx-text-muted">
+                          {text(language, '信号衰减阈值', 'Signal decay floor')}
+                        </span>
+                        <input
+                          type="number"
+                          min={0}
+                          max={3}
+                          step={0.1}
+                          disabled={(risk.exit_mode || 'fixed') === 'fixed'}
+                          value={risk.signal_score_floor ?? 0.5}
+                          onChange={(event) =>
+                            patchRisk({
+                              signal_score_floor: Number(event.target.value),
+                            })
+                          }
+                          className="w-full rounded-lg border border-[rgba(26,24,19,0.14)] bg-nofx-bg px-3 py-2 text-sm text-nofx-text disabled:opacity-50"
+                        />
                       </label>
                     </div>
                   </div>

@@ -327,6 +327,7 @@ func writeHardConstraints(sb *strings.Builder, accountEquity float64, riskContro
 	}
 
 	writeExitOwnership(sb, riskControl, zh)
+	writeAccountRiskLimits(sb, riskControl, zh)
 
 	// Position sizing guidance
 	exampleRatio := btcEthPosValueRatio
@@ -353,6 +354,52 @@ func writeHardConstraints(sb *strings.Builder, accountEquity float64, riskContro
 		sb.WriteString(fmt.Sprintf("- Example: equity %.0f × %.1fx = max %.0f USDT\n", accountEquity, exampleRatio, accountEquity*exampleRatio))
 		sb.WriteString("- **DO NOT** just use available_balance as position_size_usd. Use the Position Value Limit!\n\n")
 	}
+}
+
+// writeAccountRiskLimits states the account-level circuit breaker the trader
+// loop enforces in code.
+//
+// The distinction this section has to make — and the reason it exists rather
+// than being folded into the hard constraints above — is between rules the
+// runtime measures and rules the model is merely asked to respect. Before this
+// existed, nothing told the model which it was dealing with, so a limit could
+// read as binding in the prompt while no code evaluated it.
+func writeAccountRiskLimits(sb *strings.Builder, riskControl store.RiskControlConfig, zh bool) {
+	dailyLossPct, drawdownPct, pause, enforced := riskControl.AccountCircuitBreaker()
+	if !enforced {
+		if zh {
+			sb.WriteString("## 账户级风控\n")
+			sb.WriteString("- 本策略**未配置**账户级日亏/回撤熔断：没有任何代码会在达到某个亏损比例时替你停止交易。请自行把总回撤控制在你认为可承受的范围内。\n\n")
+			return
+		}
+		sb.WriteString("## Account-Level Risk Control\n")
+		sb.WriteString("- This strategy has **no** account-level daily-loss or drawdown breaker configured. No code will stop trading for you at any loss level; keep total drawdown inside what you consider tolerable yourself.\n\n")
+		return
+	}
+
+	pauseMinutes := int(pause.Minutes())
+	if zh {
+		sb.WriteString("## 账户级风控（由系统代码强制）\n")
+		if dailyLossPct > 0 {
+			sb.WriteString(fmt.Sprintf("- 当账户权益相对当日开盘权益下跌 %.1f%% 时，系统会暂停交易 %d 分钟。这是代码强制的，不是建议。\n", dailyLossPct, pauseMinutes))
+		}
+		if drawdownPct > 0 {
+			sb.WriteString(fmt.Sprintf("- 当账户权益相对运行期间峰值的回撤达到 %.1f%% 时，系统同样会暂停交易 %d 分钟。\n", drawdownPct, pauseMinutes))
+		}
+		sb.WriteString("- 暂停期间不会开新仓，也不会自动平掉已有仓位；交易所侧的止损与浮盈回吐保护仍然有效。\n")
+		sb.WriteString("- 你的任务不是去挑战这个上限，而是在它被触发之前把风险降下来。\n\n")
+		return
+	}
+
+	sb.WriteString("## Account-Level Risk Control (enforced in code)\n")
+	if dailyLossPct > 0 {
+		sb.WriteString(fmt.Sprintf("- When account equity falls %.1f%% below the day's opening equity, the platform pauses trading for %d minutes. This is enforced by the runtime, not suggested.\n", dailyLossPct, pauseMinutes))
+	}
+	if drawdownPct > 0 {
+		sb.WriteString(fmt.Sprintf("- The platform also pauses for %d minutes when equity draws down %.1f%% from its running peak.\n", pauseMinutes, drawdownPct))
+	}
+	sb.WriteString("- A pause blocks new positions and never closes existing ones; exchange-side stops and the profit-giveback monitor stay active.\n")
+	sb.WriteString("- Your job is not to test that ceiling but to reduce risk before it is reached.\n\n")
 }
 
 // writeExitOwnership states who is allowed to end a trade.

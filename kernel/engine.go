@@ -208,6 +208,12 @@ type StrategyEngine struct {
 	// notes accumulates candidate-pool degradations for the current cycle until
 	// TakeCoinSourceNotes drains them into the prompt context.
 	notes []string
+
+	// quantDataUnavailableFlag latches once the configured quant-data endpoint
+	// refuses this account. It is a decision, not a connection state: retrying a
+	// 402 every cycle would only produce the same answer more slowly.
+	quantDataMu              sync.Mutex
+	quantDataUnavailableFlag bool
 }
 
 // NoteCoinSource records a degradation reason for the prompt.
@@ -960,10 +966,19 @@ func (e *StrategyEngine) FetchQuantDataBatch(symbols []string) map[string]*Quant
 	if !e.config.Indicators.EnableQuantData {
 		return result
 	}
+	// A latching failure is not retried: the caller would otherwise spend one
+	// request per symbol per cycle on an endpoint it has already been refused.
+	if e.quantDataUnavailable() {
+		return result
+	}
 
 	for _, symbol := range symbols {
 		data, err := e.FetchQuantData(symbol)
 		if err != nil {
+			if nofxos.IsSubscriptionUnavailable(err) {
+				e.disableQuantData(err)
+				return result
+			}
 			logger.Infof("⚠️  Failed to fetch quantitative data for %s: %v", symbol, err)
 			continue
 		}
@@ -973,6 +988,32 @@ func (e *StrategyEngine) FetchQuantDataBatch(symbols []string) map[string]*Quant
 	}
 
 	return result
+}
+
+// disableQuantData latches the quant-data endpoint off for this process and
+// explains why once, through the same note channel candidate-pool degradations
+// use so the reason reaches the prompt instead of only the log.
+func (e *StrategyEngine) disableQuantData(cause error) {
+	if e == nil {
+		return
+	}
+	e.quantDataMu.Lock()
+	alreadyDisabled := e.quantDataUnavailableFlag
+	e.quantDataUnavailableFlag = true
+	e.quantDataMu.Unlock()
+	if alreadyDisabled {
+		return
+	}
+	e.NoteCoinSource("NofxOS quant data is unavailable for this account (%v), so the open-interest/netflow block is missing from every cycle. Unset indicators.enable_quant_data to stop asking for it.", cause)
+}
+
+func (e *StrategyEngine) quantDataUnavailable() bool {
+	if e == nil {
+		return false
+	}
+	e.quantDataMu.Lock()
+	defer e.quantDataMu.Unlock()
+	return e.quantDataUnavailableFlag
 }
 
 func uniqueNonEmpty(values ...string) []string {

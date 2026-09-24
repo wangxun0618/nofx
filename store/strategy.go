@@ -100,9 +100,6 @@ func (c *StrategyConfig) ClampLimits() {
 	if c.Indicators.Klines.PrimaryCount > MaxKlineCount {
 		c.Indicators.Klines.PrimaryCount = MaxKlineCount
 	}
-	if c.Indicators.Klines.LongerCount > MaxKlineCount {
-		c.Indicators.Klines.LongerCount = MaxKlineCount
-	}
 
 	// Clamp timeframes
 	if len(c.Indicators.Klines.SelectedTimeframes) > MaxTimeframes {
@@ -178,6 +175,30 @@ func (c *StrategyConfig) ClampLimits() {
 	if c.RiskControl.MinConfidence > MaxConfidence {
 		c.RiskControl.MinConfidence = MaxConfidence
 	}
+
+	clampAccountCircuitBreaker(&c.RiskControl)
+}
+
+// clampAccountCircuitBreaker bounds the account-level limits without ever
+// turning a disabled rule on: 0 stays 0 (off), anything else is a percentage in
+// (0, 100], and the pause length falls back to the default when unset.
+func clampAccountCircuitBreaker(rc *RiskControlConfig) {
+	if rc == nil {
+		return
+	}
+	rc.MaxDailyLossPct = clampPercent(rc.MaxDailyLossPct)
+	rc.MaxDrawdownPct = clampPercent(rc.MaxDrawdownPct)
+	if rc.StopTradingMinutes != 0 {
+		rc.StopTradingMinutes = rc.EffectiveStopTradingMinutes()
+	}
+}
+
+func clampPercent(v float64) float64 {
+	v = absPercent(v)
+	if v > 100 {
+		return 100
+	}
+	return v
 }
 
 // NormalizeProductSchema keeps saved strategy JSON aligned with the product
@@ -907,12 +928,14 @@ type IndicatorConfig struct {
 type KlineConfig struct {
 	// primary timeframe: "1m", "3m", "5m", "15m", "1h", "4h"
 	PrimaryTimeframe string `json:"primary_timeframe"`
-	// primary timeframe K-line count
+	// primary timeframe K-line count. Every selected timeframe is fetched with
+	// this count, which is why no per-timeframe count is offered: a second count
+	// field existed ("longer_count") and was never read by the fetch path, so a
+	// value stored there silently did nothing.
 	PrimaryCount int `json:"primary_count"`
-	// longer timeframe
+	// longer timeframe, used only by the legacy single-pair shape (see
+	// SelectedTimeframes below)
 	LongerTimeframe string `json:"longer_timeframe,omitempty"`
-	// longer timeframe K-line count
-	LongerCount int `json:"longer_count,omitempty"`
 	// whether to enable multi-timeframe analysis
 	EnableMultiTimeframe bool `json:"enable_multi_timeframe"`
 	// selected timeframe list (new: supports multi-timeframe selection)
@@ -963,6 +986,21 @@ type RiskControlConfig struct {
 	// SignalScoreFloor is the absolute direction score below which a
 	// signal-managed position counts as decayed and is closed (default 0.5).
 	SignalScoreFloor float64 `json:"signal_score_floor,omitempty"`
+
+	// Account-level circuit breaker. The fields above are either code-enforced
+	// per position or merely suggested to the model; these three are enforced on
+	// the whole account by the trader loop: equity is measured every cycle and
+	// trading pauses when it falls further than MaxDailyLossPct from the day's
+	// opening equity, or further than MaxDrawdownPct from the running peak.
+	//
+	// Zero disables a rule. That is deliberate: an unset field must switch the
+	// protection off loudly (the prompt says so) rather than imply a limit
+	// nobody implemented.
+	MaxDailyLossPct float64 `json:"max_daily_loss_pct,omitempty"`
+	MaxDrawdownPct  float64 `json:"max_drawdown_pct,omitempty"`
+	// StopTradingMinutes is how long a pause lasts before the drawdown baseline
+	// is re-armed. Zero means DefaultStopTradingMinutes.
+	StopTradingMinutes int `json:"stop_trading_minutes,omitempty"`
 }
 
 // Exit mode constants. SignalManagedExit is the third ownership model that sat
@@ -979,6 +1017,54 @@ const (
 // Scores are clipped to ±3 and 0 means the three components split evenly, so
 // anything under half a point is noise rather than a direction.
 const DefaultSignalScoreFloor = 0.5
+
+// Account-level circuit-breaker defaults.
+//
+// These are the values a NEW strategy starts with. They match what this project
+// has always told the model in prose ("stop trading when daily loss reaches
+// -10%") — the difference is that a configured limit is now measured and
+// enforced by the trader loop instead of asserted in a prompt.
+const (
+	DefaultMaxDailyLossPct    = 10.0
+	DefaultMaxDrawdownPct     = 20.0
+	DefaultStopTradingMinutes = 240
+	maxStopTradingMinutes     = 7 * 24 * 60
+)
+
+// AccountCircuitBreaker reports the account-level limits in the form the trader
+// loop needs: two percentages measured from the day's opening equity and from
+// the running equity peak, plus how long a breach pauses trading.
+//
+// Negative inputs are read as their magnitude so that a strategy written as
+// "-10" (the sign the prompt uses) and one written as "10" both mean the same
+// limit. `enforced` is false when neither rule is configured; the caller is
+// expected to say that out loud rather than claim a protection it does not have.
+func (c RiskControlConfig) AccountCircuitBreaker() (dailyLossPct, drawdownPct float64, pause time.Duration, enforced bool) {
+	dailyLossPct = absPercent(c.MaxDailyLossPct)
+	drawdownPct = absPercent(c.MaxDrawdownPct)
+	pause = time.Duration(c.EffectiveStopTradingMinutes()) * time.Minute
+	return dailyLossPct, drawdownPct, pause, dailyLossPct > 0 || drawdownPct > 0
+}
+
+// EffectiveStopTradingMinutes fills in the default pause length and bounds it to
+// a week, so a mis-typed value cannot pause a trader forever by accident.
+func (c RiskControlConfig) EffectiveStopTradingMinutes() int {
+	minutes := c.StopTradingMinutes
+	if minutes <= 0 {
+		return DefaultStopTradingMinutes
+	}
+	if minutes > maxStopTradingMinutes {
+		return maxStopTradingMinutes
+	}
+	return minutes
+}
+
+func absPercent(v float64) float64 {
+	if v < 0 {
+		return -v
+	}
+	return v
+}
 
 // SignalManagedExit reports whether the direction signal may close positions.
 // Anything unknown resolves to false: relaxing an exit rule because someone left
@@ -1049,7 +1135,6 @@ func GetDefaultStrategyConfig(lang string) StrategyConfig {
 				PrimaryTimeframe:     "15m",
 				PrimaryCount:         30,
 				LongerTimeframe:      "",
-				LongerCount:          0,
 				EnableMultiTimeframe: false,
 				SelectedTimeframes:   []string{"15m"},
 			},
@@ -1095,6 +1180,11 @@ func GetDefaultStrategyConfig(lang string) StrategyConfig {
 			MinConfidence:                78,                             // Min 78% confidence (AI guided)
 			ExitMode:                     ExitModeFixed,                  // Protective-price exits; signal-managed exits are opt-in
 			SignalScoreFloor:             DefaultSignalScoreFloor,
+			// Account-level circuit breaker: on by default for new strategies so
+			// the limit the prompt has always claimed is actually enforced.
+			MaxDailyLossPct:    DefaultMaxDailyLossPct,
+			MaxDrawdownPct:     DefaultMaxDrawdownPct,
+			StopTradingMinutes: DefaultStopTradingMinutes,
 		},
 	}
 

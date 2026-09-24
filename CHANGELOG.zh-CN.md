@@ -55,6 +55,13 @@ NOFX 项目的所有重要更改都将记录在此文件中。
 
 ### 修复
 - 四处界面文案取用了并不存在的 key，中文环境下会直接显示原始 key 或英文兜底：登录按钮、图表加载态、对比图表的 PnL 标签与 Lighter API 密钥导入提示，现已分别对应 `auth.loggingIn`、`chart.loadingChartData`、`chart.leadPnL`、`exchangeCfg.lighterApiKeyImported`
+- **账户级熔断从"有个名字"变成真的**：`MaxDailyLoss` / `MaxDrawdown` 只声明从不读取，`stopUntil` 从无赋值（暂停分支不可达），`dailyPnL` 只被重置——上报的 `daily_pnl` 恒为 0。现在交易循环每周期按市值测量权益，相对当日开盘权益跌破 `risk_control.max_daily_loss_pct`、或相对运行峰值回撤达到 `risk_control.max_drawdown_pct` 时暂停交易，并上报它所依据的数字。新策略默认 10% / 20% / 240 分钟。暂停只拦开仓、绝不强平：交易所侧止损与浮盈回吐保护照常运行
+- **匿名统计改为显式同意**：`EXPERIENCE_IMPROVEMENT` 过去默认开启，等于全新安装在用户同意之前就已把交易所、币种、下单金额与杠杆发往 Google Analytics。现在必须显式设为 `true`
+- **`signal_managed_exit` 有入口了，且能跨重启**：策略编辑器与 API 文档暴露 `exit_mode` / `signal_score_floor`，每笔持仓的开仓依据落盘到 `data/signal_book_<trader>.json`。此前该簿只存在于内存，每次重启后都要拿一个编造的 `0.00` 入场分作比较，可能在重启后第一个周期清掉整个仓位，而文档还写着该模式"未恢复"
+- 前端调用的 `GET /api/prompt-templates` 在本服务从未注册过；这个无调用方的 helper 已删除
+- `indicators.enable_quant_data` 过去每周期为每个币种重试一个已失效端点：现在遇到权限类应答（401/402/403）即在本进程内停用该数据源并只说明一次，走与候选池降级相同的提示通道
+- `klines.longer_count` 是个不起作用的旋钮——抓取路径一直只用 `primary_count`。已从结构体、API 与编辑器中移除，不再留作陷阱
+- README 写"九家交易所"而实际适配器有十家；市场数据文档里关于已退役 `signal_managed_exit` 模式的条目写着该模式未恢复
 
 ---
 

@@ -657,8 +657,6 @@ export const translations = {
     candidateCoins: 'Candidate Coins',
     candidateCoinsZeroWarning: 'Candidate Coins Count is 0',
     possibleReasons: 'Possible Reasons:',
-    ai500ApiNotConfigured:
-      'AI500 data provider API not configured or inaccessible (check signal source settings)',
     apiConnectionTimeout: 'API connection timeout or returned empty data',
     noCustomCoinsAndApiFailed:
       'No custom coins configured and API fetch failed',
@@ -1717,8 +1715,6 @@ export const translations = {
     candidateCoins: '候选币种',
     candidateCoinsZeroWarning: '候选币种数量为 0',
     possibleReasons: '可能原因：',
-    ai500ApiNotConfigured:
-      'AI500 数据源 API 未配置或无法访问（请检查信号源设置）',
     apiConnectionTimeout: 'API连接超时或返回数据为空',
     noCustomCoinsAndApiFailed: '未配置自定义币种且API获取失败',
     solutions: '解决方案：',

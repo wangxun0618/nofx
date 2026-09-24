@@ -25,16 +25,11 @@ export const configApi = {
     return result.data!
   },
 
-  async getPromptTemplates(): Promise<string[]> {
-    const res = await fetch(`${API_BASE}/prompt-templates`)
-    if (!res.ok) throw new Error(tg('lib.fetchPromptTemplates'))
-    const data = await res.json()
-    if (Array.isArray(data.templates)) {
-      return data.templates.map((item: { name: string }) => item.name)
-    }
-    return []
-  },
-
+  // NOTE: a getPromptTemplates() helper used to live here, calling
+  // GET /api/prompt-templates. No such route has ever been registered on this
+  // server, so the call could only ever 404. It was unused, and the strategy
+  // editor now edits prompt sections directly instead of loading a server-side
+  // template list.
   async updateModelConfigs(request: UpdateModelConfigRequest): Promise<void> {
     // Check if transport encryption is enabled
     const config = await CryptoService.fetchCryptoConfig()

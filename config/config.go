@@ -44,8 +44,9 @@ type Config struct {
 	TransportEncryption bool
 
 	// Experience improvement (anonymous usage statistics)
-	// Helps us understand product usage and improve the experience
-	// Set EXPERIENCE_IMPROVEMENT=false to disable
+	// Reports exchange, symbol, order size, leverage and the model's token
+	// usage. Trading size and leverage describe an account's capital, so this is
+	// opt-in: set EXPERIENCE_IMPROVEMENT=true to take part.
 	ExperienceImprovement bool
 
 	// Market data provider API keys
@@ -74,8 +75,11 @@ func Init() {
 
 func initConfig() error {
 	cfg := &Config{
-		APIServerPort:         8080,
-		ExperienceImprovement: true, // Default: enabled to help improve the product
+		APIServerPort: 8080,
+		// Telemetry is opt-in. It used to default to on, which meant a fresh
+		// install started shipping its trade size and leverage to Google
+		// Analytics before the operator had agreed to anything.
+		ExperienceImprovement: false,
 		// Database defaults
 		DBType:    "sqlite",
 		DBPath:    "data/data.db",
@@ -112,10 +116,11 @@ func initConfig() error {
 		cfg.TransportEncryption = strings.ToLower(v) == "true"
 	}
 
-	// Experience improvement: anonymous usage statistics
-	// Default enabled, set EXPERIENCE_IMPROVEMENT=false to disable
+	// Experience improvement: anonymous usage statistics.
+	// Opt-in only: an explicit EXPERIENCE_IMPROVEMENT=true enables reporting,
+	// and every other value (including unset) leaves it off.
 	if v := os.Getenv("EXPERIENCE_IMPROVEMENT"); v != "" {
-		cfg.ExperienceImprovement = strings.ToLower(v) != "false"
+		cfg.ExperienceImprovement = strings.ToLower(v) == "true"
 	}
 
 	// Market data provider API keys

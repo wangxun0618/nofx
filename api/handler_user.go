@@ -241,7 +241,7 @@ func (s *Server) createDefaultStrategies(userID string, lang string) error {
 	}
 
 	type strategyDef struct {
-		name        string
+		name string
 		// legacyNames lists names this preset used to ship under. Existing rows
 		// matching one of them are adopted and renamed instead of duplicated.
 		legacyNames []string
@@ -273,7 +273,6 @@ func (s *Server) createDefaultStrategies(userID string, lang string) error {
 		c.Indicators.Klines.PrimaryTimeframe = "15m"
 		c.Indicators.Klines.PrimaryCount = 30
 		c.Indicators.Klines.LongerTimeframe = ""
-		c.Indicators.Klines.LongerCount = 0
 		c.Indicators.Klines.EnableMultiTimeframe = false
 		c.Indicators.Klines.SelectedTimeframes = []string{"15m"}
 		c.Indicators.EnableRawKlines = true

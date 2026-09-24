@@ -144,9 +144,12 @@ type AutoTraderConfig struct {
 	// Account configuration
 	InitialBalance float64 // Initial balance (for P&L calculation, must be set manually)
 
-	// Risk control (only as hints, AI can make autonomous decisions)
-	MaxDailyLoss    float64       // Maximum daily loss percentage (hint)
-	MaxDrawdown     float64       // Maximum drawdown percentage (hint)
+	// Risk control. MaxDailyLoss / MaxDrawdown / StopTradingTime are the
+	// programmatic fallback for the account-level circuit breaker; the strategy's
+	// RiskControl takes precedence when it configures limits at all. See
+	// auto_trader_account_risk.go for the enforcement itself.
+	MaxDailyLoss    float64       // Maximum daily loss percentage
+	MaxDrawdown     float64       // Maximum drawdown percentage
 	StopTradingTime time.Duration // Pause duration after risk control triggers
 
 	// Position mode
@@ -204,6 +207,11 @@ type AutoTrader struct {
 	runtimeHealthMu       sync.RWMutex // Guards safe mode (loop writes, API reads)
 	safeMode              bool         // Safe mode: no new positions, protect existing ones
 	safeModeReason        string       // Why safe mode was activated
+	// accountRiskMu guards the account-level circuit breaker state (loop writes,
+	// API reads). The state itself is measured per cycle in
+	// auto_trader_account_risk.go.
+	accountRiskMu sync.RWMutex
+	accountRisk   accountRiskState // Daily loss / drawdown measurement history
 }
 
 // NewAutoTrader creates an automatic trader
@@ -402,7 +410,11 @@ func NewAutoTrader(config AutoTraderConfig, st *store.Store, userID string) (*Au
 		peakPnLCacheMutex:     sync.RWMutex{},
 		lastBalanceSyncTime:   time.Now(),
 		userID:                userID,
-		signalBook:            newSignalBook(),
+		signalBook:            newSignalBook(SignalBookPath(config.ID)),
+		// The account risk window is seeded by the first live measurement rather
+		// than by InitialBalance: that value can be days old on a restart, and a
+		// stale baseline would either invent a loss that never happened or hide
+		// one that did.
 	}, nil
 }
 

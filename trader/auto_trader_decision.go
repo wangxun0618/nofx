@@ -78,9 +78,14 @@ func (at *AutoTrader) GetStatus() map[string]interface{} {
 		"call_count":      at.callCount,
 		"initial_balance": at.initialBalance,
 		"scan_interval":   at.config.ScanInterval.String(),
-		"stop_until":      at.stopUntil.Format(time.RFC3339),
 		"last_reset_time": at.lastResetTime.Format(time.RFC3339),
 		"ai_provider":     aiProvider,
+	}
+
+	// Account-level risk state (pause window, measured loss, configured limits)
+	// travels with the status payload.
+	for key, value := range at.accountRiskReport() {
+		result[key] = value
 	}
 
 	// Add strategy info
@@ -179,7 +184,7 @@ func (at *AutoTrader) GetAccountInfo() (map[string]interface{}, error) {
 		marginUsedPct = (totalMarginUsed / totalEquity) * 100
 	}
 
-	return map[string]interface{}{
+	result := map[string]interface{}{
 		// Core fields
 		"total_equity":      totalEquity,           // Account equity = wallet + unrealized
 		"wallet_balance":    totalWalletBalance,    // Wallet balance (excluding unrealized P&L)
@@ -190,13 +195,20 @@ func (at *AutoTrader) GetAccountInfo() (map[string]interface{}, error) {
 		"total_pnl":       totalPnL,          // Total P&L = equity - initial
 		"total_pnl_pct":   totalPnLPct,       // Total P&L percentage
 		"initial_balance": at.initialBalance, // Initial balance
-		"daily_pnl":       at.dailyPnL,       // Daily P&L
 
 		// Position information
 		"position_count":  len(positions),  // Position count
 		"margin_used":     totalMarginUsed, // Margin used
 		"margin_used_pct": marginUsedPct,   // Margin usage rate
-	}, nil
+	}
+
+	// daily_pnl, stop_until and the account-level circuit-breaker limits are
+	// merged from the risk report so one source of truth produces both the
+	// number the breaker acts on and the number the dashboard shows.
+	for key, value := range at.accountRiskReport() {
+		result[key] = value
+	}
+	return result, nil
 }
 
 // GetPositions gets position list (for API)

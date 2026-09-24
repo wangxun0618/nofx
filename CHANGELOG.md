@@ -55,6 +55,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Four UI strings resolved to keys that never existed, so Chinese users saw the raw key or its English fallback: the sign-in button, the chart loading state, the comparison-chart PnL label and the Lighter API-key toast now resolve to `auth.loggingIn`, `chart.loadingChartData`, `chart.leadPnL` and `exchangeCfg.lighterApiKeyImported`
+- **Account-level circuit breaker is now real, not a name**: `MaxDailyLoss` / `MaxDrawdown` were declared and never read, `stopUntil` was never assigned (so the pause branch was unreachable) and `dailyPnL` was only ever reset — the reported `daily_pnl` was permanently zero. The loop now measures mark-to-market equity every cycle, pauses trading when it falls past `risk_control.max_daily_loss_pct` from the day's opening equity or `risk_control.max_drawdown_pct` from the running peak, and reports the numbers it acts on. New strategies start with 10% / 20% / 240 min. A pause blocks new positions and never force-closes: exchange-side stops and the profit-giveback monitor keep running
+- **Anonymous trade statistics are opt-in**: `EXPERIENCE_IMPROVEMENT` used to default to on, so a fresh install shipped exchange, symbol, order size and leverage to Google Analytics before the operator agreed to anything. It now requires an explicit `true`
+- **`signal_managed_exit` is reachable and survives a restart**: `exit_mode` / `signal_score_floor` are exposed in the strategy editor and the API docs, and the entry thesis behind each position is persisted to `data/signal_book_<trader>.json`. Previously the book lived only in memory, so after every restart the loop compared against a fabricated `0.00` entry score and could close the whole book on the first cycle — and the docs still said the mode was "not restored"
+- `GET /api/prompt-templates` was called by the web client but has never been registered on this server; the unused helper is gone
+- `indicators.enable_quant_data` retried a dead endpoint once per symbol per cycle: an entitlement answer (401/402/403) now latches the source off for the process and states the reason once, in the same note channel candidate-pool degradations use
+- `klines.longer_count` was a knob that did nothing — the fetch path always used `primary_count`. It is removed from the schema, the API and the editor rather than left as a trap
+- README said "nine exchanges" where ten adapters exist; the entry for the retired `signal_managed_exit` mode in the market-data docs said the mode was not restored
 
 ---
 

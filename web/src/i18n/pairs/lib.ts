@@ -77,7 +77,6 @@ export const libPairs: PairMap = {
   // ── api/config.ts ──────────────────────────────────────────────────────
   'lib.fetchModelConfigs': { en: 'Failed to fetch model configs', zh: '获取模型配置失败' },
   'lib.fetchSupportedModels': { en: 'Failed to fetch supported models', zh: '获取支持的模型列表失败' },
-  'lib.fetchPromptTemplates': { en: 'Failed to fetch prompt templates', zh: '获取提示词模板失败' },
   'lib.updateModelConfigs': { en: 'Failed to update model configs', zh: '更新模型配置失败' },
   'lib.fetchExchangeConfigs': { en: 'Failed to fetch exchange configs', zh: '获取交易所配置失败' },
   'lib.fetchExchangeAccountStates': {

@@ -64,7 +64,7 @@ We are aware that the "Software" provides functionality to encrypt user-entered 
 
 D. Experience Improvement Program (Optional)
 
-To help us improve the product experience, the "Software" sends **anonymous usage statistics** by default. This feature is completely optional and you can disable it at any time.
+To help us improve the product experience, the "Software" can send **anonymous usage statistics**. This feature is entirely optional and is **off by default**: nothing is sent unless you explicitly turn it on.
 
 **Data Types Collected:**
 - Exchange type (e.g., Binance, Bybit, etc., excluding your account information)
@@ -87,8 +87,8 @@ To help us improve the product experience, the "Software" sends **anonymous usag
 - AI conversation content (prompts, responses, or trading decisions)
 - Any information that could reverse-identify personal identity through the above anonymous IDs
 
-**How to Disable:**
-Set `EXPERIENCE_IMPROVEMENT=false` in your environment variables to completely disable this feature.
+**How to Enable:**
+This is opt-in. Set `EXPERIENCE_IMPROVEMENT=true` in your environment variables to turn it on; leaving the variable unset (or set to `false`) sends nothing.
 
 **Purpose of Data:**
 These anonymous statistics are only used to understand overall product usage and help us optimize features and improve user experience.

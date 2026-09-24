@@ -40,20 +40,23 @@ func (at *AutoTrader) runCycle() error {
 	}
 
 	// 1. Check if trading needs to be stopped
-	if time.Now().Before(at.stopUntil) {
-		remaining := at.stopUntil.Sub(time.Now())
-		at.logWarnf("⏸ Risk control: Trading paused, remaining %.0f minutes", remaining.Minutes())
+	if remaining, reason, paused := at.riskPause(); paused {
+		at.logWarnf("⏸ Risk control: Trading paused, remaining %.0f minutes (%s)", remaining.Minutes(), reason)
 		record.Success = false
-		record.ErrorMessage = fmt.Sprintf("Risk control paused, remaining %.0f minutes", remaining.Minutes())
+		record.ErrorMessage = fmt.Sprintf("Risk control paused, remaining %.0f minutes: %s", remaining.Minutes(), reason)
 		if err := at.saveDecision(record); err != nil {
 			at.logWarnf("⚠ Failed to save decision record: %v", err)
 		}
 		return nil
 	}
 
-	// 2. Reset daily P&L (reset every day)
+	// 2. Reset daily P&L (reset every day). The account risk window uses the
+	// same 24h cadence, but re-baselines on the live equity it measures rather
+	// than on this counter — see evaluateAccountRisk.
 	if time.Since(at.lastResetTime) > 24*time.Hour {
+		at.accountRiskMu.Lock()
 		at.dailyPnL = 0
+		at.accountRiskMu.Unlock()
 		at.lastResetTime = time.Now()
 		logger.Info("📅 Daily P&L reset")
 	}
@@ -73,6 +76,28 @@ func (at *AutoTrader) runCycle() error {
 	// Save equity snapshot independently (decoupled from AI decision, used for drawing profit curve)
 	// NOTE: Must be called BEFORE candidate coins check to ensure equity is always recorded
 	at.saveEquitySnapshot(ctx)
+
+	// Account-level circuit breaker. Measured here because this is the first
+	// point in the cycle where real equity is known, and evaluated before the
+	// model is asked to trade: a breached account must not pay for an analysis
+	// it is not allowed to act on.
+	if verdict := at.evaluateAccountRisk(ctx.Account.TotalEquity); verdict.Reason != "" {
+		at.logWarnf("🛑 Account-level circuit breaker tripped: %s", verdict.Reason)
+		record.Success = false
+		record.ErrorMessage = "Account-level circuit breaker: " + verdict.Reason
+		record.ExecutionLog = append(record.ExecutionLog, "🛑 "+verdict.Reason)
+		record.AccountState = store.AccountSnapshot{
+			TotalBalance:          ctx.Account.TotalEquity,
+			AvailableBalance:      ctx.Account.AvailableBalance,
+			TotalUnrealizedProfit: ctx.Account.UnrealizedPnL,
+			PositionCount:         ctx.Account.PositionCount,
+			InitialBalance:        at.initialBalance,
+		}
+		if err := at.saveDecision(record); err != nil {
+			at.logWarnf("⚠ Failed to save decision record: %v", err)
+		}
+		return nil
+	}
 
 	// If no candidate coins available, log but do not error
 	if len(ctx.CandidateCoins) == 0 {

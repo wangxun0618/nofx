@@ -650,7 +650,7 @@ five minutes — polling faster would only re-render identical numbers.
 | Vergex position cost / liquidation heatmap | `hyperliquid_leverage` (free proxy) + `coinank_liquidation` (opt-in, true price buckets) + `hyperdata_positioning` (opt-in, per-position distance) |
 | Vergex per-symbol detail (direction / history / heatmap JSON) | `hyperdata_orderflow` (CVD with per-venue attribution) + `hyperdata_positioning` (per-position detail) |
 | nofxos OI / NetFlow / Price ranking endpoints | Removed (endpoints return 402; the bundled key is dead) |
-| `signal_managed_exit` | **Not restored.** It is unrelated to any data source — it is trade-layer semantics. `validateProtectionPrices` currently forces both a stop and a target on every position |
+| `signal_managed_exit` | **Implemented** (trade-layer semantics, unrelated to any data source). `risk_control.exit_mode` takes `fixed` (default), `signal` or `both`; under `signal` the direction read recorded at entry closes the position when it flips or decays below `signal_score_floor`, and `validateProtectionPrices` requires a stop but no longer a target. Entry theses persist to `data/signal_book_<trader>.json`, so they survive a restart |
 
 ### Two deliberate differences from the old board
 

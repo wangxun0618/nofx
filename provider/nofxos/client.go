@@ -7,6 +7,7 @@
 package nofxos
 
 import (
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"nofx/security"
@@ -127,4 +128,24 @@ type APIError struct {
 
 func (e *APIError) Error() string {
 	return e.Message
+}
+
+// IsSubscriptionUnavailable reports whether an error means this account is not
+// entitled to the endpoint, as opposed to a transient failure.
+//
+// The distinction matters because retrying cannot fix it: the ranking endpoints
+// this client used to call now answer 402, and a caller that keeps asking once
+// per symbol per cycle is retrying a decision rather than a connection.
+func IsSubscriptionUnavailable(err error) bool {
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		return false
+	}
+	switch apiErr.StatusCode {
+	case http.StatusUnauthorized, http.StatusPaymentRequired, http.StatusForbidden,
+		http.StatusNotFound, http.StatusGone:
+		return true
+	default:
+		return false
+	}
 }

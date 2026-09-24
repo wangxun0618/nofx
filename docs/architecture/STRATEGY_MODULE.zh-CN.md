@@ -96,66 +96,37 @@ if config.CoinSource.SourceType == "static" {
 - **用途:** 手动指定交易币种
 - **标签:** `["static"]`
 
-### 1.2 AI500 币种池 (CoinPool)
+### 1.2 AI500 币种池（由本地 screener 承接）
 
 ```go
-// decision/engine.go:405-406, 456-474
-func (e *StrategyEngine) getCoinPoolCoins(limit int) []CandidateCoin {
-    coins, err := e.provider.GetTopRatedCoins(limit)
-    // ...
-    for _, coin := range coins {
-        result = append(result, CandidateCoin{
-            Symbol:  coin.Symbol,
-            Sources: []string{"ai500"},
-        })
-    }
+// kernel/engine.go:586 getScreenerCoins → kernel/local_coin_source.go Screener
+coins, err := e.getScreenerCoins(coinSource.AI500Limit)
+if err != nil {
+    // 显式降级：降级原因会进入提示词，而不只是日志
+    return e.degradedCandidates("ai500", err), nil
 }
 ```
 
-- **API:** `config.CoinSource.CoinPoolAPIURL` (默认: `https://nofxos.ai/api/ai500/list`)
-- **用途:** 获取 AI 评分最高的 N 个币种
-- **标签:** `["ai500"]`
+- **配置:** `config.CoinSource.AI500Limit`
+- **用途:** 用"每个使用者都能看到"的注意力分数给 Hyperliquid 全市场排序（24h 涨跌、成交额、OI/成交额、资金费率、mark 与 oracle 溢价）。它替代的是已退役的厂商 AI 评分，但不声称与那个分数等价
+- **标签:** `["screener"]` —— 标签说明币种实际由谁产出
+- **失败行为:** 已退役的 `nofxos` 端点返回 402，因此没有远端兜底；无法计算时降级为静态列表并说明原因
 
-### 1.3 OI Top 币种 (持仓增长榜)
-
-```go
-// decision/engine.go:408-409, 476-498
-func (e *StrategyEngine) getOITopCoins() []CandidateCoin {
-    positions, err := e.provider.GetOITopPositions()
-    // ...
-    for _, pos := range positions {
-        result = append(result, CandidateCoin{
-            Symbol:  pos.Symbol,
-            Sources: []string{"oi_top"},
-        })
-    }
-}
-```
-
-- **API:** `config.CoinSource.OITopAPIURL`
-- **用途:** 获取持仓量增长最快的币种
-- **标签:** `["oi_top"]`
-
-### 1.4 混合模式 (Mixed)
+### 1.3 OI Top / OI Low 币种（持仓增长 / 减少榜）
 
 ```go
-// decision/engine.go:411-449
-if config.CoinSource.SourceType == "mixed" {
-    if config.CoinSource.UseCoinPool {
-        // 添加 AI500 币种
-    }
-    if config.CoinSource.UseOITop {
-        // 添加 OI Top 币种
-    }
-    if len(config.CoinSource.StaticCoins) > 0 {
-        // 添加静态币种
-    }
-    // 去重合并，保留多来源标签
-}
+// kernel/engine.go:613 getOITopCoins / :624 getOILowCoins
+rows, err := OIChangeRanking(ctx, limit, false) // true 表示持仓减少
 ```
 
-- **特点:** 同时使用多个数据源
-- **标签示例:** `["ai500", "oi_top"]` (双信号币种)
+- **配置:** `config.CoinSource.OITopLimit`、`config.CoinSource.OILowLimit`
+- **用途:** 用免费的 Hyperliquid `metaAndAssetCtxs` 数据，对照落盘在 `data/oi_snapshot.json` 的快照日志（每 10 分钟一条，约 1.5 天历史）测算过去一小时的持仓量变化
+- **预热:** 在出现"至少 15 分钟前"的基线之前不给出任何榜单——把 4 分钟的变动当成 1 小时来报，读起来会像真信号。预热期间候选池降级为静态列表
+- **标签:** `["oi_top"]`、`["oi_low"]`
+
+### 1.4 已不存在的来源字段
+
+`CoinPoolAPIURL`、`OITopAPIURL` 与 `provider/data_provider.go` 已随其所指向的付费网关一并移除。数据源不再逐项配置 URL：本地数据源直接用 Hyperliquid 数据算出榜单，可选的 NofxOS 量化块统一使用 `Indicators.NofxOSAPIKey`。
 
 ---
 
@@ -661,7 +632,7 @@ at.store.Decision().LogDecision(record)
 | **决策验证** | `decision/engine.go:1480-1602` | `validateDecisions()` |
 | **风控执行** | `trader/auto_trader.go:1769-1851` | `enforceMaxPositions()`, `enforcePositionValueRatio()` |
 | **策略配置** | `store/strategy.go` | `StrategyConfig`, `RiskControlConfig` |
-| **数据提供者** | `provider/data_provider.go` | `GetAI500Data()`, `GetOITopPositions()` |
+| **数据提供者** | `kernel/local_coin_source.go` | `Screener()`, `OIChangeRanking()` |
 
 ---
 

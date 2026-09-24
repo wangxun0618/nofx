@@ -1,15 +1,28 @@
 package trader
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
 	"nofx/kernel"
+	"nofx/logger"
 	"nofx/marketdata"
 	"nofx/marketdata/providers"
+)
+
+// Signal book persistence. The file sits next to the SQLite database so one
+// volume carries all state, and can be redirected for deployments that keep
+// runtime state elsewhere.
+const (
+	signalBookDirEnv      = "SIGNAL_BOOK_DIR"
+	defaultSignalBookDir  = "data"
+	signalBookFilePattern = "signal_book_%s.json"
 )
 
 // Signal-managed exits.
@@ -33,26 +46,133 @@ type signalRead struct {
 }
 
 // signalEntry is the read a position was opened against.
+//
+// Persisted to disk (one small JSON file per trader) because the entry thesis
+// is not recoverable from the exchange: positions survive a restart, the reason
+// they were opened does not. A book that lived only in memory meant that after
+// every restart the loop had to guess, and the guess closed positions.
 type signalEntry struct {
-	Symbol string
-	Side   string
-	Read   signalRead
-	SeenAt time.Time
+	Symbol string     `json:"symbol"`
+	Side   string     `json:"side"`
+	Read   signalRead `json:"read"`
+	SeenAt time.Time  `json:"seen_at"`
 }
 
 // signalBook remembers what each open position was opened on.
 //
-// It is process-local and rebuilt from scratch after a restart, which is why a
-// missing entry falls back to the direction implied by the position's side
-// instead of disabling the exit: losing the book must weaken the rule, not
-// switch it off silently.
+// Entries are written through to disk so a restart does not erase the thesis
+// behind an open position. When an entry genuinely is missing — a position that
+// predates this file, or a lost/corrupt book — the position is evaluated on the
+// direction its own side implies, and only the flip rule may act on it: the
+// strength half of the rule needs a recorded entry score to compare against, and
+// inventing one would be a fabricated reason to close.
 type signalBook struct {
 	mu      sync.Mutex
 	entries map[string]signalEntry
+	path    string
 }
 
-func newSignalBook() *signalBook {
-	return &signalBook{entries: make(map[string]signalEntry)}
+func newSignalBook(path string) *signalBook {
+	book := &signalBook{entries: make(map[string]signalEntry), path: path}
+	book.loadFromDisk()
+	return book
+}
+
+// SignalBookPath returns the file a trader persists its entry theses to. One
+// file per trader so two traders sharing a host cannot overwrite each other.
+func SignalBookPath(traderID string) string {
+	dir := strings.TrimSpace(os.Getenv(signalBookDirEnv))
+	if dir == "" {
+		dir = defaultSignalBookDir
+	}
+	return filepath.Join(dir, fmt.Sprintf(signalBookFilePattern, sanitizeFileToken(traderID)))
+}
+
+func sanitizeFileToken(value string) string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return "default"
+	}
+	var sb strings.Builder
+	for _, r := range trimmed {
+		switch {
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9', r == '-', r == '_':
+			sb.WriteRune(r)
+		default:
+			sb.WriteRune('_')
+		}
+	}
+	return sb.String()
+}
+
+// loadFromDisk restores a previous run's entries. A missing file is normal (first
+// run); a corrupt one is reported and treated as empty rather than silently
+// producing an empty book that looks like "nothing was ever recorded".
+func (b *signalBook) loadFromDisk() {
+	if b == nil || b.path == "" {
+		return
+	}
+	raw, err := os.ReadFile(b.path)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			logger.Warnf("⚠️ Could not read the signal book %s: %v — signal-managed exits will rely on flips only", b.path, err)
+		}
+		return
+	}
+
+	var entries map[string]signalEntry
+	if err := json.Unmarshal(raw, &entries); err != nil {
+		logger.Warnf("⚠️ Signal book %s is not valid JSON (%v) — starting empty", b.path, err)
+		return
+	}
+	if len(entries) == 0 {
+		return
+	}
+
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.entries == nil {
+		b.entries = make(map[string]signalEntry, len(entries))
+	}
+	for key, entry := range entries {
+		if entry.Symbol == "" || entry.Side == "" {
+			continue
+		}
+		b.entries[key] = entry
+	}
+	logger.Infof("📡 Restored %d signal book entr(ies) from %s", len(b.entries), b.path)
+}
+
+// persist writes the book atomically (temp file + rename) so a crash mid-write
+// cannot leave a half-written book behind. Failures are logged, never fatal:
+// losing the book degrades the exit rule, it does not stop trading.
+func (b *signalBook) persist() {
+	if b == nil || b.path == "" {
+		return
+	}
+	b.mu.Lock()
+	payload, err := json.MarshalIndent(b.entries, "", "  ")
+	b.mu.Unlock()
+	if err != nil {
+		logger.Warnf("⚠️ Could not serialise the signal book: %v", err)
+		return
+	}
+
+	if dir := filepath.Dir(b.path); dir != "" && dir != "." {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			logger.Warnf("⚠️ Could not create the signal book directory %s: %v", dir, err)
+			return
+		}
+	}
+	tmp := b.path + ".tmp"
+	if err := os.WriteFile(tmp, payload, 0o600); err != nil {
+		logger.Warnf("⚠️ Could not write the signal book: %v", err)
+		return
+	}
+	if err := os.Rename(tmp, b.path); err != nil {
+		logger.Warnf("⚠️ Could not replace the signal book: %v", err)
+		_ = os.Remove(tmp)
+	}
 }
 
 func signalKey(symbol, side string) string {
@@ -65,7 +185,6 @@ func (b *signalBook) Record(symbol, side string, read signalRead) {
 		return
 	}
 	b.mu.Lock()
-	defer b.mu.Unlock()
 	if b.entries == nil {
 		b.entries = make(map[string]signalEntry)
 	}
@@ -75,6 +194,8 @@ func (b *signalBook) Record(symbol, side string, read signalRead) {
 		Read:   read,
 		SeenAt: time.Now(),
 	}
+	b.mu.Unlock()
+	b.persist()
 }
 
 // Read returns the recorded entry read, if any.
@@ -89,17 +210,24 @@ func (b *signalBook) Read(symbol, side string) (signalEntry, bool) {
 }
 
 // Prune drops positions that are no longer open so the book cannot grow for the
-// lifetime of the process.
+// lifetime of the process. It only rewrites the file when something was actually
+// removed, because Prune runs every managed cycle.
 func (b *signalBook) Prune(active map[string]bool) {
 	if b == nil {
 		return
 	}
 	b.mu.Lock()
-	defer b.mu.Unlock()
+	removed := false
 	for key := range b.entries {
 		if !active[key] {
 			delete(b.entries, key)
+			removed = true
 		}
+	}
+	b.mu.Unlock()
+
+	if removed {
+		b.persist()
 	}
 }
 
@@ -142,9 +270,15 @@ func impliedRead(side string) signalRead {
 //   - decay: absolute strength has fallen below the floor, i.e. whatever edge
 //     justified the trade has faded to noise.
 //
+// entryKnown says whether the thesis behind the position was actually recorded.
+// When it was not — a position opened before the book was persisted, or a lost
+// book — only the flip rule runs. Comparing today's strength against a made-up
+// entry would close positions for a reason nobody can audit, and on a restart
+// that is every position at once.
+//
 // It returns "" for everything else, notably for instruments with no read at
 // all: an unobserved symbol carries no evidence either way.
-func evaluateSignalExit(side string, entry, current signalRead, floor float64) string {
+func evaluateSignalExit(side string, entry, current signalRead, entryKnown bool, floor float64) string {
 	if current.Bias == "" {
 		return ""
 	}
@@ -157,6 +291,9 @@ func evaluateSignalExit(side string, entry, current signalRead, floor float64) s
 
 	if oppositeBias(entry.Bias, current.Bias) {
 		return signalReasonFlip
+	}
+	if !entryKnown {
+		return ""
 	}
 	if floor > 0 && math.Abs(current.Score) < floor {
 		return signalReasonDecay
@@ -233,11 +370,13 @@ func (at *AutoTrader) signalExitDecisions(ctx *kernel.Context, aiDecisions []ker
 		}
 
 		entry := impliedRead(side)
+		entryKnown := false
 		if recorded, found := at.signalBook.Read(position.Symbol, side); found {
 			entry = recorded.Read
+			entryKnown = true
 		}
 
-		reason := evaluateSignalExit(side, entry, current, cfg.floor)
+		reason := evaluateSignalExit(side, entry, current, entryKnown, cfg.floor)
 		if reason == "" {
 			continue
 		}
@@ -272,7 +411,7 @@ func (at *AutoTrader) recordSignalEntries(decisions []kernel.Decision) {
 
 		read, ok := at.directionalRead(decision.Symbol)
 		if !ok {
-			at.logInfof("   • %s: opened without a direction read; signal exit will use the %s direction",
+			at.logInfof("   • %s: opened without a direction read; signal exit will only act on a flip against the %s direction",
 				decision.Symbol, side)
 			continue
 		}

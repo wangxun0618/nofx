@@ -5,6 +5,23 @@
 
 ---
 
+## 修订记录（2026-09-24）
+
+本报告中的问题已在次日逐条修复，代码已变更；下表说明修复动作，正文保留体检当时的原貌（除一处事实更正）。
+
+| 报告项 | 修复动作 |
+| --- | --- |
+| P0-1 账户级回撤熔断空壳 | **已实现真实熔断**。新增 `trader/auto_trader_account_risk.go`：每周期按市值测权益，相对当日开盘权益跌破 `risk_control.max_daily_loss_pct`、或相对运行峰值回撤达到 `risk_control.max_drawdown_pct` 即暂停交易 `stop_trading_minutes`；`stopUntil` 真正被赋值、`dailyPnL` 真正累加并上报。暂停只拦开仓、不强平。策略工作室与 API 文档已暴露三个字段。8 个单元测试覆盖触发/不触发/重新武装/配置撤销 |
+| 报告正文关于"提示词层面有软约束"的表述 | **事实更正**：`kernel/schema.go` 里的 `TradingRules` 表（含 `MaxDailyLoss = -10%`）**从未被任何代码引用**，从未进入提示词，属死代码，已删除。现在真正进入提示词的是 `writeAccountRiskLimits`，它只陈述**已配置**的、代码强制的限额；未配置时明确告诉模型"没有任何代码会替你停止交易" |
+| P0-2 遥测默认外发 | **改为 opt-in**。`ExperienceImprovement` 默认 `false`，仅 `EXPERIENCE_IMPROVEMENT=true` 才上报；5 个语言的隐私政策与 `.env.example` 同步更新 |
+| P1-3 signal_managed_exit 无入口；P1 重启后行为 | **已暴露并持久化**。`exit_mode` / `signal_score_floor` 进入策略编辑器与 API 文档；开仓依据落盘 `data/signal_book_<trader>.json`，重启后仍有效；入场依据缺失时只允许 flip 规则，不再用编造的 0.00 分触发 decay |
+| 报告正文关于 `GET /api/prompt-templates` 必 404 | **已删除**该无调用方的前端 helper 及其实 i18n key |
+| P1-3 nofxos 端点 402 | **改为显式失联**。401/402/403 视为权限类应答，本进程内停用该数据源并只说明一次（走候选池降级同一提示通道），不再每周期每币种重试 |
+| P2 LongerCount 无效 | **已移除**该字段（结构体、API、编辑器），不再留"看起来能配、实际不生效"的旋钮 |
+| P1-2 文档与代码脱节 | README 补齐第十家交易所（Indodax，现货）；`STRATEGY_MODULE.md(zh-CN)` 的 1.2–1.4 节改写为本地 screener / 本地 OI 榜的真实实现，删除对 `provider/data_provider.go` 的引用；市场数据文档中"该模式未恢复"改为已实现 |
+
+---
+
 ## 0. 结论摘要
 
 | 维度 | 状态 |
@@ -128,7 +145,7 @@ trader/auto_trader.go:443  Run
 同时对比：
 
 - **网格交易有真实现**：`auto_trader_grid.go:133-205` 的 `checkMaxDrawdown` 与 `dailyPnL` 累加、日亏比例计算都是完整的。
-- **提示词层面有软约束**：`kernel/schema.go:271-277` 把 `MaxDailyLoss = -10%` 写成给模型的规则（"Stop trading when daily loss reaches -10%"），但这依赖模型自觉遵守。
+- **提示词层面曾被认为有软约束**（**2026-09-24 更正**）：`kernel/schema.go` 里那张写着 `MaxDailyLoss = -10%` 的 `TradingRules` 表**没有任何调用方**，从未进入提示词——它只是死代码，已删除。也就是说合约自动交易的账户级保护当时在代码层与提示词层**都不存在**。
 - **持仓级有硬保护**：`auto_trader_risk.go:18-30,123-134`（价移 >+5% 且回吐 ≥40% 强制平仓）。
 
 **结论**：合约自动交易的**账户级**日亏/回撤熔断在代码层不存在，只有"提示模型"和"网格专属"两种。但配置结构体和界面都提供了该字段，会让人误以为开了就有保护。

@@ -176,9 +176,10 @@ export interface IndicatorConfig {
 
 export interface KlineConfig {
   primary_timeframe: string;
+  // Every selected timeframe is fetched with this count; there is no
+  // per-timeframe count (the old `longer_count` was never read by the server).
   primary_count: number;
   longer_timeframe?: string;
-  longer_count?: number;
   enable_multi_timeframe: boolean;
   // Added: support selecting multiple timeframes
   selected_timeframes?: string[];
@@ -211,5 +212,19 @@ export interface RiskControlConfig {
   max_margin_usage: number;        // Max margin utilization, e.g. 0.9 = 90% (CODE ENFORCED)
   min_position_size: number;       // Min position size in USDT (CODE ENFORCED)
   min_risk_reward_ratio: number;   // Min take_profit / stop_loss ratio (AI guided)
-  min_confidence: number;          // Min AI confidence to open position (AI guided)
+  min_confidence: number;          // Min confidence to open a position (AI guided)
+
+  // Account-level circuit breaker (CODE ENFORCED by the trader loop).
+  // Loss measured mark-to-market: from the day's opening equity and from the
+  // running equity peak. 0 disables the rule.
+  max_daily_loss_pct?: number;
+  max_drawdown_pct?: number;
+  stop_trading_minutes?: number;   // How long a breach pauses trading
+
+  // Exit ownership. 'fixed' (default) leaves the exit to the protective prices
+  // the AI sets; 'signal' additionally closes when the direction read that
+  // justified the position flips or decays, and drops the take-profit
+  // requirement; 'both' closes on signal while still requiring both prices.
+  exit_mode?: 'fixed' | 'signal' | 'both';
+  signal_score_floor?: number;     // |score| below which a position counts as decayed
 }
